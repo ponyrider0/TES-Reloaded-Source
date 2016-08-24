@@ -128,6 +128,7 @@
     <ClCompile Include="..\..\TESReloaded\EventInterface.cpp" />
     <ClCompile Include="..\..\TESReloaded\FormHook.cpp" />
     <ClCompile Include="..\..\TESReloaded\FrameRateManager.cpp" />
+    <ClCompile Include="..\..\TESReloaded\GameMenuManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\Grass.cpp" />
     <ClCompile Include="..\..\TESReloaded\Hooking\detours\detoured.cpp" />
     <ClCompile Include="..\..\TESReloaded\Hooking\detours\detours.cpp" />
@@ -172,6 +173,7 @@
     <ClInclude Include="..\..\TESReloaded\EventInterface.h" />
     <ClInclude Include="..\..\TESReloaded\FormHook.h" />
     <ClInclude Include="..\..\TESReloaded\FrameRateManager.h" />
+    <ClInclude Include="..\..\TESReloaded\GameMenuManager.h" />
     <ClInclude Include="..\..\TESReloaded\Grass.h" />
     <ClInclude Include="..\..\TESReloaded\Hooking\detours\detoured.h" />
     <ClInclude Include="..\..\TESReloaded\Hooking\detours\detours.h" />

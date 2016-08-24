@@ -48,6 +48,8 @@ public:
 	bool TrackLoadLightingShader(BSIStream* ShaderPackage);
 	bool TrackLoadUtilityShader(BSIStream* ShaderPackage);
 	bool TrackLoadWaterShader(BSIStream* ShaderPackage);
+	int TrackLoadImageSpaceShaders();
+	int TrackLoadLightingShaderExtra();
 	int TrackNewVertexShader(BSIStream* ShaderPackage, int Arg2);
 	int TrackNewPixelShader(BSIStream* ShaderPackage, int Arg2);
 #endif
@@ -67,6 +69,8 @@ NiDX9Renderer* ShaderIOHook::TrackInitializeRenderer() {
 	TheTextureManager = new TextureManager();
 	TheEquipmentManager = new EquipmentManager();
 	TheFrameRateManager = new FrameRateManager();
+	TheGameMenuManager = new GameMenuManager();
+	TheKeyboardManager = new KeyboardManager();
 	return Renderer;
 
 }
@@ -118,9 +122,8 @@ NiD3DPixelShader* ShaderIOHook::TrackNewPixelShader(NiDX9Renderer* Renderer) {
 #if DumpShaders
 void DumpShader(void* Function, int Len) {
 	
-	if (!strstr(ShaderName,"SHADER")) {
 #if (DumpShaders == 1)
-		std::string FileNameDump = "C:\\Archivio\\Downloads\\SkyrimShaders\\shaders001_dump\\";
+		std::string FileNameDump = "C:\\Archivio\\Downloads\\SkyrimShaders\\Dump\\";
 		FileNameDump += ShaderName;
 		std::ofstream FileBinary(FileNameDump, std::ios::out|std::ios::binary);
 		FileBinary.write((char*)Function, Len);
@@ -129,14 +132,13 @@ void DumpShader(void* Function, int Len) {
 #elif (DumpShaders == 2)
 		ID3DXBuffer* pDisasm = NULL;
 		D3DXDisassembleShader((const DWORD*)Function, FALSE, NULL, &pDisasm);
-		std::string FileNameDisasm = "C:\\Archivio\\Downloads\\SkyrimShaders\\shaders001_disasm\\";
+		std::string FileNameDisasm = "C:\\Archivio\\Downloads\\SkyrimShaders\\Disasm\\";
 		FileNameDisasm += ShaderName;
 		std::ofstream FileDisasm(FileNameDisasm, std::ios::out|std::ios::binary);
 		FileDisasm.write((char*)pDisasm->GetBufferPointer(), pDisasm->GetBufferSize());
 		FileDisasm.flush();
 		FileDisasm.close();
 #endif
-	}
 
 }
 #endif
@@ -296,8 +298,30 @@ bool ShaderIOHook::TrackLoadWaterShader(BSIStream* ShaderPackage) {
 	strcpy(ShaderPrefix, "WATER");
 	VertexShaderCounter = 0;
 	PixelShaderCounter = 0;
-	bool r = (this->*LoadWaterShader)(ShaderPackage);
-	strcpy(ShaderPrefix, "SHADER"); // We are not interested to the ImageSpace shaders by now (loaded after the water), so we reset the name to recognize and avoid them
+	return (this->*LoadWaterShader)(ShaderPackage);
+
+}
+
+int (__thiscall ShaderIOHook::* LoadImageSpaceShaders)();
+int (__thiscall ShaderIOHook::* TrackLoadImageSpaceShaders)();
+int ShaderIOHook::TrackLoadImageSpaceShaders() {
+
+	strcpy(ShaderPrefix, "IMAGE");
+	VertexShaderCounter = 0;
+	PixelShaderCounter = 0;
+	return (this->*LoadImageSpaceShaders)();
+
+}
+
+int (__thiscall ShaderIOHook::* LoadLightingShaderExtra)();
+int (__thiscall ShaderIOHook::* TrackLoadLightingShaderExtra)();
+int ShaderIOHook::TrackLoadLightingShaderExtra() {
+
+	strcpy(ShaderPrefix, "LIGHTE");
+	VertexShaderCounter = 0;
+	PixelShaderCounter = 0;
+	int r = (this->*LoadLightingShaderExtra)();
+	strcpy(ShaderPrefix, "SHADER");
 	VertexShaderCounter = 0;
 	PixelShaderCounter = 0;
 	return r;
@@ -322,8 +346,8 @@ int ShaderIOHook::TrackNewVertexShader(BSIStream* ShaderPackage, int Arg2) {
 	
 	VertexShader->ShaderRecord = ShaderRecord;
 	VertexShader->ShaderName = NULL;
-	if (TheSettingManager->SettingsMain.DevelopTraceVanillaShaders) {
-		VertexShader->ShaderName = new char(strlen(ShaderName) + 1);
+	if (TheSettingManager->SettingsMain.DevelopTraceShaders) {
+		VertexShader->ShaderName = new char[24];
 		strcpy(VertexShader->ShaderName, ShaderName);
 	}
 	return r;
@@ -348,8 +372,8 @@ int ShaderIOHook::TrackNewPixelShader(BSIStream* ShaderPackage, int Arg2) {
 	
 	PixelShader->ShaderRecord = ShaderRecord;
 	PixelShader->ShaderName = NULL;
-	if (TheSettingManager->SettingsMain.DevelopTraceVanillaShaders) {
-		PixelShader->ShaderName = new char(strlen(ShaderName) + 1);
+	if (TheSettingManager->SettingsMain.DevelopTraceShaders) {
+		PixelShader->ShaderName = new char[24];
 		strcpy(PixelShader->ShaderName, ShaderName);
 	}
 	if (ShaderFunction) TheRenderManager->device->CreatePixelShader((const DWORD*)ShaderFunction, &PixelShader->ShaderHandle);
@@ -385,6 +409,10 @@ void CreateShaderIOHook()
 	TrackLoadUtilityShader				= &ShaderIOHook::TrackLoadUtilityShader;
 	*((int *)&LoadWaterShader)			= 0x00CB38D0;
 	TrackLoadWaterShader				= &ShaderIOHook::TrackLoadWaterShader;
+	*((int *)&LoadImageSpaceShaders)	= 0x00C7CC10;
+	TrackLoadImageSpaceShaders			= &ShaderIOHook::TrackLoadImageSpaceShaders;
+	*((int *)&LoadLightingShaderExtra)	= 0x00CA38D0;
+	TrackLoadLightingShaderExtra		= &ShaderIOHook::TrackLoadLightingShaderExtra;
 #endif
 	*((int *)&NewVertexShader)			= kNewVertexShader;
 	TrackNewVertexShader				= &ShaderIOHook::TrackNewVertexShader;
@@ -406,6 +434,8 @@ void CreateShaderIOHook()
 	DetourAttach(&(PVOID&)LoadLightingShader,		*((PVOID *)&TrackLoadLightingShader));
 	DetourAttach(&(PVOID&)LoadUtilityShader,		*((PVOID *)&TrackLoadUtilityShader));
 	DetourAttach(&(PVOID&)LoadWaterShader,			*((PVOID *)&TrackLoadWaterShader));
+	DetourAttach(&(PVOID&)LoadImageSpaceShaders,	*((PVOID *)&TrackLoadImageSpaceShaders));
+	DetourAttach(&(PVOID&)LoadLightingShaderExtra,	*((PVOID *)&TrackLoadLightingShaderExtra));
 #endif
 	DetourAttach(&(PVOID&)NewVertexShader,			*((PVOID *)&TrackNewVertexShader));
 	DetourAttach(&(PVOID&)NewPixelShader,			*((PVOID *)&TrackNewPixelShader));

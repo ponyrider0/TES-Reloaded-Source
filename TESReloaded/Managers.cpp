@@ -7,3 +7,5 @@ EquipmentManager*	TheEquipmentManager = NULL;
 FrameRateManager*	TheFrameRateManager = NULL;
 UtilityManager*		TheUtilityManager = NULL;
 CommandManager*		TheCommandManager = NULL;
+GameMenuManager*	TheGameMenuManager = NULL;
+KeyboardManager*	TheKeyboardManager = NULL;

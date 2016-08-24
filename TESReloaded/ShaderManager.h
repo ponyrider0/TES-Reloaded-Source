@@ -42,7 +42,7 @@ public:
 	RuntimeVariable *		pTexture;
 	RuntimeVariable *		pSampler;
 
-	char					Name[20];
+	char					Name[24];
 	void*					pFunction;
 	char* 					pSource;
 	ID3DXBuffer*			pErrors;

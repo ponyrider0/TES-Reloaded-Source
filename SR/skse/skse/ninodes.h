@@ -111,7 +111,7 @@ public:
 	UInt8	pad05[3];
 	UInt32	visibleArray; 							// 08 NiVisibleArray *
 	UInt32	camera;   								// 0C NiCamera *
-	UInt32	fustrum[(0x30 - 0x10) >> 2];			// 10 NiFustrum
+	UInt32	fustrum[(0x30 - 0x10) >> 2];				// 10 NiFustrum
 	UInt32	fustrumPlanes[(0x90 - 0x30) >> 2];		// 2C NiFrustumPlanes
 	UInt32	activePlanes;							// 90
 	UInt32	unk94;									// 94
@@ -136,7 +136,9 @@ public:
 	virtual void	Unk_17(void);
 	virtual void	Unk_18(void);
 
-	UInt32	unk110[(0x170 - 0x110) >> 2];
+	UInt32		unk110[(0x168 - 0x110) >> 2];
+	void*		shaderAccumulator;						// 168
+	UInt32		unk16C;									// 16C
 };
 
 STATIC_ASSERT(sizeof(BSCullingProcess) == 0x170);
@@ -146,7 +148,7 @@ class LocalMapCullingProcess : public BSCullingProcess
 {
 public:
 	LocalMapCamera		localMapCamera;					// 170
-	void				* shaderAccumulator;			// 1BC
+	void				* localMapShaderAccumulator;	// 1BC
 	BSRenderTargetGroup	* localMapTexture;				// 1C0
 	UInt32				unk1C4[(0x230 - 0x1C4) >> 2];	// 1C4
 	UInt32				width;							// 230
@@ -173,7 +175,7 @@ public:
 	BSCullingProcess*	cullingProcess;			// C0
 	UInt32				IsMinFarPlaneDistance;	// C4 The farplane is set to 20480.0 when the flag is true. Probably used for interiors.
 	float				cameraFOV;				// C8
-	UInt32				unkCC;					// CC
+	float				unkCC;					// CC
 	UInt32				unkD0;					// D0
 };
 

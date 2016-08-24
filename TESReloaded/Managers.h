@@ -13,6 +13,8 @@
 #include "EquipmentManager.h"
 #include "FrameRateManager.h"
 #include "UtilityManager.h"
+#include "GameMenuManager.h"
+#include "KeyboardManager.h"
 #include "RenderManager.h"
 
 extern SettingManager*		TheSettingManager;
@@ -24,3 +26,5 @@ extern EquipmentManager*	TheEquipmentManager;
 extern FrameRateManager*	TheFrameRateManager;
 extern UtilityManager*		TheUtilityManager;
 extern CommandManager*		TheCommandManager;
+extern GameMenuManager*		TheGameMenuManager;
+extern KeyboardManager*		TheKeyboardManager;

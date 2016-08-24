@@ -507,7 +507,7 @@ public:
 	~NiCamera();
 
 	UInt32		unk0AC[(0xEC - 0xAC) >> 2];	// 0AC
-	NiFrustum	CameraFrustum;				// 0EC
+	NiFrustum	Frustum;					// 0EC
 	float		MinNearPlaneDist;			// 108
 	float		MaxFarNearRatio;			// 10C
 	NiViewport	ViewPort;					// 110

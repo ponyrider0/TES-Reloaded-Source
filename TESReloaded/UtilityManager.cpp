@@ -1,14 +1,21 @@
 #if defined(OBLIVION)
 #include "obse\GameData.h"
+#define kMessageBoxButtonTextYes 0x00B38CF8
+#define kMessageBoxButtonTextNo 0x00B38D00
 #elif defined(SKYRIM)
 #include "skse\GameMenus.h"
+#include "UtilityManager.h"
+#define kMessageBoxButtonTextYes 0x01B17FA0
+#define kMessageBoxButtonTextNo 0x01B17FAC
 #endif
+
+static const char** MessageBoxButtonTextYes		= (const char**)kMessageBoxButtonTextYes;
+static const char** MessageBoxButtonTextNo		= (const char**)kMessageBoxButtonTextNo;
 
 UtilityManager::UtilityManager()
 {
 	
 	_MESSAGE("Starting the utility manager...");
-	Screenshot = false;
 
 }
 
@@ -61,6 +68,44 @@ bool UtilityManager::IsVanityView()
 	return false;
 #endif
 
+}
+
+UInt8 UtilityManager::GetSitSleepState(Actor* Act)
+{
+#if defined(OBLIVION)
+	return Act->GetSitSleepState();
+#elif defined(SKYRIM)
+	return Act->actorState.flags04 >> 14 & 0xF;
+#endif
+}
+
+float UtilityManager::GetWaterHeight(TESObjectREFR* Ref)
+{
+#if defined(OBLIVION)
+	return TheUtilityManager->ThisStdCallF(0x004CACE0, Ref);
+#elif defined(SKYRIM)
+	return TheUtilityManager->ThisStdCallF(0x004D62D0, Ref);
+#endif
+}
+
+bool UtilityManager::ShowMessageBoxQuestion(const char* Message, void* Callback)
+{
+#if defined(OBLIVION)
+	return ShowMessageBox(Message, (_ShowMessageBox_Callback)Callback, 1, *MessageBoxButtonTextYes, *MessageBoxButtonTextNo, NULL);
+#elif defined(SKYRIM)
+	bool (__cdecl * ShowMessageBox)(const char*, void*, UInt32, UInt32, UInt32, ...) = (bool (__cdecl *)(const char*, void*, UInt32, UInt32, UInt32, ...))0x0087AC60;
+	return ShowMessageBox(Message, Callback, 1, 25, 4, *MessageBoxButtonTextYes, *MessageBoxButtonTextNo, NULL);
+#endif
+}
+
+void UtilityManager::ShowMessage(const char* Message)
+{
+#if defined(OBLIVION)
+	QueueUIMessage(Message, NULL, 1, 2.0f);
+#elif defined(SKYRIM)
+	void (__cdecl * ShowMessage)(const char*, const char*, bool) = (void (__cdecl *)(const char*, const char*, bool))0x008997A0;
+	return ShowMessage(Message, NULL, 1);
+#endif
 }
 
 void UtilityManager::MatrixMultiply(NiMatrix33* ss, NiMatrix33* sm1, NiMatrix33* sm2) {

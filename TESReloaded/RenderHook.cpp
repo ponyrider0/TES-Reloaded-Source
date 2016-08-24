@@ -3,7 +3,7 @@
 #define kMainPass 0x0040C830
 #define kSetupShaderPrograms 0x0075FBA0
 #define kProcessImageSpaceShaders 0x007B48E0
-#define kBeginScene 0x0076BE00;
+#define kBeginScene 0x0076BE00
 static const UInt32 kGetDepthBufferHook = 0x0040CCE8;
 static const UInt32 kGetDepthBufferReturn = 0x0040CCEF;
 #elif defined(SKYRIM)
@@ -11,7 +11,7 @@ static const UInt32 kGetDepthBufferReturn = 0x0040CCEF;
 #define kMainPass 0x0069BDF0
 #define kSetupShaderPrograms 0x00CC4E80
 #define kProcessImageSpaceShaders 0x00C70DA0
-#define kBeginScene 0x00CDA620;
+#define kBeginScene 0x00CDA620
 static const UInt32 kGetDepthBufferHook = 0x0069BCBD;
 static const UInt32 kGetDepthBufferReturn = 0x0069BCC2;
 #endif
@@ -46,8 +46,7 @@ void (__thiscall RenderHook::* MainPass)(BSRenderedTexture*);
 void (__thiscall RenderHook::* TrackMainPass)(BSRenderedTexture*);
 void RenderHook::TrackMainPass(BSRenderedTexture* RenderedTexture) {
 
-	TheRenderManager->SetFoV();
-	TheRenderManager->SetNearDistance();
+	TheRenderManager->SetSceneGraph();
 	TheShaderManager->UpdateFrameConstants();
 	(this->*MainPass)(RenderedTexture);
 
@@ -143,9 +142,9 @@ void (__thiscall RenderHook::* MainPass)(BSRenderedTexture*, int, int);
 void (__thiscall RenderHook::* TrackMainPass)(BSRenderedTexture*, int, int);
 void RenderHook::TrackMainPass(BSRenderedTexture* RenderedTexture, int Arg2, int Arg3) {
 
-	TheRenderManager->SetFoV();
-	TheRenderManager->SetNearDistance();
+	TheRenderManager->SetSceneGraph();
 	TheShaderManager->UpdateFrameConstants();
+	if (TheSettingManager->SettingsMain.DevelopTraceShaders) _MESSAGE("MAIN PASS");
 	(this->*MainPass)(RenderedTexture, Arg2, Arg3);
 
 }
@@ -159,30 +158,24 @@ bool RenderHook::TrackSetupShaderPrograms(UInt32 Arg1, UInt32 Arg2) {
 	NiD3DPixelShaderEx* PixelShader = *(NiD3DPixelShaderEx**)0x01BABFB0;
 	
 	if (VertexShader) {
-		if (VertexShader->ShaderRecord) {
-			VertexShader->ShaderRecord->SetCT();
-			if (TheSettingManager->SettingsMain.DevelopTraceShaders) _MESSAGE("SR SetVertexShader: %s", VertexShader->ShaderRecord->Name);
-		}
-		else if (TheSettingManager->SettingsMain.DevelopTraceVanillaShaders && !strstr(VertexShader->ShaderName, "SHADER")) _MESSAGE("SetVertexShader: %s", VertexShader->ShaderName);
+		if (VertexShader->ShaderRecord) VertexShader->ShaderRecord->SetCT();
+		if (TheSettingManager->SettingsMain.DevelopTraceShaders) _MESSAGE("SetVertexShader: %s", VertexShader->ShaderName);
 	}
 	if (PixelShader) {
-		if (PixelShader->ShaderRecord) {
-			PixelShader->ShaderRecord->SetCT();
-			if (TheSettingManager->SettingsMain.DevelopTraceShaders) _MESSAGE("SR SetPixelShader: %s", PixelShader->ShaderRecord->Name);
-		}
-		else if (TheSettingManager->SettingsMain.DevelopTraceVanillaShaders && !strstr(PixelShader->ShaderName, "SHADER")) _MESSAGE("SetPixelShader: %s", PixelShader->ShaderName);
+		if (PixelShader->ShaderRecord) PixelShader->ShaderRecord->SetCT();
+		if (TheSettingManager->SettingsMain.DevelopTraceShaders) _MESSAGE("SetPixelShader: %s", PixelShader->ShaderName);
 	}
 	return r;
 
 }
 
-HRESULT (__thiscall RenderHook::* SetShaderMultiConstantF)();
+HRESULT (__thiscall RenderHook::* SetShaderMultiConstantF)(); // TODO: find the class where these data are stored and remove the detour here
 HRESULT (__thiscall RenderHook::* TrackSetShaderMultiConstantF)();
 HRESULT RenderHook::TrackSetShaderMultiConstantF() {
 
 	NiD3DPixelShaderEx* PixelShader = *(NiD3DPixelShaderEx**)0x01BABFB0;
-
-	if (PixelShader && PixelShader->ShaderRecord && PixelShader->StartRegister == 0) {		
+	
+	if (PixelShader && PixelShader->ShaderRecord) {
 		if (!memcmp(PixelShader->ShaderRecord->Name, "WATER5.pso", 10)) {
 			D3DXVECTOR4* ConstantData = (D3DXVECTOR4*)0x01BAE0A8;
 			ConstantData += 4;
@@ -209,7 +202,7 @@ void (__cdecl * ProcessImageSpaceShaders)(NiDX9Renderer*, BSRenderedTexture*, BS
 void __cdecl TrackProcessImageSpaceShaders(NiDX9Renderer* Renderer, BSRenderedTexture* RenderedTexture1, BSRenderedTexture* RenderedTexture2) {
 
 	Ni2DBuffer* RenderBuffer = NULL;
-
+	
 	ProcessImageSpaceShaders(Renderer, RenderedTexture1, RenderedTexture2);
 	if (TheRenderManager->currentRTGroup) {
 		RenderBuffer = TheRenderManager->currentRTGroup->targets[0];
@@ -217,6 +210,7 @@ void __cdecl TrackProcessImageSpaceShaders(NiDX9Renderer* Renderer, BSRenderedTe
 			TheRenderManager->LastFrame = RenderBuffer->data->Surface;
 			if (!TheEffectManager->IsInitialized) TheEffectManager->Initialize();
 			TheEffectManager->Render();
+			TheGameMenuManager->Render();
 		}
 		else if (TheRenderManager->IsSaveGameScreenShot)
 			TheRenderManager->device->StretchRect(TheRenderManager->LastFrame, NULL, RenderBuffer->data->Surface, &TheRenderManager->SaveGameScreenShotRECT, D3DTEXF_NONE);
@@ -224,23 +218,19 @@ void __cdecl TrackProcessImageSpaceShaders(NiDX9Renderer* Renderer, BSRenderedTe
 
 }
 
-void GetDepthBuffer()
-{
-	TheRenderManager->ResolveDepthBuffer();
-}
-
 static __declspec(naked) void GetDepthBufferHook()
 {
 	__asm
 	{
 		pushad
-		call	GetDepthBuffer
+		mov		ecx, TheRenderManager
+		call	RenderManager::ResolveDepthBuffer
 		popad
 #if defined (OBLIVION)
 		mov		eax, 0x00B42F3E
-		cmp     byte ptr [eax], 0
+		cmp     byte ptr[eax], 0
 #elif defined (SKYRIM)
-		cmp     byte ptr [esp+0x14], 0
+		cmp     byte ptr[esp + 0x14], 0
 #endif
 		jmp		kGetDepthBufferReturn
 	}
@@ -285,7 +275,7 @@ void CreateRenderHook() {
 #endif
     DetourTransactionCommit();
 	
-	WriteRelJump(kGetDepthBufferHook, (UInt32)GetDepthBufferHook);
+	WriteRelJump(kGetDepthBufferHook, (UInt32)GetDepthBufferHook); // Grabs the depth buffer for effects
 #if defined(OBLIVION)
 	SafeWrite8(0x00A38280, 0x5A); // Fixes the "purple water bug"
 	SafeWrite32(0x0049BFAF, TheSettingManager->SettingsMain.WaterReflectionMapSize);

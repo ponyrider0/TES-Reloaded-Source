@@ -62,7 +62,7 @@ bool __cdecl TrackLoadForm(TESForm* Form, UInt32 Arg2) {
 				Water->waterSimVals[TESWaterForm::kWaterVal_FogDistFar] = 163835.0f;
 #elif defined(SKYRIM)
 				Water->properties.fogAmountUW = 0.0f;
-				Water->properties.fogNearUW = 10000.0f;
+				Water->properties.fogNearUW = 9995.0f;
 				Water->properties.fogFarUW = 10000.0f;
 #endif
 			}

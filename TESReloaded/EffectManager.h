@@ -62,8 +62,8 @@ public:
 	void						CreateEffect(EffectTypeEnum EffectType);
 	void						DisposeEffect(EffectRecord* TheEffect);
 	bool						LoadEffect(EffectRecord* TheEffect, char* Filename, char* CustomEffectName);
-	float						GetCustomEffectConst(const char* Name, const char* Const);
-	void						SetCustomEffectConst(const char* Name, const char* Const, float Value);
+	float						GetCustomEffectValue(const char* Name, const char* Const);
+	void						SetCustomEffectValue(const char* Name, const char* Const, float Value);
 	void						SetEffectEnabled(const char* Name, bool Value);
 
 	bool						IsInitialized;

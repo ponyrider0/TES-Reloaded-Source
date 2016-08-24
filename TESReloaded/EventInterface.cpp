@@ -71,8 +71,7 @@ void EventManager::OnHitByPlayer()
 
 	if (Weapon && Weapon->wtype <= 3 && TheShaderManager->ShaderConst.BloodLens_Percent == 0) {
 		float RandomPercent = (double)rand() / (RAND_MAX + 1) * (100 - 1) + 1;
-		if (RandomPercent <= TheSettingManager->SettingsBlood.LensChance)
-			TheShaderManager->ShaderConst.BloodLens_Percent = 1;
+		if (RandomPercent <= TheSettingManager->SettingsBlood.LensChance) TheShaderManager->ShaderConst.BloodLens_Percent = 1;
 	}
 	m_events->Weapon = NULL;
 

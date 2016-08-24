@@ -7,7 +7,7 @@
 #include "skse\PluginAPI.h"
 #endif
 
-class CommandManager
+class CommandManager // Never disposed
 {
 
 public:
@@ -16,21 +16,11 @@ public:
 	class PluginCommands
 	{
 	public:
+		void GetVersion(double* result);
 		void PurgeResources(double* result);
 		void GetLocationName(double* result);
-		void Screenshot(double* result);
-		void LoadSettings(double* result);
-		void SaveSettings(double* result, const char* Name);
-		void GetSetting(double* result, const char* Name, const char* Section, const char* Setting);
-		void SetSetting(double* result, const char* Name, const char* Section, const char* Setting, float Value);
-		void GetValue(double* result, const char* Name, const char* Const);
-		void GetCustomValue(double* result, const char* Name, const char* Const);
-		void SetCustomValue(double* result, const char* Name, const char* Const, float Value);
-		void GetEnabled(double* result, const char* Name);
-		void SetEnabled(double* result, const char* Name, bool Value);
-		void GetShaders(double* result, Script* scriptObj);
-		void GetSections(double* result, const char* Name, Script* scriptObj);
-		void GetSettings(double* result, const char* Name, const char* Section, Script* scriptObj);
+		void GetCustomEffectValue(double* result, const char* Name, const char* Const);
+		void SetCustomEffectValue(double* result, const char* Name, const char* Const, float Value);
 		void EquipLeftWeapon(double* result, Actor* Act, TESObjectWEAP* Weapon);
 		void GetLeftWeapon(double* result, Actor* Act);
 		void CameraMove(double* result);
@@ -46,7 +36,6 @@ public:
 		void GetAnimGroup(double* result, Actor* Act, int AnimGroup, int AnimType);
 		void SetAnimGroup(double* result, Actor* Act, int Permanent, int PlayAnim, int AnimGroup, int AnimType, const char* Filename);
 		void ResetAnimGroup(double* result, Actor* Act, int AnimGroup, int AnimType);
-		void GetVersion(double* result);
 	}; 
 
 	PluginCommands					Commands;

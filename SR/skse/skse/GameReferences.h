@@ -12,9 +12,7 @@ class NiPoint3;
 class TESObjectREFR;
 class BSFaceGenNiNode;
 class BSFaceGenAnimationData;
-
 class InventoryEntryData;
-
 class VMClassRegistry;
 
 // TESObjectREFR and child classes
@@ -230,7 +228,7 @@ public:
 		UInt32	unk14;			// 14
 		UInt32	unk18;			// 18
 		UInt32	unk1C;			// 1C
-		NiNode	* node;			// 20
+		NiNode* node;			// 20
 		// ... probably more
 	};
 
@@ -344,7 +342,7 @@ public:
 	virtual void Unk_B6(void);
 	virtual void Unk_B7(void);
 	virtual void Unk_B8(void);
-	virtual void Unk_B9(void);
+	virtual void ServeSentence();
 	virtual void Unk_BA(void);
 	virtual void Unk_BB(void);
 	virtual void Unk_BC(void);
@@ -467,7 +465,7 @@ public:
 	UInt32					unk12C;							// 12C
 	TESRace*				race;							// 130
 	UInt32					unk134;							// 134
-	UInt32					flags2;							// 138
+	UInt32					flags138;						// 138 Burgling house: flags138 >> 12 & 1
 	UInt32					unk13C[(0x19C - 0x13C) >> 2];
 
 	MEMBER_FN_PREFIX(Actor);
@@ -524,7 +522,9 @@ public:
 	BSTEventSource <void *>	actorDeathEventSource;		// 1D8 .?AV?$BSTEventSource@UBGSActorDeathEvent@@@@
 	BSTEventSource <void *>	positionPlayerEventSource;	// 208 .?AV?$BSTEventSource@UPositionPlayerEvent@@@@
 
-	UInt32			pad238[(0x490 - 0x238) >> 2];	// 238
+	UInt32			pad238[(0x430 - 0x238) >> 2];	// 238
+	UInt32			JailedState;					// 430
+	UInt32			pad434[(0x490 - 0x434) >> 2];	// 434
 	UInt32			unk490;							// 490 - Handle
 	UInt32			pad494[(0x568 - 0x494) >> 2];	// 494
 	UInt32			unk568;							// 568 - Handle
@@ -534,7 +534,7 @@ public:
 	UInt32			unk578;							// 578
 	UInt32			unk57C;							// 57C
 	UInt32			unk580;							// 580
-	UInt32			unk584;							// 584
+	UInt32			HoursToSleep;					// 584 (value is in seconds)
 	UInt32			unk588;							// 588
 	NiNode*			firstPersonSkeleton;			// 58C
 	UInt32			pad590[(0x5AC - 0x590) >> 2];
@@ -555,14 +555,15 @@ public:
 	UInt32			pad64C[(0x6E0 - 0x64C) >> 2];
 	UInt8			isAMurderer;					// 6E0
 	UInt8			numPerkPoints;					// 6E1
-	UInt16			unk6E2;							// 6E2
+	UInt8			flags6E2;						// 6E2
+	UInt8			flags6E3;						// 6E3
 	UInt32			unk6E4;							// 6E4
 
 	tArray <TintMask *>	tintMasks;			// 6E8		// These are the actual tints
 	tArray <TintMask *>	* overlayTintMasks;	// 6F4		// These apply when overlay head parts is enabled
 	UInt32			pad6F8[(0x724 - 0x6F8) >> 2];
 	UInt8			unk724;							// 724
-	UInt8			unk725;							// 725
+	UInt8			flags725;						// 725 IsPlayerSleeping: flags725 & 4
 	UInt8			unk726;							// 726
 	UInt8			unk727;							// 727
 	UInt32			unk728;							// 728

@@ -657,7 +657,7 @@ public:
 	~Actor();
 
 	virtual SInt32	GetInfamy();
-	virtual void	Unk_83(void) = 0;
+	virtual void	Resurrect(UInt8 Unk1, UInt8 Unk2, UInt8 Unk3);
 	virtual void	Unk_84(void) = 0;
 	virtual void	Unk_85(void) = 0;
 	virtual void	Unk_86(void) = 0;
@@ -667,7 +667,7 @@ public:
 	// invoked for fall damage (attacker == NULL), melee attacks, not spell damage.
 	virtual void	ApplyDamage(float damage, float arg1, Actor* attacker) = 0;
 	virtual void	Unk_89(void) = 0;
-	virtual void	Unk_8A(void) = 0;	// handles input for PlayerCharacter
+	virtual void	ProcessControls();
 	virtual void	Unk_8B(void) = 0;
 	virtual void	SetPackageDismount();
 	virtual void	Unk_8D(void) = 0;
@@ -681,9 +681,9 @@ public:
 	virtual void	Unk_95(void) = 0;
 	virtual void	Unk_96(void) = 0;
 	virtual void	Unk_97(void) = 0;
-	virtual bool	HasVampireFed(void) = 0;			
-	virtual void	SetVampireHasFed(bool bFed) = 0;
-	virtual void	Unk_9A(void) = 0;
+	virtual bool	GetVampireHasFed();			
+	virtual void	SetVampireHasFed(bool bFed);
+	virtual void	GetBirthSign();
 	virtual void	Unk_9B(void) = 0;
 	virtual void	Unk_9C(void) = 0;
 	virtual void	Unk_9D(void) = 0;
@@ -725,11 +725,11 @@ public:
 	virtual void	Unk_C1(void) = 0;
 	virtual void	Unk_C2(void) = 0;
 	virtual void	Unk_C3(void) = 0;
-	virtual void	Unk_C4(void) = 0;
+	virtual void	ManageAlarm();
 	virtual void	Unk_C5(void) = 0;
 	virtual void	Unk_C6(void) = 0;
 	virtual void	Unk_C7(void) = 0;
-	virtual void	Unk_C8(void) = 0;
+	virtual void	AddPackageWakeUp();
 	virtual void	Unk_C9(void) = 0;
 	virtual void	Unk_CA(void) = 0;
 	virtual void	Unk_CB(void) = 0;
@@ -1003,7 +1003,10 @@ public:
 	UInt32			unk200;										// 200
 	float			maxAVModifiers[kActorVal_OblivionMax];		// 204
 	float			scriptAVModifiers[kActorVal_OblivionMax];	// 324
-	UInt32			unk444[(0x570 - 0x444) >> 2];	// 444
+	float			unk444;							// 444
+	float			unk448;							// 448
+	float			unk44C;							// 44C
+	UInt32			unk450[(0x570 - 0x450) >> 2];	// 450
 	TESObjectREFR*	lastActivatedLoadDoor;			// 570 - most recently activated load door
 	UInt32			unk574;							// 574
 	UInt32			unk578;							// 578
@@ -1090,7 +1093,8 @@ public:
 	UInt32			unk714;							// 714
 	UInt32			unk718;							// 718
 	UInt8			isTravelPackage;				// 71C
-	UInt8			pad71C[3];
+	UInt8			isWakeUpPackage;				// 71D
+	UInt8			pad71E[2];
 	UInt32			unk720;							// 720
 	UInt32			unk724;							// 724
 	UInt32			unk728;							// 728

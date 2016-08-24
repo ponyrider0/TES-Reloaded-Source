@@ -1207,19 +1207,19 @@ public:
 		kFlags_Mobile = 16,
 		kFlags_Reset = 32
 	};
-	UInt32	unk00;						// 00
-	MiddleProcess	* middleProcess;	// 04
-	void	* unk08;					// 08
-	TESPackage * package;				// 0C
-	UInt32	unk10[(0x54 - 0x10) >> 2];	// 10
-	float	timeOfDeath;				// 54 - GetTimeDead = (GameDaysPassed*24) - timeOfDeath
-	UInt32	unk58[(0x68 - 0x58) >> 2];	// 58
-	TESForm	* equippedObject[2];		// 68
-	UInt32	unk70[(0x98 - 0x70) >> 2];	// 70
-	UInt8	unk98;						// 98
-	UInt8	unk9A;						// 9A
-	SInt8	unk9B;						// 9B
-	UInt8	unk9C[(0xA0 - 0x9C)];		// 9C
+	UInt32				unk00;						// 00
+	MiddleProcess*		middleProcess;				// 04
+	void*				unk08;						// 08
+	TESPackage*			package;					// 0C
+	UInt32				unk10[(0x54 - 0x10) >> 2];	// 10
+	float				timeOfDeath;				// 54 - GetTimeDead = (GameDaysPassed*24) - timeOfDeath
+	UInt32				unk58[(0x68 - 0x58) >> 2];	// 58
+	TESForm*			equippedObject[2];			// 68
+	UInt32				unk70[(0x98 - 0x70) >> 2];	// 70
+	UInt8				unk98;						// 98
+	UInt8				unk9A;						// 9A
+	SInt8				unk9B;						// 9B
+	UInt8				unk9C[(0xA0 - 0x9C)];		// 9C
 
 	MEMBER_FN_PREFIX(ActorProcessManager);
 	DEFINE_MEMBER_FN(SetEquipFlag, void, 0x0071F520, UInt8 flags);

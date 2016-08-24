@@ -89,6 +89,7 @@
     <ClCompile Include="..\obse\obse\GameExtraData.cpp">
       <Filter>obse</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\TESReloaded\GameMenuManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -166,6 +167,7 @@
       <Filter>obse</Filter>
     </ClInclude>
     <ClInclude Include="..\..\TESReloaded\CommandInfo.h" />
+    <ClInclude Include="..\..\TESReloaded\GameMenuManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="exports.def" />

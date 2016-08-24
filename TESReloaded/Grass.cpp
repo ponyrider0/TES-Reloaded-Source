@@ -10,7 +10,7 @@
 static const UInt32 kGrassHook = 0x004EBF87;
 static const UInt32 kGrassReturn = 0x004EC4E8;
 
-void (__cdecl * DrawGrass)(TESObjectCELL*, NiNode*, float, float, float, float, float, int, float, float, float) = (void(*)(TESObjectCELL*, NiNode*, float, float, float, float, float, int, float, float, float))0x004EB3F0;
+void (__cdecl * DrawGrass)(TESObjectCELL*, NiNode*, float, float, float, float, float, int, float, float, float) = (void (__cdecl *)(TESObjectCELL*, NiNode*, float, float, float, float, float, int, float, float, float))0x004EB3F0;
 
 void UpdateGrass(TESObjectCELL* Cell, NiNode* GrassNode, float CameraLocalTranslateX, float CameraLocalTranslateY, float CameraLocalTranslateZ, float CameraForwardX, float CameraForwardY, int Arg8, float StartFadingDistance, float EndDistance, float Arg11)
 {

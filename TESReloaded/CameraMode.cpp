@@ -1,7 +1,7 @@
-#if defined(OBLIVION)
-#include "obse_common\SafeWrite.h"
 #include "CameraMode.h"
 #include "Hooking\detours\detours.h"
+#if defined(OBLIVION)
+#include "obse_common\SafeWrite.h"
 
 static const UInt32 kUpdateCameraHook = 0x0066BE6E;
 static const UInt32 kUpdateCameraReturn = 0x0066BE7C;
@@ -342,11 +342,108 @@ void CreateCameraModeHook()
 	WriteRelJump(0x006738B1, 0x00673935); // Cancels the fPlayerDeathReloadTime
 
 	HUDReticle = TheSettingManager->SettingsMain.CameraModeHUDReticle;
-
+	
 }
 #elif defined (SKYRIM)
+#include "skse\GameReferences.h"
+#include "skse\NiNodes.h"
+#include "skse\GameCamera.h"
+#include "skse\SafeWrite.h"
+
+static bool TogglePOV = false;
+
+class CameraMode {
+
+public:
+	int TrackSetCameraState(TESCameraState* CameraState);
+	void TrackManageButtonEvent(ButtonEvent* Event, int Arg2);
+	void TrackSetCameraPosition();
+
+};
+
+int (__thiscall CameraMode::* SetCameraState)(TESCameraState*);
+int (__thiscall CameraMode::* TrackSetCameraState)(TESCameraState*);
+int CameraMode::TrackSetCameraState(TESCameraState* CameraState) {
+	
+	PlayerCamera* Camera = (PlayerCamera*)this;
+	bool IsWeaponOut = false;
+	
+	if (CameraState->stateId == PlayerCamera::kCameraState_FirstPerson) {
+		if (TheRenderManager->FirstPersonView && TogglePOV) {
+			CameraState = Camera->thirdPersonState2;
+			TheRenderManager->FirstPersonView = false;
+		}
+		else {
+			CameraState = Camera->thirdPersonState2;
+			TheRenderManager->FirstPersonView = true;
+		}
+	}
+	else if (CameraState->stateId == PlayerCamera::kCameraState_ThirdPerson2) TheRenderManager->FirstPersonView = false;
+	if (TheRenderManager->FirstPersonView && CameraState->stateId != PlayerCamera::kCameraState_ThirdPerson2) TheRenderManager->FirstPersonView = false;
+	if (!TheRenderManager->FirstPersonView) {
+		IsWeaponOut = (*g_thePlayer)->actorState.IsWeaponDrawn();
+		Camera->AllowVanityMode = !IsWeaponOut;
+		TheUtilityManager->ThisStdCall(0x0083C7E0, this, IsWeaponOut);
+	}
+	TogglePOV = false;
+	return (this->*SetCameraState)(CameraState);
+
+}
+
+void (__thiscall CameraMode::* ManageButtonEvent)(ButtonEvent*, int);
+void (__thiscall CameraMode::* TrackManageButtonEvent)(ButtonEvent*, int);
+void CameraMode::TrackManageButtonEvent(ButtonEvent* Event, int Arg2) {
+	
+	ThirdPersonState* State = (ThirdPersonState*)(this - 0x10); //ecx is ThirdPersonState for PlayerInputHandler (class is "shifted" due to the multi inheritance)
+	
+	(this->*ManageButtonEvent)(Event, Arg2);
+	if (State->stateId == PlayerCamera::kCameraState_ThirdPerson2) {
+		if (State->TogglePOV) TogglePOV = true;
+		if (TheRenderManager->FirstPersonView && *Event->GetControlID() == InputStringHolder::GetSingleton()->zoomOut) TheUtilityManager->ThisStdCall(0x006533D0, State->camera, State->camera->thirdPersonState2);
+	}
+
+}
+
+void (__thiscall CameraMode::* SetCameraPosition)();
+void (__thiscall CameraMode::* TrackSetCameraPosition)();
+void CameraMode::TrackSetCameraPosition() {
+
+	ThirdPersonState* State = (ThirdPersonState*)(this);
+
+	if (TheRenderManager->FirstPersonView) {
+		BSFixedString Head; TheUtilityManager->ThisStdCall(0x00A511C0, &Head, "NPC Head [Head]");
+		NiNode* ActorNode = (*g_thePlayer)->GetNiRootNode(0);
+		NiPoint3* HeadPosition = &ActorNode->GetObjectByName(&Head)->m_worldTransform.pos;
+		NiPoint3 v;
+		TheUtilityManager->MatrixVectorMultiply(&v, &ActorNode->m_worldTransform.rot, &TheSettingManager->SettingsMain.CameraModeOffset);
+		State->CameraPosition.x = HeadPosition->x + v.x;
+		State->CameraPosition.y = HeadPosition->y + v.y;
+		State->CameraPosition.z = HeadPosition->z + v.z;
+		State->OverShoulderPosX = State->OverShoulderPosY = State->OverShoulderPosZ = 0.0f;
+		State->camera->AllowVanityMode = 0;
+	}
+	(this->*SetCameraPosition)();
+	
+}
+
 void CreateCameraModeHook()
 {
+
+	*((int *)&SetCameraState)			= 0x006533D0;
+	TrackSetCameraState					= &CameraMode::TrackSetCameraState;
+	*((int *)&ManageButtonEvent)		= 0x00840BE0;
+	TrackManageButtonEvent				= &CameraMode::TrackManageButtonEvent;
+	*((int *)&SetCameraPosition)		= 0x0083F690;
+	TrackSetCameraPosition				= &CameraMode::TrackSetCameraPosition;
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)SetCameraState,		*((PVOID *)&TrackSetCameraState));
+	DetourAttach(&(PVOID&)ManageButtonEvent,	*((PVOID *)&TrackManageButtonEvent));
+	DetourAttach(&(PVOID&)SetCameraPosition,	*((PVOID *)&TrackSetCameraPosition));
+	DetourTransactionCommit();
 	
+	SafeWrite8(0x0083F69B, 0); // Stops PlayerCharacter fading
+
 }
 #endif

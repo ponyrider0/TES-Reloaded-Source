@@ -2467,6 +2467,13 @@ public:
 	UInt32		unk24;	// 24
 };
 
+class PackageLocation
+{
+	UInt32		unk04;
+	UInt32		unk08;
+	UInt32		unk0C;
+};
+
 // 80
 class TESPackage : public TESForm
 {
@@ -2551,7 +2558,7 @@ public:
 	UInt16	unk1C;			// 1C
 	UInt16	unk1E;			// 1E
 	UInt32	unk20;			// 20
-	UInt32	unk24;			// 24
+	PackageLocation*	packageLocation;	// 24
 	UInt32	unk28;			// 28
 	UInt32	unk2C;			// 2C
 	Data30	unk30;			// 30

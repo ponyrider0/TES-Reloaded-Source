@@ -1,6 +1,11 @@
 #include <nvapi.h>
-#if defined(SKYRIM)
+#if defined(OBLIVION)
+#define kWorldSceneGraph 0x00B333CC
+#define kGetFarPlaneDistance 0x00410EE0
+#elif defined(SKYRIM)
 #include "skse\NiNodes.h"
+#define kWorldSceneGraph 0x01B2E8BC
+#define kGetFarPlaneDistance 0x00B17D50
 #endif
 
 #define RESZ_CODE 0x7fa05000
@@ -49,7 +54,7 @@ void RenderManager::SetCameraData()
 		Right.z = WorldRotate->data[2][2];
 
 #if defined(OBLIVION)		
-		SetupCamera(WorldTranslate, &Forward, &Up, &Right, &Camera->CameraFrustum, (float*)&Camera->ViewPort);
+		SetupCamera(WorldTranslate, &Forward, &Up, &Right, &Camera->Frustum, (float*)&Camera->ViewPort);
 #elif defined(SKYRIM)
 		TheUtilityManager->ThisStdCall(0x00633670, this, Camera);
 #endif
@@ -64,55 +69,47 @@ void RenderManager::SetCameraData()
 
 }
 
-void RenderManager::SetFoV()
+void RenderManager::SetSceneGraph()
 {
 
 	float FoV = TheSettingManager->SettingsMain.FoV;
 
-	if (FoV) {
 #if defined(OBLIVION)
-		if (!TheUtilityManager->IsMenuMode(1009) && !TheUtilityManager->IsMenuMode(1034)) {
-			if ((*g_thePlayer)->FoV != FoV) {
-				ThisStdCall(0x00664A40, (*g_thePlayer), FoV);
-				TheShaderManager->ShaderConst.FoV = FoV;
-			}
-		}
-#elif defined(SKYRIM)
-		if (*SettingWorldFoV != FoV) {
-			void (__cdecl * C71820)(float) = (void(__cdecl *)(float))0x00C71820;
-			SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
-			PlayerCamera* Camera = PlayerCamera::GetSingleton();
-		
-			TheUtilityManager->ThisStdCall(0x00B17960, WorldSceneGraph, FoV, 0, NULL, NULL);	
-			C71820(FoV);
-			Camera->worldFOV = FoV;
-			Camera->firstPersonFOV = FoV;
-			*SettingWorldFoV = FoV;
-			*Setting1stPersonFoV = FoV;
+	if (!TheUtilityManager->IsMenuMode(1009) && !TheUtilityManager->IsMenuMode(1034)) {
+		if ((*g_thePlayer)->FoV != FoV) {
+			ThisStdCall(0x00664A40, (*g_thePlayer), FoV);
 			TheShaderManager->ShaderConst.FoV = FoV;
 		}
-#endif
 	}
-
-}
-
-void RenderManager::SetNearDistance()
-{
+#elif defined(SKYRIM)
+	PlayerCamera* Camera = PlayerCamera::GetSingleton();
+	if (Camera->worldFOV != FoV) {
+		void (__cdecl * C71820)(float) = (void(__cdecl *)(float))0x00C71820;
+		SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
+		
+		TheUtilityManager->ThisStdCall(0x00B17960, WorldSceneGraph, FoV, 0, NULL, 0);	
+		C71820(FoV);
+		Camera->worldFOV = FoV;
+		Camera->firstPersonFOV = FoV;
+		*SettingWorldFoV = FoV;
+		*Setting1stPersonFoV = FoV;
+		TheShaderManager->ShaderConst.FoV = FoV;
+	}
+#endif
 
 	if (TheSettingManager->SettingsMain.CameraMode) {
-#if defined(OBLIVION)
 		SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
+		float FarPlaneDistance = TheUtilityManager->ThisStdCallF(kGetFarPlaneDistance, WorldSceneGraph);
 		if (TheRenderManager->FirstPersonView && *SettingNearDistance != TheSettingManager->SettingsMain.CameraModeNearDistanceFirst) {
 			*SettingNearDistance = TheSettingManager->SettingsMain.CameraModeNearDistanceFirst;
-			ThisStdCall(0x00411160, WorldSceneGraph, WorldSceneGraph->cameraFOV, 1.0f);
+			WorldSceneGraph->camera->Frustum.Near = *SettingNearDistance;
+			WorldSceneGraph->camera->MaxFarNearRatio = FarPlaneDistance / *SettingNearDistance;
 		}
 		else if (!TheRenderManager->FirstPersonView && *SettingNearDistance != TheSettingManager->SettingsMain.CameraModeNearDistanceThird) {
 			*SettingNearDistance = TheSettingManager->SettingsMain.CameraModeNearDistanceThird;
-			ThisStdCall(0x00411160, WorldSceneGraph, WorldSceneGraph->cameraFOV, 1.0f);
+			WorldSceneGraph->camera->Frustum.Near = *SettingNearDistance;
+			WorldSceneGraph->camera->MaxFarNearRatio = FarPlaneDistance / *SettingNearDistance;
 		}
-#elif defined(SKYRIM)
-
-#endif
 	}
 
 }
@@ -188,15 +185,14 @@ void RenderManager::ResolveDepthBuffer()
 		device->SetStreamSource(0, pCurrVX, dCurrVO, dCurrVS);
 		
 		if (pCurrTX) pCurrTX->Release();
-		pCurrVX->Release();
+		if (pCurrVX) pCurrVX->Release();
 	}
-	else
-	{
+	else {
 		if (!DepthSurface) {
 			D3DSURFACE_DESC desc;
 			device->GetDepthStencilSurface(&DepthSurface);
 			DepthSurface->GetDesc(&desc);
-			if (desc.Format == (D3DFORMAT)MAKEFOURCC('I','N','T','Z')) {
+			if (desc.Format == (D3DFORMAT)MAKEFOURCC('I','N','T','Z')) { // ENB or an other injector could have replaced the depth surface
 				void *Container = NULL;
 				DepthSurface->GetContainer(IID_IDirect3DTexture9, &Container);
 				DepthTextureINTZ = (IDirect3DTexture9 *)Container;

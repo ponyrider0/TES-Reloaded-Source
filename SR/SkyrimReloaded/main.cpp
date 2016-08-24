@@ -25,18 +25,26 @@ namespace SRPapyrus
 {
 	const char* SRClass = "SRCommands";
 
-	bool Screenshot(StaticFunctionTag* FunctionTag)
+	float GetCustomEffectValue(StaticFunctionTag* FunctionTag, BSFixedString Name, BSFixedString Const)
 	{
 		double result;
 
-		TheCommandManager->Commands.Screenshot(&result);
+		TheCommandManager->Commands.GetCustomEffectValue(&result, Name.data, Const.data);
+		return result;
+	}
+	
+	bool SetCustomEffectValue(StaticFunctionTag* FunctionTag, BSFixedString Name, BSFixedString Const, float Value)
+	{
+		double result;
+
+		TheCommandManager->Commands.SetCustomEffectValue(&result, Name.data, Const.data, Value);
 		return result;
 	}
 
 	bool RegisterCommands(VMClassRegistry* registry)
 	{
-		registry->RegisterFunction(new NativeFunction0<StaticFunctionTag, bool>("SRScreenshot", SRClass, Screenshot, registry));
-		registry->SetFunctionFlags(SRClass, "SRScreenshot", VMClassRegistry::kFunctionFlag_NoWait);
+		registry->RegisterFunction(new NativeFunction2<StaticFunctionTag, float, BSFixedString, BSFixedString>("SRGetCustomEffectValue", SRClass, GetCustomEffectValue, registry));
+		registry->RegisterFunction(new NativeFunction3<StaticFunctionTag, bool, BSFixedString, BSFixedString, float>("SRSetCustomEffectValue", SRClass, SetCustomEffectValue, registry));
 		return true;
 	}
 
@@ -62,28 +70,27 @@ bool SKSEPlugin_Query(const SKSEInterface* skse, PluginInfo* info)
 bool SKSEPlugin_Load(const SKSEInterface* skse)
 {
 	pluginHandle = skse->GetPluginHandle();
-	
-	TheCommandManager = new CommandManager();
-	TheCommandManager->PapyrusInterface = (SKSEPapyrusInterface*)skse->QueryInterface(kInterface_Papyrus);
-	TheCommandManager->PapyrusInterface->Register(SRPapyrus::RegisterCommands);
 
 	if (!skse->isEditor) {
+		TheCommandManager = new CommandManager();
 		TheSettingManager = new SettingManager();
 		TheUtilityManager = new UtilityManager();	
 		
+		TheCommandManager->PapyrusInterface = (SKSEPapyrusInterface*)skse->QueryInterface(kInterface_Papyrus);
+		TheCommandManager->PapyrusInterface->Register(SRPapyrus::RegisterCommands);
+
 		TheSettingManager->LoadSettings();
 		CreateConsoleCommandHook();
 		CreateShaderIOHook();
 		CreateRenderHook();
 		CreateFormLoadHook();
-		//CreateSettingsHook();
+		CreateSettingsHook();
 		//if (TheSettingManager->SettingsMain.EnableBloodLens) CreateEventHook();
 		if (TheSettingManager->SettingsMain.GrassMode) CreateGrassHook();
 		if (TheSettingManager->SettingsMain.WindowedMode) CreateWindowedModeHook();
 		if (TheSettingManager->SettingsMain.CameraMode) CreateCameraModeHook();
 		if (TheSettingManager->SettingsMain.EquipmentMode) CreateEquipmentHook();
 		if (TheSettingManager->SettingsMain.SleepingMode) CreateSleepingModeHook();
-		//Sleep(3000);
 	}
 	return true;
 }

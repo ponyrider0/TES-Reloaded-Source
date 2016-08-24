@@ -164,7 +164,7 @@ public:
 	virtual void	SetPropertyState(NiProperty * prop);
 	virtual void	Unk_25(UInt32 arg0);
 	virtual void	Unk_26(UInt32 arg0);
-	virtual NiAVObject *	GetObjectByName(const char ** name);	// BSFixedString? alternatively BSFixedString is a typedef of a netimmerse type
+	virtual NiAVObject *	GetObjectByName(BSFixedString* name);
 	virtual void	SetSelectiveUpdateFlags(bool * selectiveUpdate, bool selectiveUpdateTransforms, bool * rigid);
 	virtual void	UpdateDownwardPass(ControllerUpdateContext * ctx, UInt32 unk1);
 	virtual void	UpdateSelectedDownwardPass(ControllerUpdateContext * ctx, UInt32 unk1);
@@ -320,14 +320,14 @@ STATIC_ASSERT(sizeof(BSFaceGenMorphDataHair) == 0x10);
 class NiCamera : public NiAVObject
 {
 public:
-	float			m_aafWorldToCam[4][4];	// A8
-	NiFrustum		m_frustum;				// E8
-	float			m_fMinNearPlaneDist;	// 104
-	float			m_fMaxFarNearRatio;		// 108
-	NiRect<float>	m_kPort;				// 10C
-	float			m_fLODAdjust;			// 11C
+	float			WorldToCam[4][4];	// A8
+	NiFrustum		Frustum;			// E8
+	float			MinNearPlaneDist;	// 104
+	float			MaxFarNearRatio;	// 108
+	NiRect<float>	Port;				// 10C
+	float			LODAdjust;			// 11C
 
 	bool WorldPtToScreenPt3(NiPoint3 * p_in, float * x_out, float * y_out, float * z_out, float zeroTolerance = 1e-5);
 };
-STATIC_ASSERT(offsetof(NiCamera, m_frustum) == 0xE8);
-STATIC_ASSERT(offsetof(NiCamera, m_fLODAdjust) == 0x11C);
+STATIC_ASSERT(offsetof(NiCamera, Frustum) == 0xE8);
+STATIC_ASSERT(offsetof(NiCamera, LODAdjust) == 0x11C);

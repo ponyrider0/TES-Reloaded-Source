@@ -1,17 +1,13 @@
 #if defined(OBLIVION)
 #include "obse_common\SafeWrite.h"
-#elif defined(SKYRIM)
-#include "skse\SafeWrite.h"
-#endif
-#include "WindowedMode.h"
-
-#if defined(OBLIVION)
 #define kPopupValue 0x0040E7C0
 #define kPopupVisibleValue 0x0040E805
 #elif defined(SKYRIM)
+#include "skse\SafeWrite.h"
 #define kPopupValue 0x0069D832
 #define kPopupVisibleValue 0x0069D877
 #endif
+#include "WindowedMode.h"
 
 void CreateWindowedModeHook() {
 

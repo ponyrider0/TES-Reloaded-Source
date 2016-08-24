@@ -103,13 +103,14 @@ public:
 class NiFrustum
 {
 public:
-	float	m_fLeft;	// 00
-	float	m_fRight;	// 04
-	float	m_fTop;		// 08
-	float	m_fBottom;	// 0C
-	float	m_fNear;	// 10
-	float	m_fFar;		// 14
-	bool	m_bOrtho;	// 18
+	float	Left;		// 00
+	float	Right;		// 04
+	float	Top;		// 08
+	float	Bottom;		// 0C
+	float	Near;		// 10
+	float	Far;		// 14
+	UInt8	Ortho;		// 18
+	UInt8	pad18[3];
 };
 
 // 10

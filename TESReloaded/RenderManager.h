@@ -36,8 +36,7 @@ public:
 	void				ResolveDepthBuffer();
 	void				GetCameraData();
 	void				SetCameraData();
-	void				SetFoV();
-	void				SetNearDistance();
+	void				SetSceneGraph();
 	
 	D3DXVECTOR4			CameraForward;
 	D3DXVECTOR4			CameraPosition;

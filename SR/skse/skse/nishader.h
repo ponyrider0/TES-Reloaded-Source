@@ -7,16 +7,16 @@ class BSShader : public NiRefObject
 public:
 	
 	enum ShaderType {
-		tBSGrassShader = 1,
-		tBSSkyShader = 2,
-		tBSWaterShader = 3,
-		tBSBloodSplatterShader = 4,
-		tBSUnknownShader = 5,
-		tBSLightingShader = 6,
-		tBSEffectShader = 7,
-		tBSUtilityShader = 8,
-		tBSDistantTreeShader = 9,
-		tBSParticleShader = 10,
+		tBSGrassShader			= 1,
+		tBSSkyShader			= 2,
+		tBSWaterShader			= 3,
+		tBSBloodSplatterShader	= 4,
+		tBSUnknownShader		= 5,
+		tBSLightingShader		= 6,
+		tBSEffectShader			= 7,
+		tBSUtilityShader		= 8,
+		tBSDistantTreeShader	= 9,
+		tBSParticleShader		= 10,
 	};
 
 	UInt32		unk08;		// 08

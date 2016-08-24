@@ -414,24 +414,14 @@ void EffectManager::Render() {
 
 	if (TheSettingManager->SettingsMain.EnableUnderwater && TheShaderManager->ShaderConst.HasWater && TheRenderManager->CameraPosition.z < TheShaderManager->ShaderConst.WaterHeight + 20)
 	{
-		// Cancel BloodLens if it is firing
-		if (TheShaderManager->ShaderConst.BloodLens_Percent) TheShaderManager->ShaderConst.BloodLens_Percent = 0;
-
-		// Wait 1 frame. A fix to avoid water during transition from interior to exterior
-		if (TheShaderManager->ShaderConst.WaterLens_Percent > -2)
-			TheShaderManager->ShaderConst.WaterLens_Percent = TheShaderManager->ShaderConst.WaterLens_Percent - 1;
-		if (TheShaderManager->ShaderConst.WaterLens_Percent <= -2) {
-			UnderwaterEffect->ApplyConstants(Underwater);
-			UnderwaterEffect->Render(D3DDevice, RenderTo, RenderSurface, false);
-		}
+		if (TheShaderManager->ShaderConst.BloodLens_Percent) TheShaderManager->ShaderConst.BloodLens_Percent = 0.0f;
+		TheShaderManager->ShaderConst.WaterLens_Percent = -1.0f;
+		UnderwaterEffect->ApplyConstants(Underwater);
+		UnderwaterEffect->Render(D3DDevice, RenderTo, RenderSurface, false);
 	}
 	else
 	{
-		// Wait 1 frame. A fix to avoid lens on water during transition from interior to exterior
-		if (TheShaderManager->ShaderConst.WaterLens_Percent <= -2)
-			TheShaderManager->ShaderConst.WaterLens_Percent = 1;
-		else if (TheShaderManager->ShaderConst.WaterLens_Percent <= -1)
-			TheShaderManager->ShaderConst.WaterLens_Percent = 0;
+		if (TheShaderManager->ShaderConst.WaterLens_Percent == -1.0f) TheShaderManager->ShaderConst.WaterLens_Percent = 1.0f;
 
 		if (TheSettingManager->SettingsMain.EnableAmbientOcclusion && TheShaderManager->ShaderConst.AmbientOcclusion_Enabled) {
 			D3DDevice->StretchRect(RenderTo, NULL, SourceSurface, NULL, D3DTEXF_NONE);
@@ -454,12 +444,12 @@ void EffectManager::Render() {
 		DepthOfFieldEffect->Render(D3DDevice, RenderTo, RenderSurface, false);
 	}
 
-	if (TheSettingManager->SettingsMain.EnableBloodLens && TheShaderManager->ShaderConst.BloodLens_Percent > 0) {
+	if (TheSettingManager->SettingsMain.EnableBloodLens && TheShaderManager->ShaderConst.BloodLens_Percent > 0.0f) {
 		BloodLensEffect->ApplyConstants(BloodLens);
 		BloodLensEffect->Render(D3DDevice, RenderTo, RenderSurface, false);
 	}
 
-	if (TheSettingManager->SettingsMain.EnableWaterLens && TheShaderManager->ShaderConst.WaterLens_Percent > 0) {
+	if (TheSettingManager->SettingsMain.EnableWaterLens && TheShaderManager->ShaderConst.WaterLens_Percent > 0.0f) {
 		WaterLensEffect->ApplyConstants(WaterLens);
 		WaterLensEffect->Render(D3DDevice, RenderTo, RenderSurface, false);
 	}
@@ -503,21 +493,21 @@ void EffectManager::Render() {
 		D3DDevice->SetRenderTarget(0, RenderTo);
 	}
 
-	if (TheUtilityManager->Screenshot) {
+	if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.ScreenshotKey)) {
 		char Filename[MAX_PATH];
 		char Name[80];
 
-		TheUtilityManager->Screenshot = false;
 		strcpy(Filename, TheSettingManager->SettingsMain.ScreenshotPath);
 		strcat(Filename, ScreenshotFilenamePrefix);
-		strftime(Name, 80, "%Y%m%d %H.%M.%S",localtime(&TheShaderManager->currentTime));
-		strcat(Filename,Name);
+		strftime(Name, 80, "%Y%m%d %H.%M.%S", localtime(&TheShaderManager->currentTime));
+		strcat(Filename, Name);
 		if (TheSettingManager->SettingsMain.ScreenshotType == 0)
-			strcat(Filename,".bmp");
+			strcat(Filename, ".bmp");
 		else
-			strcat(Filename,".jpg");
+			strcat(Filename, ".jpg");
 		if (GetFileAttributesA(TheSettingManager->SettingsMain.ScreenshotPath) == INVALID_FILE_ATTRIBUTES) CreateDirectoryA(TheSettingManager->SettingsMain.ScreenshotPath, NULL);
 		D3DXSaveSurfaceToFileA(Filename, (D3DXIMAGE_FILEFORMAT)TheSettingManager->SettingsMain.ScreenshotType, RenderTo, NULL, NULL);
+		TheUtilityManager->ShowMessage("Screenshot taken!");
 	}
 
 }
@@ -653,57 +643,42 @@ bool EffectManager::LoadEffect(EffectRecord* TheEffect, char* Filename, char* Cu
 void EffectManager::DisposeEffect(EffectRecord* TheEffect)
 {
 
-	if (TheEffect == AmbientOcclusionEffect) {
+	if (TheEffect == AmbientOcclusionEffect)
 		AmbientOcclusionEffect = NULL;
-	}
-	else if (TheEffect == BloodLensEffect) {
+	else if (TheEffect == BloodLensEffect)
 		BloodLensEffect = NULL;
-	}
-	else if (TheEffect == BloomEffect) {
+	else if (TheEffect == BloomEffect)
 		BloomEffect = NULL;
-	}
-	else if (TheEffect == CinemaEffect) {
+	else if (TheEffect == CinemaEffect)
 		CinemaEffect = NULL;
-	}
-	else if (TheEffect == ColoringEffect) {
+	else if (TheEffect == ColoringEffect)
 		ColoringEffect = NULL;
-	}
-	else if (TheEffect == DepthOfFieldEffect) {
+	else if (TheEffect == DepthOfFieldEffect)
 		DepthOfFieldEffect = NULL;
-	}
-	else if (TheEffect == GodRaysEffect) {
+	else if (TheEffect == GodRaysEffect)
 		GodRaysEffect = NULL;
-	}
-	else if (TheEffect == LowHFEffect) {
+	else if (TheEffect == LowHFEffect)
 		LowHFEffect = NULL;
-	}
-	else if (TheEffect == MotionBlurEffect) {
+	else if (TheEffect == MotionBlurEffect)
 		MotionBlurEffect = NULL;
-	}
-	else if (TheEffect == SMAAEffect) {
+	else if (TheEffect == SMAAEffect)
 		SMAAEffect = NULL;
-	}
-	else if (TheEffect == SnowAccumulationEffect) {
+	else if (TheEffect == SnowAccumulationEffect)
 		SnowAccumulationEffect = NULL;
-	}
-	else if (TheEffect == UnderwaterEffect) {
+	else if (TheEffect == UnderwaterEffect)
 		UnderwaterEffect = NULL;
-	}
-	else if (TheEffect == WaterLensEffect) {
+	else if (TheEffect == WaterLensEffect)
 		WaterLensEffect = NULL;
-	}
-	else if (TheEffect == WetWorldEffect) {
+	else if (TheEffect == WetWorldEffect)
 		WetWorldEffect = NULL;
-	}
-	else if (TheEffect == SharpeningEffect) {
+	else if (TheEffect == SharpeningEffect)
 		SharpeningEffect = NULL;
-	}
 
 	if (TheEffect) delete TheEffect;
 
 }
 
-float EffectManager::GetCustomEffectConst(const char* Name, const char* Const)
+float EffectManager::GetCustomEffectValue(const char* Name, const char* Const)
 {
 	float Value;
 
@@ -718,7 +693,7 @@ float EffectManager::GetCustomEffectConst(const char* Name, const char* Const)
 
 }
 
-void EffectManager::SetCustomEffectConst(const char* Name, const char* Const, float Value)
+void EffectManager::SetCustomEffectValue(const char* Name, const char* Const, float Value)
 {
 
 	CustomEffectRecordList::iterator v = CustomEffectRecords.find(std::string(Name));

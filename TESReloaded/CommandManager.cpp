@@ -9,7 +9,7 @@
 #include "Hooking\detours\detours.h"
 #include "CommandManager.h"
 #define CommandPrefix "SR"
-#define PluginVersion "Skyrim Reloaded v1.3.3"
+#define PluginVersion "Skyrim Reloaded v1.5.0"
 #endif
 
 #define DEFINE_COMMAND_PLUGIN_R(name, altName, description, refRequired, numParams, paramInfo, parser) \
@@ -43,6 +43,12 @@ bool Cmd_ClearInvalidRegistrations_Execute(COMMAND_ARGS)
 }
 #endif
 
+bool Cmd_GetVersion_Execute(COMMAND_ARGS)
+{
+	TheCommandManager->Commands.GetVersion(result);
+	return true;
+}
+
 bool Cmd_PurgeResources_Execute(COMMAND_ARGS)
 {
 	TheCommandManager->Commands.PurgeResources(result);
@@ -55,112 +61,22 @@ bool Cmd_GetLocationName_Execute(COMMAND_ARGS)
 	return true;
 }
 
-bool Cmd_Screenshot_Execute(COMMAND_ARGS)
-{
-	TheCommandManager->Commands.Screenshot(result);
-	return true;
-}
-
-bool Cmd_LoadSettings_Execute(COMMAND_ARGS)
-{
-	TheCommandManager->Commands.LoadSettings(result);
-	return true;
-}
-
-bool Cmd_SaveSettings_Execute(COMMAND_ARGS)
-{
-	char Name[80];
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name)) TheCommandManager->Commands.SaveSettings(result, Name);
-	return true;
-}
-
-bool Cmd_GetSetting_Execute(COMMAND_ARGS)
-{
-	char Name[80];
-	char Section[80];
-	char Setting[80];
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Section, &Setting)) TheCommandManager->Commands.GetSetting(result, Name, Section, Setting);
-	return true;
-}
-
-bool Cmd_SetSetting_Execute(COMMAND_ARGS)
-{
-	char Name[80];
-	char Section[80];
-	char Setting[80];
-	float Value;
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Section, &Setting, &Value)) TheCommandManager->Commands.SetSetting(result, Name, Section, Setting, Value);
-	return true;
-}
-
-bool Cmd_GetValue_Execute(COMMAND_ARGS)
+bool Cmd_GetCustomEffectValue_Execute(COMMAND_ARGS)
 {
 	char Name[80];
 	char Const[80];
 
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Const)) TheCommandManager->Commands.GetValue(result, Name, Const);
+	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Const)) TheCommandManager->Commands.GetCustomEffectValue(result, Name, Const);
 	return true;
 }
 
-bool Cmd_GetCustomValue_Execute(COMMAND_ARGS)
-{
-	char Name[80];
-	char Const[80];
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Const)) TheCommandManager->Commands.GetCustomValue(result, Name, Const);
-	return true;
-}
-
-bool Cmd_SetCustomValue_Execute(COMMAND_ARGS)
+bool Cmd_SetCustomEffectValue_Execute(COMMAND_ARGS)
 {
 	char Name[80];
 	char Const[80];
 	float Value;
 
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Const, &Value)) TheCommandManager->Commands.SetCustomValue(result, Name, Const, Value);
-	return true;
-}
-
-bool Cmd_GetEnabled_Execute(COMMAND_ARGS)
-{
-	char Name[80];
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name)) TheCommandManager->Commands.GetEnabled(result, Name);
-	return true;
-}
-
-bool Cmd_SetEnabled_Execute(COMMAND_ARGS)
-{
-	char Name[80];
-	int Value;
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Value)) TheCommandManager->Commands.SetEnabled(result, Name, Value);
-	return true;
-}
-
-bool Cmd_GetShaders_Execute(COMMAND_ARGS)
-{
-	TheCommandManager->Commands.GetShaders(result, scriptObj);
-	return true;
-}
-
-bool Cmd_GetSections_Execute(COMMAND_ARGS)
-{
-	char Name[80];
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name)) TheCommandManager->Commands.GetSections(result, Name, scriptObj);
-	return true;
-}
-
-bool Cmd_GetSettings_Execute(COMMAND_ARGS)
-{
-	char Name[80];
-	char Section[80];
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Section)) TheCommandManager->Commands.GetSettings(result, Name, Section, scriptObj);
+	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Const, &Value)) TheCommandManager->Commands.SetCustomEffectValue(result, Name, Const, Value);
 	return true;
 }
 
@@ -268,49 +184,32 @@ bool Cmd_ResetAnimGroup_Execute(COMMAND_ARGS)
 	return true;
 }
 
-bool Cmd_GetVersion_Execute(COMMAND_ARGS)
-{
-	TheCommandManager->Commands.GetVersion(result);
-	return true;
-}
-
 #if defined(SKYRIM)
 #define CommandPrefix ""
 DEFINE_COMMAND_PLUGIN_R(GetSKSEVersion, , "Returns the SKSE version", 0, 0, NULL, NULL);
 DEFINE_COMMAND_PLUGIN_R(ClearInvalidRegistrations, , "Clears invalid event registrations", 0, 0, NULL, NULL);
 #define CommandPrefix "SR"
 #endif
-DEFINE_COMMAND_PLUGIN_R(PurgeResources,	, "Purges resources from the video memory", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetLocationName,, "Gets the name of the current worldspace and current cell - this is a console command only", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(Screenshot,		, "Takes a screenshot without the HUD", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(LoadSettings,	, "Loads settings from configuration files", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(SaveSettings,	, "Saves settings into the shader configuration file", 0, 1, kParams_OneString, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetSetting,		, "Gets the current setting of a shader", 0, 3, kParams_ThreeString, NULL);
-DEFINE_COMMAND_PLUGIN_R(SetSetting,		, "Sets the current setting of a shader", 0, 4, kParams_ThreeString_OneFloat, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetValue,		, "Gets the current value of a shader", 0, 2, kParams_TwoString, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetCustomValue, , "Gets the current value of a custom effect", 0, 2, kParams_TwoString, NULL);
-DEFINE_COMMAND_PLUGIN_R(SetCustomValue, , "Sets the current value of a custom effect", 0, 3, kParams_TwoString_OneFloat, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetEnabled,		, "Gets the status of a shader", 0, 1, kParams_OneString, NULL);
-DEFINE_COMMAND_PLUGIN_R(SetEnabled,		, "Enables/disables an effect", 0, 2, kParams_OneString_OneInt, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetShaders,		, "Gets the shaders list", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetSections,	, "Gets the sections list of a shader", 0, 1, kParams_OneString, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetSettings,	, "Gets settings of a specific section of a shader", 0, 2, kParams_TwoString, NULL);
-DEFINE_COMMAND_PLUGIN_R(EquipLeftWeapon,, "Equips a weapon in the left hand", 1, 1, kParams_OneObject, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetLeftWeapon,	, "Gets the original weapon in the left hand", 1, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraMove,		, "Moves the camera from the actor's head", 0, 4, kParams_OneActorThreeFloats, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraRotate,	, "Rotates the camera in relation of the actor's head", 0, 4, kParams_OneActorThreeFloats, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraLook,		, "Forces the camera to look at the actor", 0, 4, kParams_OneActorThreeFloats, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraMoveTo,	, "Moves the camera in the world", 0, 3, kParams_ThreeFloats, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraRotateTo, , "Rotates the camera in the world", 0, 3, kParams_ThreeFloats, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraLookTo,	, "Forces the camera to look to a point in the world", 0, 3, kParams_ThreeFloats, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraReset,	, "Restores the camera to the normal state", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraGetPosX,	, "Gets the camera position for the x axis", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraGetPosY,	, "Gets the camera position for the y axis", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(CameraGetPosZ,	, "Gets the camera position for the z axis", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetAnimGroup,	, "Gets if a specific animation for the specific group is set", 1, 2, kParams_TwoInts, NULL);
-DEFINE_COMMAND_PLUGIN_R(SetAnimGroup,	, "Sets a specific animation for the specific group", 1, 5, kParams_FourIntsOneString, NULL);
-DEFINE_COMMAND_PLUGIN_R(ResetAnimGroup, , "Reset a permanent specific animation for the specific group to default", 1, 2, kParams_TwoInts, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetVersion,		, "Returns the plugin version", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(GetVersion,				, "Returns the plugin version", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(PurgeResources,			, "Purges resources from the video memory", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(GetLocationName,		, "Gets the name of the current worldspace and current cell - this is a console command only", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(GetCustomEffectValue,	, "Gets the current value of a custom effect", 0, 2, kParams_TwoString, NULL);
+DEFINE_COMMAND_PLUGIN_R(SetCustomEffectValue,	, "Sets the current value of a custom effect", 0, 3, kParams_TwoString_OneFloat, NULL);
+DEFINE_COMMAND_PLUGIN_R(EquipLeftWeapon,		, "Equips a weapon in the left hand", 1, 1, kParams_OneObject, NULL);
+DEFINE_COMMAND_PLUGIN_R(GetLeftWeapon,			, "Gets the original weapon in the left hand", 1, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraMove,				, "Moves the camera from the actor's head", 0, 4, kParams_OneActorThreeFloats, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraRotate,			, "Rotates the camera in relation of the actor's head", 0, 4, kParams_OneActorThreeFloats, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraLook,				, "Forces the camera to look at the actor", 0, 4, kParams_OneActorThreeFloats, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraMoveTo,			, "Moves the camera in the world", 0, 3, kParams_ThreeFloats, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraRotateTo,			, "Rotates the camera in the world", 0, 3, kParams_ThreeFloats, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraLookTo,			, "Forces the camera to look to a point in the world", 0, 3, kParams_ThreeFloats, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraReset,			, "Restores the camera to the normal state", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraGetPosX,			, "Gets the camera position for the x axis", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraGetPosY,			, "Gets the camera position for the y axis", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(CameraGetPosZ,			, "Gets the camera position for the z axis", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(GetAnimGroup,			, "Gets if a specific animation for the specific group is set", 1, 2, kParams_TwoInts, NULL);
+DEFINE_COMMAND_PLUGIN_R(SetAnimGroup,			, "Sets a specific animation for the specific group", 1, 5, kParams_FourIntsOneString, NULL);
+DEFINE_COMMAND_PLUGIN_R(ResetAnimGroup,			, "Reset a permanent specific animation for the specific group to default", 1, 2, kParams_TwoInts, NULL);
 
 #if defined(OBLIVION)
 CommandManager::CommandManager() {
@@ -501,12 +400,14 @@ void __cdecl TrackToggleConsole() {
 		commandTable.Add(&kCommandInfo_GetVersion);
 		commandTable.Add(&kCommandInfo_PurgeResources);
 		commandTable.Add(&kCommandInfo_GetLocationName);
-		commandTable.Add(&kCommandInfo_LoadSettings);
+		commandTable.Add(&kCommandInfo_GetCustomEffectValue);
+		commandTable.Add(&kCommandInfo_SetCustomEffectValue);
 		commandTable.Add();
 		commandTable.PatchEXE(&kPatchSet);
 		TheCommandManager->ConsolePatched = true;
 	}
 	ToggleConsole();
+
 }
 
 void CreateConsoleCommandHook()
@@ -519,11 +420,18 @@ void CreateConsoleCommandHook()
 
 CommandManager::CommandManager()
 {
+
 	_MESSAGE("Starting the command manager...");
-	PapyrusInterface = NULL;
 	ConsolePatched = false;
+
 }
 #endif
+
+void CommandManager::PluginCommands::GetVersion(double* result)
+{
+	if (IsConsoleMode()) Console_Print(PluginVersion);
+	*result = 1;
+}
 
 void CommandManager::PluginCommands::PurgeResources(double* result)
 {
@@ -550,80 +458,15 @@ void CommandManager::PluginCommands::GetLocationName(double* result)
 	*result = 1;
 }
 
-void CommandManager::PluginCommands::Screenshot(double* result)
+void CommandManager::PluginCommands::GetCustomEffectValue(double* result, const char* Name, const char* Const)
 {
-	TheUtilityManager->Screenshot = true;
+	*result = TheEffectManager->GetCustomEffectValue(Name, Const);
+}
+
+void CommandManager::PluginCommands::SetCustomEffectValue(double* result, const char* Name, const char* Const, float Value)
+{
+	TheEffectManager->SetCustomEffectValue(Name, Const, Value);
 	*result = 1;
-}
-
-void CommandManager::PluginCommands::LoadSettings(double* result)
-{
-	TheSettingManager->LoadSettings();
-	*result = 1;
-}
-
-void CommandManager::PluginCommands::SaveSettings(double* result, const char* Name)
-{
-	TheSettingManager->SaveSettings(Name);
-	*result = 1;
-}
-
-void CommandManager::PluginCommands::GetSetting(double* result, const char* Name, const char* Section, const char* Setting)
-{
-	*result = TheSettingManager->GetSetting(Name, Section, Setting);
-}
-
-void CommandManager::PluginCommands::SetSetting(double* result, const char* Name, const char* Section, const char* Setting, float Value)
-{
-	TheSettingManager->SetSetting(Name, Section, Setting, Value);
-}
-
-void CommandManager::PluginCommands::GetValue(double* result, const char* Name, const char* Const)
-{
-	*result = TheShaderManager->GetShaderConst(Name, Const);
-}
-
-void CommandManager::PluginCommands::GetCustomValue(double* result, const char* Name, const char* Const)
-{
-	* result = TheEffectManager->GetCustomEffectConst(Name, Const);
-}
-
-void CommandManager::PluginCommands::SetCustomValue(double* result, const char* Name, const char* Const, float Value)
-{
-	TheEffectManager->SetCustomEffectConst(Name, Const, Value);
-	*result = 1;
-}
-
-void CommandManager::PluginCommands::GetEnabled(double* result, const char* Name)
-{
-	*result = TheSettingManager->GetEnabled(Name);
-}
-
-void CommandManager::PluginCommands::SetEnabled(double* result, const char* Name, bool Value)
-{
-	TheEffectManager->SetEffectEnabled(Name, Value);
-	*result = 1;
-}
-
-void CommandManager::PluginCommands::GetShaders(double* result, Script* scriptObj)
-{
-#if defined(OBLIVION)
-	TheCommandManager->ArrayInterface->AssignCommandResult(TheCommandManager->GetOBSEArray(TheSettingManager->GetShaders(), scriptObj), result);
-#endif
-}
-
-void CommandManager::PluginCommands::GetSections(double* result, const char* Name, Script* scriptObj)
-{
-#if defined(OBLIVION)
-	TheCommandManager->ArrayInterface->AssignCommandResult(TheCommandManager->GetOBSEArray(TheSettingManager->GetSections(Name), scriptObj), result);
-#endif
-}
-
-void CommandManager::PluginCommands::GetSettings(double* result, const char* Name, const char* Section, Script* scriptObj)
-{
-#if defined(OBLIVION)
-	TheCommandManager->ArrayInterface->AssignCommandResult(TheCommandManager->GetOBSEArray(TheSettingManager->GetSettings(Name, Section), scriptObj), result);
-#endif
 }
 
 void CommandManager::PluginCommands::EquipLeftWeapon(double* result, Actor* Act, TESObjectWEAP* Weapon)
@@ -854,10 +697,4 @@ void CommandManager::PluginCommands::ResetAnimGroup(double* result, Actor* Act, 
 		}
 	}
 #endif
-}
-
-void CommandManager::PluginCommands::GetVersion(double* result)
-{
-	if (IsConsoleMode()) Console_Print(PluginVersion);
-	*result = 1;
 }

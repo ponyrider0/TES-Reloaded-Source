@@ -1,5 +1,6 @@
 #if defined(OBLIVION)
 #include "obse\GameData.h"
+#define kSky 0x00B365C4
 #define fogNight_nearFog fogNight.nearFog
 #define fogNight_farFog fogNight.farFog
 #define fogDay_nearFog fogDay.nearFog
@@ -8,10 +9,11 @@
 #define GetPlayerHealthPercent (float)(*g_thePlayer)->GetActorValue(kActorVal_Health) / (float)(*g_thePlayer)->GetBaseActorValue(kActorVal_Health)
 #define GetPlayerFatiguePercent (float)(*g_thePlayer)->GetActorValue(kActorVal_Fatigue) / (float)(*g_thePlayer)->GetBaseActorValue(kActorVal_Fatigue)
 #define CurrentBlend *WaterBlend
-#define WaterLevel ShaderConst.currentCell->GetWaterHeight()
+#define WaterLevel TheUtilityManager->GetWaterHeight(ShaderConst.currentCell)
 #elif defined(SKYRIM)
 #include "skse\GameData.h"
 #include "skse\GameCamera.h"
+#define kSky 0x01B1160C
 #define eColor_Fog kColorType_FogNear
 #define eColor_Sun kColorType_Sun
 #define fogNight_nearFog fogDistance.nearNight
@@ -21,7 +23,7 @@
 #define sunGlare general.sunGlare
 #define windSpeed general.windSpeed
 #define precipType general.precipType
-#define isThirdPersonView PlayerCamera::GetSingleton()->cameraState->stateId == 9
+#define isThirdPersonView PlayerCamera::GetSingleton()->cameraState->stateId == PlayerCamera::kCameraState_ThirdPerson2
 #define rotZ rot.z
 #define rotX rot.x
 #define GetPlayerHealthPercent (*g_thePlayer)->actorValueOwner.GetCurrent(24) / (*g_thePlayer)->actorValueOwner.GetBase(24)
@@ -29,7 +31,7 @@
 #define CurrentBlend 0.0f
 #define LightingData InteriorData
 #define lighting interiorData
-#define WaterLevel (*g_thePlayer)->loadedState->waterHeight
+#define WaterLevel TheUtilityManager->GetWaterHeight(*g_thePlayer)
 #endif
 #include <assert.h>
 #include <fstream>
@@ -37,7 +39,7 @@
 
 RuntimeShaderRecord::RuntimeShaderRecord() {
 
-	Name[0] = '\0';
+	Name[0]	  = NULL;
 	pCustomCT = NULL;
 	pBool     = NULL;
 	pInt4     = NULL;
@@ -62,46 +64,43 @@ bool RuntimeShaderRecord::LoadShader(const char *Name) {
 
 	strcpy(FileName, ShadersPath);
 	if (!memcmp(Name,"WATER",5)) {
-		if (TheSettingManager->SettingsMain.EnableWater == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnableWater) return false;
 		strcat(FileName, "Water\\");
 	}
 	else if (!memcmp(Name,"GRASS",5)) {
-		if (TheSettingManager->SettingsMain.EnableGrass == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnableGrass) return false;
 		strcat(FileName, "Grass\\");
 	}
 	else if (!memcmp(Name,"PRECIP",6)) {
-		if (TheSettingManager->SettingsMain.EnablePrecipitations == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnablePrecipitations) return false;
 		strcat(FileName, "Precipitations\\");
 	}
 	else if (!memcmp(Name,"HDR",3)) {
-		if (TheSettingManager->SettingsMain.EnableHDR == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnableHDR) return false;
 		strcat(FileName, "HDR\\");
 	}
 	else if (!memcmp(Name,"PAR",3)) {
-		if (TheSettingManager->SettingsMain.EnablePOM == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnablePOM) return false;
 		strcat(FileName, "POM\\");
 	}
 	else if (!memcmp(Name,"SKIN",4)) {
-		if (TheSettingManager->SettingsMain.EnableSkin == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnableSkin) return false;
 		strcat(FileName, "Skin\\");
 	}
 	else if (!memcmp(Name,"SLS2001",7) || !memcmp(Name,"SLS2064.vso",11) || !memcmp(Name,"SLS2068.pso",11) || !memcmp(Name,"SLS2042.vso",11) || !memcmp(Name,"SLS2048.pso",11) || !memcmp(Name,"SLS2043.vso",11) || !memcmp(Name,"SLS2049.pso",11)) {
-		if (TheSettingManager->SettingsMain.EnableTerrain == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnableTerrain) return false;
 		strcat(FileName, "Terrain\\");
 	}
 	else if (!memcmp(Name,"GDECALS.vso",11) || !memcmp(Name,"GDECAL.pso",10) || !memcmp(Name,"SLS2040.vso",11) || !memcmp(Name,"SLS2046.pso",11)) {
-		if (TheSettingManager->SettingsMain.EnableBlood == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnableBlood) return false;
 		strcat(FileName, "Blood\\");
 	}
 	else if (!memcmp(Name,"SLS2073.vso",11) || !memcmp(Name,"SLS2074.vso",11) || !memcmp(Name,"SLS2075.vso",11) || !memcmp(Name,"SLS2080.pso",11) || !memcmp(Name,"SLS2081.pso",11)) {
-		if (TheSettingManager->SettingsMain.EnableShadows == 0) return false;
+		if (!TheSettingManager->SettingsMain.EnableShadows) return false;
 		strcat(FileName, "Shadows\\");
 	}
-	else if (TheSettingManager->SettingsMain.DevelopShadersFolder) {
-		strcat(FileName, "Develop\\");
-	}
 	else
-		FileName[0] = 0;
+		FileName[0] = NULL;
 
 	if (FileName[0]) {
 		strcpy(this->Name, Name);
@@ -119,36 +118,30 @@ bool RuntimeShaderRecord::LoadShader(const char *Name) {
 				ShaderType = Vertex;
 			else if (strstr(Name, ".pso"))
 				ShaderType = Pixel;
-			if (strstr(FileName, "Develop")) {
+			if (TheSettingManager->SettingsMain.DevelopCompileShaders) {
 				D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (ShaderType == Vertex ? "vs_3_0" : "ps_3_0"), NULL, &pShader, &pErrors, &pTable);
 				if (pErrors) _MESSAGE((char*)pErrors->GetBufferPointer());
+				if (pShader) {
+					std::ofstream FileBinary(FileNameBinary,std::ios::out|std::ios::binary);
+					FileBinary.write((char*)pShader->GetBufferPointer(), pShader->GetBufferSize());
+					FileBinary.flush();
+					FileBinary.close();
+					_MESSAGE("Shader compiled: %s", FileName);
+				}
 			}
 			else {
-				if (TheSettingManager->SettingsMain.DevelopCompileShaders) {
-					D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (ShaderType == Vertex ? "vs_3_0" : "ps_3_0"), NULL, &pShader, &pErrors, &pTable);
-					if (pErrors) _MESSAGE((char*)pErrors->GetBufferPointer());
-					if (pShader) {
-						std::ofstream FileBinary(FileNameBinary,std::ios::out|std::ios::binary);
-						FileBinary.write((char*)pShader->GetBufferPointer(), pShader->GetBufferSize());
-						FileBinary.flush();
-						FileBinary.close();
-						_MESSAGE("Shader compiled: %s", FileName);
-					}
+				std::ifstream FileBinary(FileNameBinary,std::ios::in|std::ios::binary|std::ios::ate);
+				if (FileBinary.is_open()) {
+					size = FileBinary.tellg();
+					D3DXCreateBuffer(size, &pShader);
+					FileBinary.seekg(0, std::ios::beg);
+					void* pShaderBuffer = pShader->GetBufferPointer();
+					FileBinary.read((char*)pShaderBuffer, size);
+					FileBinary.close();
+					D3DXGetShaderConstantTable((const DWORD*)pShaderBuffer, &pTable);
 				}
-				else {
-					std::ifstream FileBinary(FileNameBinary,std::ios::in|std::ios::binary|std::ios::ate);
-					if (FileBinary.is_open()) {
-						size = FileBinary.tellg();
-						D3DXCreateBuffer(size, &pShader);
-						FileBinary.seekg(0, std::ios::beg);
-						void* pShaderBuffer = pShader->GetBufferPointer();
-						FileBinary.read((char*)pShaderBuffer, size);
-						FileBinary.close();
-						D3DXGetShaderConstantTable((const DWORD*)pShaderBuffer, &pTable);
-					}
-					else
-						_MESSAGE("ERROR: Shader %s not found. Try to enable the CompileShader option to attempt to recompile the shaders!", FileNameBinary);
-				}
+				else
+					_MESSAGE("ERROR: Shader %s not found. Try to enable the CompileShader option to attempt to recompile the shaders.", FileNameBinary);
 			}
 			if (pShader) {
 				pFunction = pShader->GetBufferPointer();
@@ -630,6 +623,7 @@ void ShaderManager::UpdateFrameConstants() {
 
 	LARGE_INTEGER tick;
 	SettingsWaterStruct *sws = NULL;
+	
 	Sky* pSky = *(Sky**)kSky;
 	NiAVObject* SunRoot = (NiAVObject*)pSky->sun->SunBillboard->m_parent;
 	TESClimate* currentClimate = pSky->firstClimate;
@@ -979,8 +973,7 @@ void ShaderManager::UpdateFrameConstants() {
 			else if (ShaderConst.WaterLens_Percent > 0.0f) {
 				ShaderConst.WaterLens_Time.w += 1.0f;
 				ShaderConst.WaterLens_Percent = 1.0f - ShaderConst.WaterLens_Time.w / ShaderConst.WaterLens_Time.z;
-				if (ShaderConst.WaterLens_Percent < 0.0f)
-					ShaderConst.WaterLens_Percent = 0.0f;
+				if (ShaderConst.WaterLens_Percent < 0.0f) ShaderConst.WaterLens_Percent = 0.0f;
 				ShaderConst.WaterLens_Amount = sws->LensAmount * ShaderConst.WaterLens_Percent;
 			}
 			ShaderConst.WaterLens_Viscosity = sws->LensViscosity;

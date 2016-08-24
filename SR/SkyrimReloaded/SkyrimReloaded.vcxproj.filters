@@ -95,6 +95,11 @@
     <ClCompile Include="..\skse\skse\CommandTable.cpp">
       <Filter>skse</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\TESReloaded\GameMenuManager.cpp" />
+    <ClCompile Include="..\skse\skse\GameInput.cpp">
+      <Filter>skse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TESReloaded\KeyboardManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -181,6 +186,11 @@
       <Filter>skse</Filter>
     </ClInclude>
     <ClInclude Include="..\..\TESReloaded\CommandInfo.h" />
+    <ClInclude Include="..\..\TESReloaded\GameMenuManager.h" />
+    <ClInclude Include="..\skse\skse\GameInput.h">
+      <Filter>skse</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\TESReloaded\KeyboardManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="exports.def" />

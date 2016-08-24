@@ -47,16 +47,17 @@ struct NiSphere
 };
 
 // 1C
-struct NiFrustum
+class NiFrustum
 {
-	float	l;			// 00
-	float	r;			// 04
-	float	t;			// 08
-	float	b;			// 0C
-	float	n;			// 10
-	float	f;			// 14
-	UInt8	o;			// 18
-	UInt8	pad19[3];	// 19
+public:
+	float	Left;		// 00
+	float	Right;		// 04
+	float	Top;		// 08
+	float	Bottom;		// 0C
+	float	Near;		// 10
+	float	Far;		// 14
+	UInt8	Ortho;		// 18
+	UInt8	pad18[3];
 };
 
 // 10

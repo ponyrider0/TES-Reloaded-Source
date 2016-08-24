@@ -2,7 +2,6 @@
 #include <sstream>
 #include <fstream>
 #include "Hooking\detours\detours.h"
-#include "SettingManager.h"
 
 template <typename T> std::string ToString(const T& Value) {
 
@@ -17,107 +16,170 @@ SettingManager::SettingManager() {
 
 	char* Filename = SettingsMain.MainSettingsFullFile;
 	char value[255];
-	
+	char* pNextValue = NULL;
+
 	_MESSAGE("Starting the settings manager...");
 
 	GetCurrentDirectoryA(MAX_PATH,CurrentPath);
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, MainSettingsFile);
 
-	SettingsMain.WindowedMode = GetPrivateProfileIntA("Main","WindowedMode",1,Filename);
-	GetPrivateProfileStringA("Main","FoV","90.0",value,255,Filename);
+	SettingsMain.WindowedMode = GetPrivateProfileIntA("Main", "WindowedMode", 1, Filename);
+	GetPrivateProfileStringA("Main", "FoV", "90.0", value, 255, Filename);
 	SettingsMain.FoV = atof(value);
-	SettingsMain.WaterReflectionMapSize = GetPrivateProfileIntA("Main","WaterReflectionMapSize",512,Filename);
-	SettingsMain.WaterManagement = GetPrivateProfileIntA("Main","WaterManagement",1,Filename);
-	GetPrivateProfileStringA("Main","FarPlaneDistance","0.0",value,255,Filename);
+	SettingsMain.WaterReflectionMapSize = GetPrivateProfileIntA("Main", "WaterReflectionMapSize", 512, Filename);
+	SettingsMain.WaterManagement = GetPrivateProfileIntA("Main", "WaterManagement", 1, Filename);
+	GetPrivateProfileStringA("Main", "FarPlaneDistance", "0.0", value, 255, Filename);
 	SettingsMain.FarPlaneDistance = atof(value);
-	GetPrivateProfileStringA("Main","ScreenshotPath",CurrentPath,value,255,Filename);
+	GetPrivateProfileStringA("Main", "ScreenshotPath", CurrentPath, value, 255, Filename);
 	if (value[0] == '\\') {
-		strcpy(SettingsMain.ScreenshotPath,CurrentPath);
-		strcat(SettingsMain.ScreenshotPath,value);
+		strcpy(SettingsMain.ScreenshotPath, CurrentPath);
+		strcat(SettingsMain.ScreenshotPath, value);
 	}
 	else
-		strcpy(SettingsMain.ScreenshotPath,value);
-	if (SettingsMain.ScreenshotPath[strlen(SettingsMain.ScreenshotPath)-1] != '\\')
+		strcpy(SettingsMain.ScreenshotPath, value);
+	if (SettingsMain.ScreenshotPath[strlen(SettingsMain.ScreenshotPath) - 1] != '\\')
 		strcat(SettingsMain.ScreenshotPath, "\\");
-	SettingsMain.ScreenshotType = GetPrivateProfileIntA("Main","ScreenshotType",1,Filename);
-	SettingsMain.CustomEffects = GetPrivateProfileIntA("Main","CustomEffects",0,Filename);
-	SettingsMain.FrameRate = GetPrivateProfileIntA("Main","FrameRate",0,Filename);
-	SettingsMain.SaveSettings = GetPrivateProfileIntA("Main","SaveSettings",1,Filename);
-	SettingsMain.CombatMode = GetPrivateProfileIntA("Main","CombatMode",0,Filename);
-	SettingsMain.CameraMode = GetPrivateProfileIntA("Main","CameraMode",0,Filename);
-	SettingsMain.EquipmentMode = GetPrivateProfileIntA("Main","EquipmentMode",0,Filename);
-	SettingsMain.SleepingMode = GetPrivateProfileIntA("Main","SleepingMode",0,Filename);
+	SettingsMain.ScreenshotType = GetPrivateProfileIntA("Main", "ScreenshotType", 1, Filename);
+	SettingsMain.ScreenshotKey = GetPrivateProfileIntA("Main", "ScreenshotKey", 87, Filename);
+	SettingsMain.CustomEffects = GetPrivateProfileIntA("Main", "CustomEffects", 0, Filename);
+	SettingsMain.FrameRate = GetPrivateProfileIntA("Main", "FrameRate", 0, Filename);
+	SettingsMain.SaveSettings = GetPrivateProfileIntA("Main", "SaveSettings", 1, Filename);
+	SettingsMain.CombatMode = GetPrivateProfileIntA("Main", "CombatMode", 0, Filename);
+	SettingsMain.CameraMode = GetPrivateProfileIntA("Main", "CameraMode", 0, Filename);
+	SettingsMain.EquipmentMode = GetPrivateProfileIntA("Main", "EquipmentMode", 0, Filename);
+	SettingsMain.SleepingMode = GetPrivateProfileIntA("Main", "SleepingMode", 0, Filename);
 	SettingsMain.GrassMode = GetPrivateProfileIntA("Main", "GrassMode", 0, Filename);
 
-	SettingsMain.FrameRateAverage = GetPrivateProfileIntA("FrameRate","Average",30,Filename);
-	SettingsMain.FrameRateGap = GetPrivateProfileIntA("FrameRate","Gap",3,Filename);
-	SettingsMain.FrameRateDelay = GetPrivateProfileIntA("FrameRate","Delay",10,Filename);
-	GetPrivateProfileStringA("FrameRate","FadeStep","0.5",value,255,Filename);
+	SettingsMain.FrameRateAverage = GetPrivateProfileIntA("FrameRate", "Average", 30, Filename);
+	SettingsMain.FrameRateGap = GetPrivateProfileIntA("FrameRate", "Gap", 3, Filename);
+	SettingsMain.FrameRateDelay = GetPrivateProfileIntA("FrameRate", "Delay", 10, Filename);
+	GetPrivateProfileStringA("FrameRate", "FadeStep", "0.5", value, 255, Filename);
 	SettingsMain.FrameRateFadeStep = atof(value);
-	SettingsMain.FrameRateFadeMinObjects = GetPrivateProfileIntA("FrameRate","FadeMinObjects",10,Filename);
-	SettingsMain.FrameRateFadeMinActors = GetPrivateProfileIntA("FrameRate","FadeMinActors",15,Filename);
-	SettingsMain.FrameRateGridStep = GetPrivateProfileIntA("FrameRate","GridStep",2,Filename);
-	SettingsMain.FrameRateGridMin = GetPrivateProfileIntA("FrameRate","GridMin",5,Filename);
+	SettingsMain.FrameRateFadeMinObjects = GetPrivateProfileIntA("FrameRate", "FadeMinObjects", 10, Filename);
+	SettingsMain.FrameRateFadeMinActors = GetPrivateProfileIntA("FrameRate", "FadeMinActors", 15, Filename);
+	SettingsMain.FrameRateGridStep = GetPrivateProfileIntA("FrameRate", "GridStep", 2, Filename);
+	SettingsMain.FrameRateGridMin = GetPrivateProfileIntA("FrameRate", "GridMin", 5, Filename);
 
-	SettingsMain.CameraModeHUDReticle = GetPrivateProfileIntA("CameraMode","HUDReticle",2,Filename);
-	SettingsMain.CameraModeChasingFirst = GetPrivateProfileIntA("CameraMode","ChasingFirst",0,Filename);
-	SettingsMain.CameraModeChasingThird = GetPrivateProfileIntA("CameraMode","ChasingThird",0,Filename);
-	GetPrivateProfileStringA("CameraMode","OffsetX","0.0",value,255,Filename);
+	SettingsMain.CameraModeHUDReticle = GetPrivateProfileIntA("CameraMode", "HUDReticle", 2, Filename);
+	SettingsMain.CameraModeChasingFirst = GetPrivateProfileIntA("CameraMode", "ChasingFirst", 0, Filename);
+	SettingsMain.CameraModeChasingThird = GetPrivateProfileIntA("CameraMode", "ChasingThird", 0, Filename);
+	GetPrivateProfileStringA("CameraMode", "OffsetX", "0.0", value, 255, Filename);
 	SettingsMain.CameraModeOffset.x = atof(value);
-	GetPrivateProfileStringA("CameraMode","OffsetY","16.0",value,255,Filename);
+	GetPrivateProfileStringA("CameraMode", "OffsetY", "16.0", value, 255, Filename);
 	SettingsMain.CameraModeOffset.y = atof(value);
-	GetPrivateProfileStringA("CameraMode","OffsetZ","3.0",value,255,Filename);
+	GetPrivateProfileStringA("CameraMode", "OffsetZ", "3.0", value, 255, Filename);
 	SettingsMain.CameraModeOffset.z = atof(value);
-	GetPrivateProfileStringA("CameraMode","NearDistanceFirst","2.0",value,255,Filename);
+	GetPrivateProfileStringA("CameraMode", "NearDistanceFirst", "2.0", value, 255, Filename);
 	SettingsMain.CameraModeNearDistanceFirst = atof(value);
-	GetPrivateProfileStringA("CameraMode","NearDistanceThird","8.0",value,255,Filename);
+	GetPrivateProfileStringA("CameraMode", "NearDistanceThird", "8.0", value, 255, Filename);
 	SettingsMain.CameraModeNearDistanceThird = atof(value);
-	SettingsMain.CameraModeDialogFirst = GetPrivateProfileIntA("CameraMode","DialogFirst",1,Filename);
-	SettingsMain.CameraModeDialogThird = GetPrivateProfileIntA("CameraMode","DialogThird",2,Filename);
-	GetPrivateProfileStringA("CameraMode","DialogOffsetX","50.0",value,255,Filename);
+	SettingsMain.CameraModeDialogFirst = GetPrivateProfileIntA("CameraMode", "DialogFirst", 1, Filename);
+	SettingsMain.CameraModeDialogThird = GetPrivateProfileIntA("CameraMode", "DialogThird", 2, Filename);
+	GetPrivateProfileStringA("CameraMode", "DialogOffsetX", "50.0", value, 255, Filename);
 	SettingsMain.CameraModeDialogOffset.x = atof(value);
-	GetPrivateProfileStringA("CameraMode","DialogOffsetY","-10.0",value,255,Filename);
+	GetPrivateProfileStringA("CameraMode", "DialogOffsetY", "-10.0", value, 255, Filename);
 	SettingsMain.CameraModeDialogOffset.y = atof(value);
-	GetPrivateProfileStringA("CameraMode","DialogOffsetZ","10.0",value,255,Filename);
+	GetPrivateProfileStringA("CameraMode", "DialogOffsetZ", "10.0", value, 255, Filename);
 	SettingsMain.CameraModeDialogOffset.z = atof(value);
 
-	SettingsMain.SleepingModeRest = GetPrivateProfileIntA("SleepingMode","Rest",1,Filename);
-	GetPrivateProfileStringA("SleepingMode","RestMessage","You must be in a bed to rest.",value,255,Filename);
-	strcpy(SettingsMain.SleepingModeRestMessage,value);
+	SettingsMain.SleepingModeRest = GetPrivateProfileIntA("SleepingMode", "Rest", 1, Filename);
+	GetPrivateProfileStringA("SleepingMode", "RestMessage", "You must be in a bed to rest.", SettingsMain.SleepingModeRestMessage, 80, Filename);
 
-	SettingsMain.EnableWater = GetPrivateProfileIntA("Shaders","EnableWater",0,Filename);
-	SettingsMain.EnableGrass = GetPrivateProfileIntA("Shaders","EnableGrass",0,Filename);
-	SettingsMain.EnablePrecipitations = GetPrivateProfileIntA("Shaders","EnablePrecipitations",0,Filename);
-	SettingsMain.EnableHDR = GetPrivateProfileIntA("Shaders","EnableHDR",0,Filename);
-	SettingsMain.EnablePOM = GetPrivateProfileIntA("Shaders","EnablePOM",0,Filename);
-	SettingsMain.EnableSkin = GetPrivateProfileIntA("Shaders","EnableSkin",0,Filename);
-	SettingsMain.EnableTerrain = GetPrivateProfileIntA("Shaders","EnableTerrain",0,Filename);
-	SettingsMain.EnableBlood = GetPrivateProfileIntA("Shaders","EnableBlood",0,Filename);
-	SettingsMain.EnableShadows = GetPrivateProfileIntA("Shaders","EnableShadows",0,Filename);
+	SettingsMain.EnableWater = GetPrivateProfileIntA("Shaders", "EnableWater", 0, Filename);
+	SettingsMain.EnableGrass = GetPrivateProfileIntA("Shaders", "EnableGrass", 0, Filename);
+	SettingsMain.EnablePrecipitations = GetPrivateProfileIntA("Shaders", "EnablePrecipitations", 0, Filename);
+	SettingsMain.EnableHDR = GetPrivateProfileIntA("Shaders", "EnableHDR", 0, Filename);
+	SettingsMain.EnablePOM = GetPrivateProfileIntA("Shaders", "EnablePOM", 0, Filename);
+	SettingsMain.EnableSkin = GetPrivateProfileIntA("Shaders", "EnableSkin", 0, Filename);
+	SettingsMain.EnableTerrain = GetPrivateProfileIntA("Shaders", "EnableTerrain", 0, Filename);
+	SettingsMain.EnableBlood = GetPrivateProfileIntA("Shaders", "EnableBlood", 0, Filename);
+	SettingsMain.EnableShadows = GetPrivateProfileIntA("Shaders", "EnableShadows", 0, Filename);
 
-	SettingsMain.EnableUnderwater = GetPrivateProfileIntA("Effects","EnableUnderwater",0,Filename);
-	SettingsMain.EnableWaterLens = GetPrivateProfileIntA("Effects","EnableWaterLens",0,Filename);
-	SettingsMain.EnableGodRays = GetPrivateProfileIntA("Effects","EnableGodRays",0,Filename);
-	SettingsMain.EnableDepthOfField = GetPrivateProfileIntA("Effects","EnableDepthOfField",0,Filename);
-	SettingsMain.EnableAmbientOcclusion = GetPrivateProfileIntA("Effects","EnableAmbientOcclusion",0,Filename);
-	SettingsMain.EnableColoring = GetPrivateProfileIntA("Effects","EnableColoring",0,Filename);
-	SettingsMain.EnableCinema = GetPrivateProfileIntA("Effects","EnableCinema",0,Filename);
-	SettingsMain.EnableBloom = GetPrivateProfileIntA("Effects","EnableBloom",0,Filename);
-	SettingsMain.EnableSnowAccumulation = GetPrivateProfileIntA("Effects","EnableSnowAccumulation",0,Filename);
-	SettingsMain.EnableBloodLens = GetPrivateProfileIntA("Effects","EnableBloodLens",0,Filename);
-	SettingsMain.EnableMotionBlur = GetPrivateProfileIntA("Effects","EnableMotionBlur",0,Filename);
-	SettingsMain.EnableLowHF = GetPrivateProfileIntA("Effects","EnableLowHF",0,Filename);
-	SettingsMain.EnableWetWorld = GetPrivateProfileIntA("Effects","EnableWetWorld",0,Filename);
-	SettingsMain.EnableSharpening = GetPrivateProfileIntA("Effects","EnableSharpening",0,Filename);
-	SettingsMain.EnableSMAA = GetPrivateProfileIntA("Effects","EnableSMAA",0,Filename);
+	SettingsMain.EnableUnderwater = GetPrivateProfileIntA("Effects", "EnableUnderwater", 0, Filename);
+	SettingsMain.EnableWaterLens = GetPrivateProfileIntA("Effects", "EnableWaterLens", 0, Filename);
+	SettingsMain.EnableGodRays = GetPrivateProfileIntA("Effects", "EnableGodRays", 0, Filename);
+	SettingsMain.EnableDepthOfField = GetPrivateProfileIntA("Effects", "EnableDepthOfField", 0, Filename);
+	SettingsMain.EnableAmbientOcclusion = GetPrivateProfileIntA("Effects", "EnableAmbientOcclusion", 0, Filename);
+	SettingsMain.EnableColoring = GetPrivateProfileIntA("Effects", "EnableColoring", 0, Filename);
+	SettingsMain.EnableCinema = GetPrivateProfileIntA("Effects", "EnableCinema", 0, Filename);
+	SettingsMain.EnableBloom = GetPrivateProfileIntA("Effects", "EnableBloom", 0, Filename);
+	SettingsMain.EnableSnowAccumulation = GetPrivateProfileIntA("Effects", "EnableSnowAccumulation", 0, Filename);
+	SettingsMain.EnableBloodLens = GetPrivateProfileIntA("Effects", "EnableBloodLens", 0, Filename);
+	SettingsMain.EnableMotionBlur = GetPrivateProfileIntA("Effects", "EnableMotionBlur", 0, Filename);
+	SettingsMain.EnableLowHF = GetPrivateProfileIntA("Effects", "EnableLowHF", 0, Filename);
+	SettingsMain.EnableWetWorld = GetPrivateProfileIntA("Effects", "EnableWetWorld", 0, Filename);
+	SettingsMain.EnableSharpening = GetPrivateProfileIntA("Effects", "EnableSharpening", 0, Filename);
+	SettingsMain.EnableSMAA = GetPrivateProfileIntA("Effects", "EnableSMAA", 0, Filename);
 
-	SettingsMain.DevelopCompileShaders = GetPrivateProfileIntA("Develop","CompileShaders",0,Filename);
+	GetPrivateProfileStringA("Menu", "Font", "Calibri", SettingsMain.MenuFont, 80, Filename);
+	GetPrivateProfileStringA("Menu", "TextColorNormal", "180,180,180", value, 255, Filename);
+	pNextValue = strtok(value, ",");
+	for (int i = 0; i < 3; i++) {
+		SettingsMain.MenuTextColorNormal[i] = atoi(pNextValue);
+		pNextValue = strtok(NULL, ",");
+	}
+	GetPrivateProfileStringA("Menu", "TextShadowColorNormal", "50,50,50", value, 255, Filename);
+	pNextValue = strtok(value, ",");
+	for (int i = 0; i < 3; i++) {
+		SettingsMain.MenuTextShadowColorNormal[i] = atoi(pNextValue);
+		pNextValue = strtok(NULL, ",");
+	}
+	GetPrivateProfileStringA("Menu", "TextColorSelected", "255,255,255", value, 255, Filename);
+	pNextValue = strtok(value, ",");
+	for (int i = 0; i < 3; i++) {
+		SettingsMain.MenuTextColorSelected[i] = atoi(pNextValue);
+		pNextValue = strtok(NULL, ",");
+	}
+	GetPrivateProfileStringA("Menu", "TextShadowColorSelected", "50,50,50", value, 255, Filename);
+	pNextValue = strtok(value, ",");
+	for (int i = 0; i < 3; i++) {
+		SettingsMain.MenuTextShadowColorSelected[i] = atoi(pNextValue);
+		pNextValue = strtok(NULL, ",");
+	}
+	GetPrivateProfileStringA("Menu", "TextColorEditing", "255,100,50", value, 255, Filename);
+	pNextValue = strtok(value, ",");
+	for (int i = 0; i < 3; i++) {
+		SettingsMain.MenuTextColorEditing[i] = atoi(pNextValue);
+		pNextValue = strtok(NULL, ",");
+	}
+	GetPrivateProfileStringA("Menu", "TextShadowColorEditing", "50,50,50", value, 255, Filename);
+	pNextValue = strtok(value, ",");
+	for (int i = 0; i < 3; i++) {
+		SettingsMain.MenuTextShadowColorEditing[i] = atoi(pNextValue);
+		pNextValue = strtok(NULL, ",");
+	}
+	SettingsMain.MenuTextSize = GetPrivateProfileIntA("Menu", "TextSize", 22, Filename);
+	SettingsMain.MenuTitleX = GetPrivateProfileIntA("Menu", "TitleX", 60, Filename);
+	SettingsMain.MenuTitleY = GetPrivateProfileIntA("Menu", "TitleY", 120, Filename);
+	SettingsMain.MenuTitleRect = GetPrivateProfileIntA("Menu", "TitleRect", 1000, Filename);
+	SettingsMain.MenuX = GetPrivateProfileIntA("Menu", "X", 80, Filename);
+	SettingsMain.MenuY = GetPrivateProfileIntA("Menu", "Y", 160, Filename);
+	SettingsMain.MenuRect = GetPrivateProfileIntA("Menu", "Rect", 250, Filename);
+	SettingsMain.MenuExtraRect = GetPrivateProfileIntA("Menu", "ExtraRect", 50, Filename);
+	SettingsMain.MenuRowSpace = GetPrivateProfileIntA("Menu", "RowSpace", 4, Filename);
+	SettingsMain.MenuRowsPerPage = GetPrivateProfileIntA("Menu", "RowsPerPage", 30, Filename);
+	SettingsMain.MenuKeyEnable = GetPrivateProfileIntA("Menu", "KeyEnable", 24, Filename);
+	SettingsMain.MenuKeyUp = GetPrivateProfileIntA("Menu", "KeyUp", 200, Filename);
+	SettingsMain.MenuKeyDown = GetPrivateProfileIntA("Menu", "KeyDown", 208, Filename);
+	SettingsMain.MenuKeyLeft = GetPrivateProfileIntA("Menu", "KeyLeft", 203, Filename);
+	SettingsMain.MenuKeyRight = GetPrivateProfileIntA("Menu", "KeyRight", 205, Filename);
+	SettingsMain.MenuKeyPageUp = GetPrivateProfileIntA("Menu", "KeyPageUp", 201, Filename);
+	SettingsMain.MenuKeyPageDown = GetPrivateProfileIntA("Menu", "KeyPageDown", 209, Filename);
+	SettingsMain.MenuKeyAdd = GetPrivateProfileIntA("Menu", "KeyAdd", 78, Filename);
+	SettingsMain.MenuKeySubtract = GetPrivateProfileIntA("Menu", "KeySubtract", 74, Filename);
+	SettingsMain.MenuKeySave = GetPrivateProfileIntA("Menu", "KeySave", 28, Filename);
+	SettingsMain.MenuKeyEditing = GetPrivateProfileIntA("Menu", "KeyEditing", 156, Filename);
+	GetPrivateProfileStringA("Menu", "StepValue", "0.1", value, 255, Filename);
+	SettingsMain.MenuStepValue = atof(value);
+	GetPrivateProfileStringA("Menu", "Decimals", "3", value, 255, Filename);
+	strcpy(SettingsMain.MenuValueFormat, "%.");
+	strcat(SettingsMain.MenuValueFormat, value);
+	strcat(SettingsMain.MenuValueFormat, "f");
+
+	SettingsMain.DevelopCompileShaders = GetPrivateProfileIntA("Develop", "CompileShaders", 0, Filename);
 	SettingsMain.DevelopCompileEffects = GetPrivateProfileIntA("Develop", "CompileEffects", 0, Filename);
-	SettingsMain.DevelopShadersFolder = GetPrivateProfileIntA("Develop","ShadersFolder",0,Filename);
-	SettingsMain.DevelopTraceShaders = GetPrivateProfileIntA("Develop","TraceShaders",0,Filename);
-	SettingsMain.DevelopTraceVanillaShaders = GetPrivateProfileIntA("Develop", "TraceVanillaShaders", 0, Filename);
-	SettingsMain.DevelopTraceCulling = GetPrivateProfileIntA("Develop","TraceCulling",0,Filename);
+	SettingsMain.DevelopTraceShaders = GetPrivateProfileIntA("Develop", "TraceShaders", 0, Filename);
 
 	InitCamera();
 
@@ -147,64 +209,64 @@ void SettingManager::LoadSettings() {
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Water\\Water.ini");
-	GetPrivateProfileStringA("Default","IceEnabled","1",Water_IceEnabled,255,Filename);
+	strcat(Filename, "Water\\Water.ini");
+	GetPrivateProfileStringA("Default", "IceEnabled", "0", Water_IceEnabled, 255, Filename);
 	SW.IceEnabled = atof(Water_IceEnabled);
-	GetPrivateProfileStringA("Default","choppiness","0.8",Water_choppiness,255,Filename);
+	GetPrivateProfileStringA("Default", "choppiness", "0.8", Water_choppiness, 255, Filename);
 	SW.choppiness = atof(Water_choppiness);
-	GetPrivateProfileStringA("Default","waveWidth","1.8",Water_waveWidth,255,Filename);
+	GetPrivateProfileStringA("Default", "waveWidth", "1.8", Water_waveWidth, 255, Filename);
 	SW.waveWidth = atof(Water_waveWidth);
-	GetPrivateProfileStringA("Default","waveSpeed","0.6",Water_waveSpeed,255,Filename);
+	GetPrivateProfileStringA("Default", "waveSpeed", "0.6", Water_waveSpeed, 255, Filename);
 	SW.waveSpeed = atof(Water_waveSpeed);
-	GetPrivateProfileStringA("Default","reflectivity","0.8",Water_reflectivity,255,Filename);
+	GetPrivateProfileStringA("Default", "reflectivity", "0.8", Water_reflectivity, 255, Filename);
 	SW.reflectivity = atof(Water_reflectivity);
-	GetPrivateProfileStringA("Default","causticsStrength","0.5",Water_causticsStrength,255,Filename);
+	GetPrivateProfileStringA("Default", "causticsStrength", "0.5", Water_causticsStrength, 255, Filename);
 	SW.causticsStrength = atof(Water_causticsStrength);
 	GetPrivateProfileStringA("Default", "causticsStrengthS", "1.0", Water_causticsStrengthS, 255, Filename);
 	SW.causticsStrengthS = atof(Water_causticsStrengthS);
-	GetPrivateProfileStringA("Default","shoreFactor","1.2",Water_shoreFactor,255,Filename);
+	GetPrivateProfileStringA("Default", "shoreFactor", "1.2", Water_shoreFactor, 255, Filename);
 	SW.shoreFactor = atof(Water_shoreFactor);
-	GetPrivateProfileStringA("Default","turbidity","0.72",Water_turbidity,255,Filename);
+	GetPrivateProfileStringA("Default", "turbidity", "0.72", Water_turbidity, 255, Filename);
 	SW.turbidity = atof(Water_turbidity);
-	GetPrivateProfileStringA("Default","inScattCoeff","0.12",Water_inScattCoeff,255,Filename);
+	GetPrivateProfileStringA("Default", "inScattCoeff", "0.12", Water_inScattCoeff, 255, Filename);
 	SW.inScattCoeff = atof(Water_inScattCoeff);
-	GetPrivateProfileStringA("Default","inExtCoeff_R","0.40",Water_inExtCoeff_R,255,Filename);
+	GetPrivateProfileStringA("Default", "inExtCoeff_R", "0.40", Water_inExtCoeff_R, 255, Filename);
 	SW.inExtCoeff_R = atof(Water_inExtCoeff_R);
-	GetPrivateProfileStringA("Default","inExtCoeff_G","0.26",Water_inExtCoeff_G,255,Filename);
+	GetPrivateProfileStringA("Default", "inExtCoeff_G", "0.26", Water_inExtCoeff_G, 255, Filename);
 	SW.inExtCoeff_G = atof(Water_inExtCoeff_G);
-	GetPrivateProfileStringA("Default","inExtCoeff_B","0.30",Water_inExtCoeff_B,255,Filename);
+	GetPrivateProfileStringA("Default", "inExtCoeff_B", "0.30", Water_inExtCoeff_B, 255, Filename);
 	SW.inExtCoeff_B = atof(Water_inExtCoeff_B);
-	GetPrivateProfileStringA("Default","IceinExtCoeff_R","0.22",Water_IceinExtCoeff_R,255,Filename);
+	GetPrivateProfileStringA("Default", "IceinExtCoeff_R", "0.22", Water_IceinExtCoeff_R, 255, Filename);
 	SW.IceinExtCoeff_R = atof(Water_IceinExtCoeff_R);
-	GetPrivateProfileStringA("Default","IceinExtCoeff_G","0.18",Water_IceinExtCoeff_G,255,Filename);
+	GetPrivateProfileStringA("Default", "IceinExtCoeff_G", "0.18", Water_IceinExtCoeff_G, 255, Filename);
 	SW.IceinExtCoeff_G = atof(Water_IceinExtCoeff_G);
-	GetPrivateProfileStringA("Default","IceinExtCoeff_B","0.18",Water_IceinExtCoeff_B,255,Filename);
+	GetPrivateProfileStringA("Default", "IceinExtCoeff_B", "0.18", Water_IceinExtCoeff_B, 255, Filename);
 	SW.IceinExtCoeff_B = atof(Water_IceinExtCoeff_B);
-	GetPrivateProfileStringA("Default","Icechoppiness","0.2",Water_Icechoppiness,255,Filename);
+	GetPrivateProfileStringA("Default", "Icechoppiness", "0.2", Water_Icechoppiness, 255, Filename);
 	SW.Icechoppiness = atof(Water_Icechoppiness);
-	GetPrivateProfileStringA("Default","IcewaveWidth","3.6",Water_IcewaveWidth,255,Filename);
+	GetPrivateProfileStringA("Default", "IcewaveWidth", "3.6", Water_IcewaveWidth, 255, Filename);
 	SW.IcewaveWidth = atof(Water_IcewaveWidth);
-	GetPrivateProfileStringA("Default","Icereflectivity","1.6",Water_Icereflectivity,255,Filename);
+	GetPrivateProfileStringA("Default", "Icereflectivity", "1.6", Water_Icereflectivity, 255, Filename);
 	SW.Icereflectivity = atof(Water_Icereflectivity);
-	GetPrivateProfileStringA("Default","IceshoreFactor","0.4",Water_IceshoreFactor,255,Filename);
+	GetPrivateProfileStringA("Default", "IceshoreFactor", "0.4", Water_IceshoreFactor, 255, Filename);
 	SW.IceshoreFactor = atof(Water_IceshoreFactor);
-	GetPrivateProfileStringA("Default","Iceturbidity","1.4",Water_Iceturbidity,255,Filename);
+	GetPrivateProfileStringA("Default", "Iceturbidity", "1.4", Water_Iceturbidity, 255, Filename);
 	SW.Iceturbidity = atof(Water_Iceturbidity);
-	GetPrivateProfileStringA("Default","depthDarkness","0.1",Water_depthDarkness,255,Filename);
+	GetPrivateProfileStringA("Default", "depthDarkness", "0.1", Water_depthDarkness, 255, Filename);
 	SW.depthDarkness = atof(Water_depthDarkness);
-	GetPrivateProfileStringA("Default","LODdistance","1.0",Water_LODdistance,255,Filename);
+	GetPrivateProfileStringA("Default", "LODdistance", "1.0", Water_LODdistance, 255, Filename);
 	SW.LODdistance = atof(Water_LODdistance);
-	GetPrivateProfileStringA("Default","MinLOD","0.0",Water_MinLOD,255,Filename);
+	GetPrivateProfileStringA("Default", "MinLOD", "0.0", Water_MinLOD, 255, Filename);
 	SW.MinLOD = atof(Water_MinLOD);
-	GetPrivateProfileStringA("Default","LensTimeMultA","0.1",Water_LensTimeMultA,255,Filename);
+	GetPrivateProfileStringA("Default", "LensTimeMultA", "0.1", Water_LensTimeMultA, 255, Filename);
 	SW.LensTimeMultA = atof(Water_LensTimeMultA);
-	GetPrivateProfileStringA("Default","LensTimeMultB","0.2",Water_LensTimeMultB,255,Filename);
+	GetPrivateProfileStringA("Default", "LensTimeMultB", "0.2", Water_LensTimeMultB, 255, Filename);
 	SW.LensTimeMultB = atof(Water_LensTimeMultB);
-	GetPrivateProfileStringA("Default","LensTime","80.0",Water_LensTime,255,Filename);
+	GetPrivateProfileStringA("Default", "LensTime", "80.0", Water_LensTime, 255, Filename);
 	SW.LensTime = atof(Water_LensTime);
-	GetPrivateProfileStringA("Default","LensAmount","0.1",Water_LensAmount,255,Filename);
+	GetPrivateProfileStringA("Default", "LensAmount", "0.1", Water_LensAmount, 255, Filename);
 	SW.LensAmount = atof(Water_LensAmount);
-	GetPrivateProfileStringA("Default","LensViscosity","0.05",Water_LensViscosity,255,Filename);
+	GetPrivateProfileStringA("Default", "LensViscosity", "0.05", Water_LensViscosity, 255, Filename);
 	SW.LensViscosity = atof(Water_LensViscosity);
 	SettingsWater["Default"] = SW;
 
@@ -212,64 +274,64 @@ void SettingManager::LoadSettings() {
 	pNextSection = Sections;
 	while (*pNextSection != NULL)
 	{
-		if (strcmp(pNextSection,"Default") != 0) {
-			GetPrivateProfileStringA(pNextSection,"IceEnabled",Water_IceEnabled,value,255,Filename);
+		if (strcmp(pNextSection, "Default") != 0) {
+			GetPrivateProfileStringA(pNextSection, "IceEnabled", Water_IceEnabled, value, 255, Filename);
 			SW.IceEnabled = atof(value);
-			GetPrivateProfileStringA(pNextSection,"choppiness",Water_choppiness,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "choppiness", Water_choppiness, value, 255, Filename);
 			SW.choppiness = atof(value);
-			GetPrivateProfileStringA(pNextSection,"waveWidth",Water_waveWidth,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "waveWidth", Water_waveWidth, value, 255, Filename);
 			SW.waveWidth = atof(value);
-			GetPrivateProfileStringA(pNextSection,"waveSpeed",Water_waveSpeed,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "waveSpeed", Water_waveSpeed, value, 255, Filename);
 			SW.waveSpeed = atof(value);
-			GetPrivateProfileStringA(pNextSection,"reflectivity",Water_reflectivity,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "reflectivity", Water_reflectivity, value, 255, Filename);
 			SW.reflectivity = atof(value);
-			GetPrivateProfileStringA(pNextSection,"causticsStrength",Water_causticsStrength,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "causticsStrength", Water_causticsStrength, value, 255, Filename);
 			SW.causticsStrength = atof(value);
 			GetPrivateProfileStringA(pNextSection, "causticsStrengthS", Water_causticsStrengthS, value, 255, Filename);
 			SW.causticsStrengthS = atof(value);
-			GetPrivateProfileStringA(pNextSection,"shoreFactor",Water_shoreFactor,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "shoreFactor", Water_shoreFactor, value, 255, Filename);
 			SW.shoreFactor = atof(value);
-			GetPrivateProfileStringA(pNextSection,"turbidity",Water_turbidity,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "turbidity", Water_turbidity, value, 255, Filename);
 			SW.turbidity = atof(value);
-			GetPrivateProfileStringA(pNextSection,"inScattCoeff",Water_inScattCoeff,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "inScattCoeff", Water_inScattCoeff, value, 255, Filename);
 			SW.inScattCoeff = atof(value);
-			GetPrivateProfileStringA(pNextSection,"inExtCoeff_R",Water_inExtCoeff_R,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "inExtCoeff_R", Water_inExtCoeff_R, value, 255, Filename);
 			SW.inExtCoeff_R = atof(value);
-			GetPrivateProfileStringA(pNextSection,"inExtCoeff_G",Water_inExtCoeff_G,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "inExtCoeff_G", Water_inExtCoeff_G, value, 255, Filename);
 			SW.inExtCoeff_G = atof(value);
-			GetPrivateProfileStringA(pNextSection,"inExtCoeff_B",Water_inExtCoeff_B,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "inExtCoeff_B", Water_inExtCoeff_B, value, 255, Filename);
 			SW.inExtCoeff_B = atof(value);
-			GetPrivateProfileStringA(pNextSection,"IceinExtCoeff_R",Water_IceinExtCoeff_R,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "IceinExtCoeff_R", Water_IceinExtCoeff_R, value, 255, Filename);
 			SW.IceinExtCoeff_R = atof(value);
-			GetPrivateProfileStringA(pNextSection,"IceinExtCoeff_G",Water_IceinExtCoeff_G,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "IceinExtCoeff_G", Water_IceinExtCoeff_G, value, 255, Filename);
 			SW.IceinExtCoeff_G = atof(value);
-			GetPrivateProfileStringA(pNextSection,"IceinExtCoeff_B",Water_IceinExtCoeff_B,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "IceinExtCoeff_B", Water_IceinExtCoeff_B, value, 255, Filename);
 			SW.IceinExtCoeff_B = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Icechoppiness",Water_Icechoppiness,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Icechoppiness", Water_Icechoppiness, value, 255, Filename);
 			SW.Icechoppiness = atof(value);
-			GetPrivateProfileStringA(pNextSection,"IcewaveWidth",Water_IcewaveWidth,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "IcewaveWidth", Water_IcewaveWidth, value, 255, Filename);
 			SW.IcewaveWidth = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Icereflectivity",Water_Icereflectivity,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Icereflectivity", Water_Icereflectivity, value, 255, Filename);
 			SW.Icereflectivity = atof(value);
-			GetPrivateProfileStringA(pNextSection,"IceshoreFactor",Water_IceshoreFactor,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "IceshoreFactor", Water_IceshoreFactor, value, 255, Filename);
 			SW.IceshoreFactor = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Iceturbidity",Water_Iceturbidity,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Iceturbidity", Water_Iceturbidity, value, 255, Filename);
 			SW.Iceturbidity = atof(value);
-			GetPrivateProfileStringA(pNextSection,"depthDarkness",Water_depthDarkness,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "depthDarkness", Water_depthDarkness, value, 255, Filename);
 			SW.depthDarkness = atof(value);
-			GetPrivateProfileStringA(pNextSection,"LODdistance",Water_LODdistance,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "LODdistance", Water_LODdistance, value, 255, Filename);
 			SW.LODdistance = atof(value);
-			GetPrivateProfileStringA(pNextSection,"MinLOD",Water_MinLOD,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "MinLOD", Water_MinLOD, value, 255, Filename);
 			SW.MinLOD = atof(value);
-			GetPrivateProfileStringA(pNextSection,"LensTimeMultA",Water_LensTimeMultA,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "LensTimeMultA", Water_LensTimeMultA, value, 255, Filename);
 			SW.LensTimeMultA = atof(value);
-			GetPrivateProfileStringA(pNextSection,"LensTimeMultB",Water_LensTimeMultB,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "LensTimeMultB", Water_LensTimeMultB, value, 255, Filename);
 			SW.LensTimeMultB = atof(value);
-			GetPrivateProfileStringA(pNextSection,"LensTime",Water_LensTime,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "LensTime", Water_LensTime, value, 255, Filename);
 			SW.LensTime = atof(value);
-			GetPrivateProfileStringA(pNextSection,"LensAmount",Water_LensAmount,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "LensAmount", Water_LensAmount, value, 255, Filename);
 			SW.LensAmount = atof(value);
-			GetPrivateProfileStringA(pNextSection,"LensViscosity",Water_LensViscosity,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "LensViscosity", Water_LensViscosity, value, 255, Filename);
 			SW.LensViscosity = atof(value);
 			SettingsWater[std::string(pNextSection)] = SW;
 		}
@@ -278,92 +340,92 @@ void SettingManager::LoadSettings() {
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Grass\\Grass.ini");
-	GetPrivateProfileStringA("Default","WindEnabled","1",value,255,Filename);
+	strcat(Filename, "Grass\\Grass.ini");
+	GetPrivateProfileStringA("Default", "WindEnabled", "1", value, 255, Filename);
 	SettingsGrass.WindEnabled = atoi(value);
-	GetPrivateProfileStringA("Default","GrassDensity","6",value,255,Filename);
+	GetPrivateProfileStringA("Default", "GrassDensity", "6", value, 255, Filename);
 	SettingsGrass.GrassDensity = atoi(value);
-	GetPrivateProfileStringA("Default","WindCoefficient","100",value,255,Filename);
+	GetPrivateProfileStringA("Default", "WindCoefficient", "100", value, 255, Filename);
 	SettingsGrass.WindCoefficient = atof(value);
-	GetPrivateProfileStringA("Default","ScaleX","2.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ScaleX", "2.0", value, 255, Filename);
 	SettingsGrass.ScaleX = atof(value);
-	GetPrivateProfileStringA("Default","ScaleY","2.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ScaleY", "2.0", value, 255, Filename);
 	SettingsGrass.ScaleY = atof(value);
-	GetPrivateProfileStringA("Default","ScaleZ","1.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ScaleZ", "1.0", value, 255, Filename);
 	SettingsGrass.ScaleZ = atof(value);
-	GetPrivateProfileStringA("Default","MinHeight","0.8",value,255,Filename);
+	GetPrivateProfileStringA("Default", "MinHeight", "0.8", value, 255, Filename);
 	SettingsGrass.MinHeight = atof(value);
-	GetPrivateProfileStringA("Default","MinDistance","11000.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "MinDistance", "11000.0", value, 255, Filename);
 	SettingsGrass.MinDistance = atof(value);
-	GetPrivateProfileStringA("Default","MaxDistance","12000.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "MaxDistance", "12000.0", value, 255, Filename);
 	SettingsGrass.MaxDistance = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"HDR\\HDR.ini");
-	GetPrivateProfileStringA("Default","ToneMapping","1.8",value,255,Filename);
+	strcat(Filename, "HDR\\HDR.ini");
+	GetPrivateProfileStringA("Default", "ToneMapping", "1.8", value, 255, Filename);
 	SettingsHDR.ToneMapping = atof(value);
-	GetPrivateProfileStringA("Default","ToneMappingBlur","-0.1",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ToneMappingBlur", "-0.1", value, 255, Filename);
 	SettingsHDR.ToneMappingBlur = atof(value);
-	GetPrivateProfileStringA("Default","ToneMappingColor","0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ToneMappingColor", "0", value, 255, Filename);
 	SettingsHDR.ToneMappingColor = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"POM\\POM.ini");
-	GetPrivateProfileStringA("Default","HeightMapScale","0.05",value,255,Filename);
+	strcat(Filename, "POM\\POM.ini");
+	GetPrivateProfileStringA("Default", "HeightMapScale", "0.05", value, 255, Filename);
 	SettingsPOM.HeightMapScale = atof(value);
-	GetPrivateProfileStringA("Default","ShadowSoftening","0.58",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ShadowSoftening", "0.58", value, 255, Filename);
 	SettingsPOM.ShadowSoftening = atof(value);
-	GetPrivateProfileStringA("Default","MinSamples","16",value,255,Filename);
+	GetPrivateProfileStringA("Default", "MinSamples", "16", value, 255, Filename);
 	SettingsPOM.MinSamples = atof(value);
-	GetPrivateProfileStringA("Default","MaxSamples","160",value,255,Filename);
+	GetPrivateProfileStringA("Default", "MaxSamples", "160", value, 255, Filename);
 	SettingsPOM.MaxSamples = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Terrain\\Terrain.ini");
-	GetPrivateProfileStringA("Default","DistantSpecular","0.0",value,255,Filename);
+	strcat(Filename, "Terrain\\Terrain.ini");
+	GetPrivateProfileStringA("Default", "DistantSpecular", "0.0", value, 255, Filename);
 	SettingsTerrain.DistantSpecular = atof(value);
-	GetPrivateProfileStringA("Default","DistantNoise","0.4",value,255,Filename);
+	GetPrivateProfileStringA("Default", "DistantNoise", "0.4", value, 255, Filename);
 	SettingsTerrain.DistantNoise = atof(value);
-	GetPrivateProfileStringA("Default","NearSpecular","0.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "NearSpecular", "0.0", value, 255, Filename);
 	SettingsTerrain.NearSpecular = atof(value);
-	GetPrivateProfileStringA("Default","MiddleSpecular","0.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "MiddleSpecular", "0.0", value, 255, Filename);
 	SettingsTerrain.MiddleSpecular = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Skin\\Skin.ini");
-	GetPrivateProfileStringA("Default","Attenuation","1.0",value,255,Filename);
+	strcat(Filename, "Skin\\Skin.ini");
+	GetPrivateProfileStringA("Default", "Attenuation", "1.0", value, 255, Filename);
 	SettingsSkin.Attenuation = atof(value);
-	GetPrivateProfileStringA("Default","SpecularPower","1.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "SpecularPower", "1.0", value, 255, Filename);
 	SettingsSkin.SpecularPower = atof(value);
-	GetPrivateProfileStringA("Default","MaterialThickness","0.25",value,255,Filename);
+	GetPrivateProfileStringA("Default", "MaterialThickness", "0.25", value, 255, Filename);
 	SettingsSkin.MaterialThickness = atof(value);
-	GetPrivateProfileStringA("Default","RimScalar","1.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "RimScalar", "1.0", value, 255, Filename);
 	SettingsSkin.RimScalar = atof(value);
-	GetPrivateProfileStringA("Default","ExtCoeffRed","0.70",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ExtCoeffRed", "0.70", value, 255, Filename);
 	SettingsSkin.ExtCoeffRed = atof(value);
-	GetPrivateProfileStringA("Default","ExtCoeffGreen","0.62",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ExtCoeffGreen", "0.62", value, 255, Filename);
 	SettingsSkin.ExtCoeffGreen = atof(value);
-	GetPrivateProfileStringA("Default","ExtCoeffBlue","0.50",value,255,Filename);
+	GetPrivateProfileStringA("Default", "ExtCoeffBlue", "0.50", value, 255, Filename);
 	SettingsSkin.ExtCoeffBlue = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"GodRays\\GodRays.ini");
-	GetPrivateProfileStringA("Default","SunGlareEnabled","1",value,255,Filename);
+	strcat(Filename, "GodRays\\GodRays.ini");
+	GetPrivateProfileStringA("Default", "SunGlareEnabled", "1", value, 255, Filename);
 	SettingsGodRays.SunGlareEnabled = atoi(value);
-	GetPrivateProfileStringA("Default","LightShaftPasses","50",value,255,Filename);
+	GetPrivateProfileStringA("Default", "LightShaftPasses", "50", value, 255, Filename);
 	SettingsGodRays.LightShaftPasses = atoi(value);
-	GetPrivateProfileStringA("Default","RayIntensity","3.2",value,255,Filename);
+	GetPrivateProfileStringA("Default", "RayIntensity", "3.2", value, 255, Filename);
 	SettingsGodRays.RayIntensity = atof(value);
-	GetPrivateProfileStringA("Default","RayLength","1.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "RayLength", "1.0", value, 255, Filename);
 	SettingsGodRays.RayLength = atof(value);
-	GetPrivateProfileStringA("Default","RayDensity","0.8",value,255,Filename);
+	GetPrivateProfileStringA("Default", "RayDensity", "0.8", value, 255, Filename);
 	SettingsGodRays.RayDensity = atof(value);
-	GetPrivateProfileStringA("Default","RayVisibility","0.4",value,255,Filename);
+	GetPrivateProfileStringA("Default", "RayVisibility", "0.4", value, 255, Filename);
 	SettingsGodRays.RayVisibility = atof(value);
 	GetPrivateProfileStringA("Default", "Luminance", "0.4", value, 255, Filename);
 	SettingsGodRays.Luminance = atof(value);
@@ -375,35 +437,34 @@ void SettingManager::LoadSettings() {
 	SettingsGodRays.RayG = atof(value);
 	GetPrivateProfileStringA("Default", "RayB", "0.8", value, 255, Filename);
 	SettingsGodRays.RayB = atof(value);
-	GetPrivateProfileStringA("Default","Saturate","0.55",value, 255, Filename);
+	GetPrivateProfileStringA("Default", "Saturate", "0.55", value, 255, Filename);
 	SettingsGodRays.Saturate = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"DepthOfField\\DepthOfField.ini");
-	GetPrivateProfileSectionNamesA(Sections,32767,Filename);
+	strcat(Filename, "DepthOfField\\DepthOfField.ini");
+	GetPrivateProfileSectionNamesA(Sections, 32767, Filename);
 	pNextSection = Sections;
-	while (*pNextSection != NULL)
-	{
-		GetPrivateProfileStringA(pNextSection,"Enabled","1",value,255,Filename);
+	while (*pNextSection != NULL) {
+		GetPrivateProfileStringA(pNextSection, "Enabled", "1", value, 255, Filename);
 		SD.Enabled = atoi(value);
-		GetPrivateProfileStringA(pNextSection,"DialogMode","0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "DialogMode", "0", value, 255, Filename);
 		SD.DialogMode = atoi(value);
-		GetPrivateProfileStringA(pNextSection,"DistantBlur","0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "DistantBlur", "0", value, 255, Filename);
 		SD.DistantBlur = atoi(value);
-		GetPrivateProfileStringA(pNextSection,"DistantBlurStartRange","800",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "DistantBlurStartRange", "800", value, 255, Filename);
 		SD.DistantBlurStartRange = atof(value);
-		GetPrivateProfileStringA(pNextSection,"DistantBlurEndRange","1000",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "DistantBlurEndRange", "1000", value, 255, Filename);
 		SD.DistantBlurEndRange = atof(value);
-		GetPrivateProfileStringA(pNextSection,"BaseBlurRadius","1.0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "BaseBlurRadius", "1.0", value, 255, Filename);
 		SD.BaseBlurRadius = atof(value);
-		GetPrivateProfileStringA(pNextSection,"BlurFallOff","2.0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "BlurFallOff", "2.0", value, 255, Filename);
 		SD.BlurFallOff = atof(value);
-		GetPrivateProfileStringA(pNextSection,"Radius","8.0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "Radius", "8.0", value, 255, Filename);
 		SD.Radius = atof(value);
-		GetPrivateProfileStringA(pNextSection,"DiameterRange","0.009",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "DiameterRange", "0.009", value, 255, Filename);
 		SD.DiameterRange = atof(value);
-		GetPrivateProfileStringA(pNextSection,"NearBlurCutOff","0.8",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "NearBlurCutOff", "0.8", value, 255, Filename);
 		SD.NearBlurCutOff = atof(value);
 		SettingsDepthOfField[std::string(pNextSection)] = SD;
 		pNextSection = pNextSection + strlen(pNextSection) + 1;
@@ -411,28 +472,27 @@ void SettingManager::LoadSettings() {
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"AmbientOcclusion\\AmbientOcclusion.ini");
-	GetPrivateProfileSectionNamesA(Sections,32767,Filename);
+	strcat(Filename, "AmbientOcclusion\\AmbientOcclusion.ini");
+	GetPrivateProfileSectionNamesA(Sections, 32767, Filename);
 	pNextSection = Sections;
-	while (*pNextSection != NULL)
-	{
-		GetPrivateProfileStringA(pNextSection,"Enabled","1",value,255,Filename);
+	while (*pNextSection != NULL) {
+		GetPrivateProfileStringA(pNextSection, "Enabled", "1", value, 255, Filename);
 		SA.Enabled = atoi(value);
-		GetPrivateProfileStringA(pNextSection,"RadiusMultiplier","8",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "RadiusMultiplier", "8", value, 255, Filename);
 		SA.RadiusMultiplier = atof(value);
-		GetPrivateProfileStringA(pNextSection,"StrengthMultiplier","4",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "StrengthMultiplier", "4", value, 255, Filename);
 		SA.StrengthMultiplier = atof(value);
-		GetPrivateProfileStringA(pNextSection,"ClampStrength","0.1",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "ClampStrength", "0.1", value, 255, Filename);
 		SA.ClampStrength = atof(value);
-		GetPrivateProfileStringA(pNextSection,"AngleBias","15",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "AngleBias", "15", value, 255, Filename);
 		SA.AngleBias = atof(value);
-		GetPrivateProfileStringA(pNextSection,"Range","1500",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "Range", "1500", value, 255, Filename);
 		SA.Range = atof(value);
-		GetPrivateProfileStringA(pNextSection,"LumThreshold","0.2",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "LumThreshold", "0.2", value, 255, Filename);
 		SA.LumThreshold = atof(value);
-		GetPrivateProfileStringA(pNextSection,"BlurDropThreshold","100",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "BlurDropThreshold", "100", value, 255, Filename);
 		SA.BlurDropThreshold = atof(value);
-		GetPrivateProfileStringA(pNextSection,"BlurRadiusMultiplier","1.0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "BlurRadiusMultiplier", "1.0", value, 255, Filename);
 		SA.BlurRadiusMultiplier = atof(value);
 		SettingsAmbientOcclusion[std::string(pNextSection)] = SA;
 		pNextSection = pNextSection + strlen(pNextSection) + 1;
@@ -440,77 +500,76 @@ void SettingManager::LoadSettings() {
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Coloring\\Coloring.ini");
-	GetPrivateProfileStringA("Default","Strength","0.5",Coloring_Strength,255,Filename);
+	strcat(Filename, "Coloring\\Coloring.ini");
+	GetPrivateProfileStringA("Default", "Strength", "0.5", Coloring_Strength, 255, Filename);
 	SC.Strength = atof(Coloring_Strength);
-	GetPrivateProfileStringA("Default","BaseGamma","1.6",Coloring_BaseGamma,255,Filename);
+	GetPrivateProfileStringA("Default", "BaseGamma", "1.6", Coloring_BaseGamma, 255, Filename);
 	SC.BaseGamma = atof(Coloring_BaseGamma);
-	GetPrivateProfileStringA("Default","Fade","0.0",Coloring_Fade,255,Filename);
+	GetPrivateProfileStringA("Default", "Fade", "0.0", Coloring_Fade, 255, Filename);
 	SC.Fade = atof(Coloring_Fade);
-	GetPrivateProfileStringA("Default","Contrast","0.8",Coloring_Contrast,255,Filename);
+	GetPrivateProfileStringA("Default", "Contrast", "0.8", Coloring_Contrast, 255, Filename);
 	SC.Contrast = atof(Coloring_Contrast);
-	GetPrivateProfileStringA("Default","Saturation","-0.1",Coloring_Saturation,255,Filename);
+	GetPrivateProfileStringA("Default", "Saturation", "-0.1", Coloring_Saturation, 255, Filename);
 	SC.Saturation = atof(Coloring_Saturation);
-	GetPrivateProfileStringA("Default","Bleach","0.1",Coloring_Bleach,255,Filename);
+	GetPrivateProfileStringA("Default", "Bleach", "0.1", Coloring_Bleach, 255, Filename);
 	SC.Bleach = atof(Coloring_Bleach);
-	GetPrivateProfileStringA("Default","BleachLuma","0.2",Coloring_BleachLuma,255,Filename);
+	GetPrivateProfileStringA("Default", "BleachLuma", "0.2", Coloring_BleachLuma, 255, Filename);
 	SC.BleachLuma = atof(Coloring_BleachLuma);
-	GetPrivateProfileStringA("Default","ColorCurve","1.2",Coloring_ColorCurve,255,Filename);
+	GetPrivateProfileStringA("Default", "ColorCurve", "1.2", Coloring_ColorCurve, 255, Filename);
 	SC.ColorCurve = atof(Coloring_ColorCurve);
-	GetPrivateProfileStringA("Default","ColorCurveR","0.9",Coloring_ColorCurveR,255,Filename);
+	GetPrivateProfileStringA("Default", "ColorCurveR", "0.9", Coloring_ColorCurveR, 255, Filename);
 	SC.ColorCurveR = atof(Coloring_ColorCurveR);
-	GetPrivateProfileStringA("Default","ColorCurveG","1.0",Coloring_ColorCurveG,255,Filename);
+	GetPrivateProfileStringA("Default", "ColorCurveG", "1.0", Coloring_ColorCurveG, 255, Filename);
 	SC.ColorCurveG = atof(Coloring_ColorCurveG);
-	GetPrivateProfileStringA("Default","ColorCurveB","1.0",Coloring_ColorCurveB,255,Filename);
+	GetPrivateProfileStringA("Default", "ColorCurveB", "1.0", Coloring_ColorCurveB, 255, Filename);
 	SC.ColorCurveB = atof(Coloring_ColorCurveB);
-	GetPrivateProfileStringA("Default","EffectGamma","0.9",Coloring_EffectGamma,255,Filename);
+	GetPrivateProfileStringA("Default", "EffectGamma", "0.9", Coloring_EffectGamma, 255, Filename);
 	SC.EffectGamma = atof(Coloring_EffectGamma);
-	GetPrivateProfileStringA("Default","EffectGammaR","1.0",Coloring_EffectGammaR,255,Filename);
+	GetPrivateProfileStringA("Default", "EffectGammaR", "1.0", Coloring_EffectGammaR, 255, Filename);
 	SC.EffectGammaR = atof(Coloring_EffectGammaR);
-	GetPrivateProfileStringA("Default","EffectGammaG","1.0",Coloring_EffectGammaG,255,Filename);
+	GetPrivateProfileStringA("Default", "EffectGammaG", "1.0", Coloring_EffectGammaG, 255, Filename);
 	SC.EffectGammaG = atof(Coloring_EffectGammaG);
-	GetPrivateProfileStringA("Default","EffectGammaB","1.0",Coloring_EffectGammaB,255,Filename);
+	GetPrivateProfileStringA("Default", "EffectGammaB", "1.0", Coloring_EffectGammaB, 255, Filename);
 	SC.EffectGammaB = atof(Coloring_EffectGammaB);
-	GetPrivateProfileStringA("Default","Linearization","1.1",Coloring_Linearization,255,Filename);
+	GetPrivateProfileStringA("Default", "Linearization", "1.1", Coloring_Linearization, 255, Filename);
 	SC.Linearization = atof(Coloring_Linearization);
 	SettingsColoring["Default"] = SC;
 
-	GetPrivateProfileSectionNamesA(Sections,32767,Filename);
+	GetPrivateProfileSectionNamesA(Sections, 32767, Filename);
 	pNextSection = Sections;
-	while (*pNextSection != NULL)
-	{
-		if (strcmp(pNextSection,"Default") != 0) {
-			GetPrivateProfileStringA(pNextSection,"Strength",Coloring_Strength,value,255,Filename);
+	while (*pNextSection != NULL) {
+		if (strcmp(pNextSection, "Default") != 0) {
+			GetPrivateProfileStringA(pNextSection, "Strength", Coloring_Strength, value, 255, Filename);
 			SC.Strength = atof(value);
-			GetPrivateProfileStringA(pNextSection,"BaseGamma",Coloring_BaseGamma,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "BaseGamma", Coloring_BaseGamma, value, 255, Filename);
 			SC.BaseGamma = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Fade",Coloring_Fade,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Fade", Coloring_Fade, value, 255, Filename);
 			SC.Fade = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Contrast",Coloring_Contrast,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Contrast", Coloring_Contrast, value, 255, Filename);
 			SC.Contrast = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Saturation",Coloring_Saturation,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Saturation", Coloring_Saturation, value, 255, Filename);
 			SC.Saturation = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Bleach",Coloring_Bleach,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Bleach", Coloring_Bleach, value, 255, Filename);
 			SC.Bleach = atof(value);
-			GetPrivateProfileStringA(pNextSection,"BleachLuma",Coloring_BleachLuma,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "BleachLuma", Coloring_BleachLuma, value, 255, Filename);
 			SC.BleachLuma = atof(value);
-			GetPrivateProfileStringA(pNextSection,"ColorCurve",Coloring_ColorCurve,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "ColorCurve", Coloring_ColorCurve, value, 255, Filename);
 			SC.ColorCurve = atof(value);
-			GetPrivateProfileStringA(pNextSection,"ColorCurveR",Coloring_ColorCurveR,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "ColorCurveR", Coloring_ColorCurveR, value, 255, Filename);
 			SC.ColorCurveR = atof(value);
-			GetPrivateProfileStringA(pNextSection,"ColorCurveG",Coloring_ColorCurveG,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "ColorCurveG", Coloring_ColorCurveG, value, 255, Filename);
 			SC.ColorCurveG = atof(value);
-			GetPrivateProfileStringA(pNextSection,"ColorCurveB",Coloring_ColorCurveB,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "ColorCurveB", Coloring_ColorCurveB, value, 255, Filename);
 			SC.ColorCurveB = atof(value);
-			GetPrivateProfileStringA(pNextSection,"EffectGamma",Coloring_EffectGamma,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "EffectGamma", Coloring_EffectGamma, value, 255, Filename);
 			SC.EffectGamma = atof(value);
-			GetPrivateProfileStringA(pNextSection,"EffectGammaR",Coloring_EffectGammaR,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "EffectGammaR", Coloring_EffectGammaR, value, 255, Filename);
 			SC.EffectGammaR = atof(value);
-			GetPrivateProfileStringA(pNextSection,"EffectGammaG",Coloring_EffectGammaG,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "EffectGammaG", Coloring_EffectGammaG, value, 255, Filename);
 			SC.EffectGammaG = atof(value);
-			GetPrivateProfileStringA(pNextSection,"EffectGammaB",Coloring_EffectGammaB,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "EffectGammaB", Coloring_EffectGammaB, value, 255, Filename);
 			SC.EffectGammaB = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Linearization",Coloring_Linearization,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Linearization", Coloring_Linearization, value, 255, Filename);
 			SC.Linearization = atof(value);
 			SettingsColoring[std::string(pNextSection)] = SC;
 		}
@@ -519,53 +578,52 @@ void SettingManager::LoadSettings() {
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Cinema\\Cinema.ini");
-	GetPrivateProfileStringA("Default","DialogMode","0",value,255,Filename);
+	strcat(Filename, "Cinema\\Cinema.ini");
+	GetPrivateProfileStringA("Default", "DialogMode", "0", value, 255, Filename);
 	SettingsCinema.DialogMode = atoi(value);
-	GetPrivateProfileStringA("Default","AspectRatio","1.20",value,255,Filename);
+	GetPrivateProfileStringA("Default", "AspectRatio", "1.20", value, 255, Filename);
 	SettingsCinema.AspectRatio = atof(value);
-	GetPrivateProfileStringA("Default","VignetteRadius","6.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "VignetteRadius", "6.0", value, 255, Filename);
 	SettingsCinema.VignetteRadius = atof(value);
-	GetPrivateProfileStringA("Default","VignetteDarkness","0.55",value,255,Filename);
+	GetPrivateProfileStringA("Default", "VignetteDarkness", "0.55", value, 255, Filename);
 	SettingsCinema.VignetteDarkness = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Bloom\\Bloom.ini");
-	GetPrivateProfileStringA("Default","BloomIntensity","1.4",Bloom_BloomIntensity,255,Filename);
+	strcat(Filename, "Bloom\\Bloom.ini");
+	GetPrivateProfileStringA("Default", "BloomIntensity", "1.4", Bloom_BloomIntensity, 255, Filename);
 	SB.BloomIntensity = atof(Bloom_BloomIntensity);
-	GetPrivateProfileStringA("Default","OriginalIntensity","1.0",Bloom_OriginalIntensity,255,Filename);
+	GetPrivateProfileStringA("Default", "OriginalIntensity", "1.0", Bloom_OriginalIntensity, 255, Filename);
 	SB.OriginalIntensity = atof(Bloom_OriginalIntensity);
-	GetPrivateProfileStringA("Default","BloomSaturation","1.2",Bloom_BloomSaturation,255,Filename);
+	GetPrivateProfileStringA("Default", "BloomSaturation", "1.2", Bloom_BloomSaturation, 255, Filename);
 	SB.BloomSaturation = atof(Bloom_BloomSaturation);
-	GetPrivateProfileStringA("Default","OriginalSaturation","1.0",Bloom_OriginalSaturation,255,Filename);
+	GetPrivateProfileStringA("Default", "OriginalSaturation", "1.0", Bloom_OriginalSaturation, 255, Filename);
 	SB.OriginalSaturation = atof(Bloom_OriginalSaturation);
-	GetPrivateProfileStringA("Default","Luminance","0.06",Bloom_Luminance,255,Filename);
+	GetPrivateProfileStringA("Default", "Luminance", "0.06", Bloom_Luminance, 255, Filename);
 	SB.Luminance = atof(Bloom_Luminance);
-	GetPrivateProfileStringA("Default","MiddleGray","0.18",Bloom_MiddleGray,255,Filename);
+	GetPrivateProfileStringA("Default", "MiddleGray", "0.18", Bloom_MiddleGray, 255, Filename);
 	SB.MiddleGray = atof(Bloom_MiddleGray);
-	GetPrivateProfileStringA("Default","WhiteCutOff","0.8",Bloom_WhiteCutOff,255,Filename);
+	GetPrivateProfileStringA("Default", "WhiteCutOff", "0.8", Bloom_WhiteCutOff, 255, Filename);
 	SB.WhiteCutOff = atof(Bloom_WhiteCutOff);
 	SettingsBloom["Default"] = SB;
 
-	GetPrivateProfileSectionNamesA(Sections,32767,Filename);
+	GetPrivateProfileSectionNamesA(Sections, 32767, Filename);
 	pNextSection = Sections;
-	while (*pNextSection != NULL)
-	{
-		if (strcmp(pNextSection,"Default") != 0) {
-			GetPrivateProfileStringA(pNextSection,"BloomIntensity",Bloom_BloomIntensity,value,255,Filename);
+	while (*pNextSection != NULL) {
+		if (strcmp(pNextSection, "Default") != 0) {
+			GetPrivateProfileStringA(pNextSection, "BloomIntensity", Bloom_BloomIntensity, value, 255, Filename);
 			SB.BloomIntensity = atof(value);
-			GetPrivateProfileStringA(pNextSection,"OriginalIntensity",Bloom_OriginalIntensity,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "OriginalIntensity", Bloom_OriginalIntensity, value, 255, Filename);
 			SB.OriginalIntensity = atof(value);
-			GetPrivateProfileStringA(pNextSection,"BloomSaturation",Bloom_BloomSaturation,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "BloomSaturation", Bloom_BloomSaturation, value, 255, Filename);
 			SB.BloomSaturation = atof(value);
-			GetPrivateProfileStringA(pNextSection,"OriginalSaturation",Bloom_OriginalSaturation,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "OriginalSaturation", Bloom_OriginalSaturation, value, 255, Filename);
 			SB.OriginalSaturation = atof(value);
-			GetPrivateProfileStringA(pNextSection,"Luminance",Bloom_Luminance,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "Luminance", Bloom_Luminance, value, 255, Filename);
 			SB.Luminance = atof(value);
-			GetPrivateProfileStringA(pNextSection,"MiddleGray",Bloom_MiddleGray,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "MiddleGray", Bloom_MiddleGray, value, 255, Filename);
 			SB.MiddleGray = atof(value);
-			GetPrivateProfileStringA(pNextSection,"WhiteCutOff",Bloom_WhiteCutOff,value,255,Filename);
+			GetPrivateProfileStringA(pNextSection, "WhiteCutOff", Bloom_WhiteCutOff, value, 255, Filename);
 			SB.WhiteCutOff = atof(value);
 			SettingsBloom[std::string(pNextSection)] = SB;
 		}
@@ -574,72 +632,71 @@ void SettingManager::LoadSettings() {
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Precipitations\\Precipitations.ini");
-	GetPrivateProfileStringA("Default","Intensity","0.25",value,255,Filename);
+	strcat(Filename, "Precipitations\\Precipitations.ini");
+	GetPrivateProfileStringA("Default", "Intensity", "0.25", value, 255, Filename);
 	SettingsPrecipitations.Intensity = atof(value);
-	GetPrivateProfileStringA("Default","Velocity","0.5",value,255,Filename);
+	GetPrivateProfileStringA("Default", "Velocity", "0.5", value, 255, Filename);
 	SettingsPrecipitations.Velocity = atof(value);
-	GetPrivateProfileStringA("Default","Size","2.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "Size", "2.0", value, 255, Filename);
 	SettingsPrecipitations.Size = atof(value);
-	GetPrivateProfileStringA("Default","SnowAmount","2.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "SnowAmount", "2.0", value, 255, Filename);
 	SettingsPrecipitations.SnowAmount = atof(value);
-	GetPrivateProfileStringA("Default","SnowIncrease","0.0005",value,255,Filename);
+	GetPrivateProfileStringA("Default", "SnowIncrease", "0.0005", value, 255, Filename);
 	SettingsPrecipitations.SnowIncrease = atof(value);
-	GetPrivateProfileStringA("Default","SnowDecrease","0.0001",value,255,Filename);
+	GetPrivateProfileStringA("Default", "SnowDecrease", "0.0001", value, 255, Filename);
 	SettingsPrecipitations.SnowDecrease = atof(value);
-	GetPrivateProfileStringA("Default","SnowSunPower","0.3",value,255,Filename);
+	GetPrivateProfileStringA("Default", "SnowSunPower", "0.3", value, 255, Filename);
 	SettingsPrecipitations.SnowSunPower = atof(value);
-	GetPrivateProfileStringA("Default","SnowBlurNormDropThreshhold","-0.5",value,255,Filename);
+	GetPrivateProfileStringA("Default", "SnowBlurNormDropThreshhold", "-0.5", value, 255, Filename);
 	SettingsPrecipitations.SnowBlurNormDropThreshhold = atof(value);
-	GetPrivateProfileStringA("Default","SnowBlurRadiusMultiplier","1",value,255,Filename);
+	GetPrivateProfileStringA("Default", "SnowBlurRadiusMultiplier", "1", value, 255, Filename);
 	SettingsPrecipitations.SnowBlurRadiusMultiplier = atof(value);
-	GetPrivateProfileStringA("Default","RainAmount","1.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "RainAmount", "1.0", value, 255, Filename);
 	SettingsPrecipitations.RainAmount = atof(value);
-	GetPrivateProfileStringA("Default","RainIncrease","0.001",value,255,Filename);
+	GetPrivateProfileStringA("Default", "RainIncrease", "0.001", value, 255, Filename);
 	SettingsPrecipitations.RainIncrease = atof(value);
-	GetPrivateProfileStringA("Default","RainDecrease","0.0001",value,255,Filename);
+	GetPrivateProfileStringA("Default", "RainDecrease", "0.0001", value, 255, Filename);
 	SettingsPrecipitations.RainDecrease = atof(value);
-	GetPrivateProfileStringA("Default","PuddleCoeff_R","0.62",value,255,Filename);
+	GetPrivateProfileStringA("Default", "PuddleCoeff_R", "0.62", value, 255, Filename);
 	SettingsPrecipitations.PuddleCoeff_R = atof(value);
-	GetPrivateProfileStringA("Default","PuddleCoeff_G","0.6",value,255,Filename);
+	GetPrivateProfileStringA("Default", "PuddleCoeff_G", "0.6", value, 255, Filename);
 	SettingsPrecipitations.PuddleCoeff_G = atof(value);
-	GetPrivateProfileStringA("Default","PuddleCoeff_B","0.55",value,255,Filename);
+	GetPrivateProfileStringA("Default", "PuddleCoeff_B", "0.55", value, 255, Filename);
 	SettingsPrecipitations.PuddleCoeff_B = atof(value);
-	GetPrivateProfileStringA("Default","PuddleSpecularMultiplier","0.2",value,255,Filename);
+	GetPrivateProfileStringA("Default", "PuddleSpecularMultiplier", "0.2", value, 255, Filename);
 	SettingsPrecipitations.PuddleSpecularMultiplier = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Blood\\Blood.ini");
-	GetPrivateProfileStringA("Default","LensChance","10",value,255,Filename);
+	strcat(Filename, "Blood\\Blood.ini");
+	GetPrivateProfileStringA("Default", "LensChance", "10", value, 255, Filename);
 	SettingsBlood.LensChance = atof(value);
-	GetPrivateProfileStringA("Default","LensColorR","0.92",value,255,Filename);
+	GetPrivateProfileStringA("Default", "LensColorR", "0.92", value, 255, Filename);
 	SettingsBlood.LensColorR = atof(value);
-	GetPrivateProfileStringA("Default","LensColorG","0.16",value,255,Filename);
+	GetPrivateProfileStringA("Default", "LensColorG", "0.16", value, 255, Filename);
 	SettingsBlood.LensColorG = atof(value);
-	GetPrivateProfileStringA("Default","LensColorB","0.16",value,255,Filename);
+	GetPrivateProfileStringA("Default", "LensColorB", "0.16", value, 255, Filename);
 	SettingsBlood.LensColorB = atof(value);
-	GetPrivateProfileStringA("Default","LensIntensity","0.8",value,255,Filename);
+	GetPrivateProfileStringA("Default", "LensIntensity", "0.8", value, 255, Filename);
 	SettingsBlood.LensIntensity = atof(value);
-	GetPrivateProfileStringA("Default","LensTime","360",value,255,Filename);
+	GetPrivateProfileStringA("Default", "LensTime", "360", value, 255, Filename);
 	SettingsBlood.LensTime = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"MotionBlur\\MotionBlur.ini");
-	GetPrivateProfileSectionNamesA(Sections,32767,Filename);
+	strcat(Filename, "MotionBlur\\MotionBlur.ini");
+	GetPrivateProfileSectionNamesA(Sections, 32767, Filename);
 	pNextSection = Sections;
-	while (*pNextSection != NULL)
-	{
-		GetPrivateProfileStringA(pNextSection,"Enabled","1",value,255,Filename);
+	while (*pNextSection != NULL) {
+		GetPrivateProfileStringA(pNextSection, "Enabled", "1", value, 255, Filename);
 		SM.Enabled = atoi(value);
-		GetPrivateProfileStringA(pNextSection,"GaussianWeight","6.0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "GaussianWeight", "6.0", value, 255, Filename);
 		SM.GaussianWeight = atof(value);
-		GetPrivateProfileStringA(pNextSection,"BlurScale","4.0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "BlurScale", "4.0", value, 255, Filename);
 		SM.BlurScale = atof(value);
-		GetPrivateProfileStringA(pNextSection,"BlurOffsetMax","24.0",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "BlurOffsetMax", "24.0", value, 255, Filename);
 		SM.BlurOffsetMax = atof(value);
-		GetPrivateProfileStringA(pNextSection,"BlurCutOff","15",value,255,Filename);
+		GetPrivateProfileStringA(pNextSection, "BlurCutOff", "15", value, 255, Filename);
 		SM.BlurCutOff = atof(value);
 		SettingsMotionBlur[std::string(pNextSection)] = SM;
 		pNextSection = pNextSection + strlen(pNextSection) + 1;
@@ -647,36 +704,36 @@ void SettingManager::LoadSettings() {
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"LowHF\\LowHF.ini");
-	GetPrivateProfileStringA("Default","HealthLimit","0.5",value,255,Filename);
+	strcat(Filename, "LowHF\\LowHF.ini");
+	GetPrivateProfileStringA("Default", "HealthLimit", "0.5", value, 255, Filename);
 	SettingsLowHF.HealthLimit = atof(value);
-	GetPrivateProfileStringA("Default","FatigueLimit","0.4",value,255,Filename);
+	GetPrivateProfileStringA("Default", "FatigueLimit", "0.4", value, 255, Filename);
 	SettingsLowHF.FatigueLimit = atof(value);
-	GetPrivateProfileStringA("Default","LumaMultiplier","0.1",value,255,Filename);
+	GetPrivateProfileStringA("Default", "LumaMultiplier", "0.1", value, 255, Filename);
 	SettingsLowHF.LumaMultiplier = atof(value);
-	GetPrivateProfileStringA("Default","BlurMultiplier","0.1",value,255,Filename);
+	GetPrivateProfileStringA("Default", "BlurMultiplier", "0.1", value, 255, Filename);
 	SettingsLowHF.BlurMultiplier = atof(value);
-	GetPrivateProfileStringA("Default","VignetteMultiplier","0.1",value,255,Filename);
+	GetPrivateProfileStringA("Default", "VignetteMultiplier", "0.1", value, 255, Filename);
 	SettingsLowHF.VignetteMultiplier = atof(value);
-	GetPrivateProfileStringA("Default","DarknessMultiplier","0.1",value,255,Filename);
+	GetPrivateProfileStringA("Default", "DarknessMultiplier", "0.1", value, 255, Filename);
 	SettingsLowHF.DarknessMultiplier = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Sharpening\\Sharpening.ini");
-	GetPrivateProfileStringA("Default","Strength","0.75",value,255,Filename);
+	strcat(Filename, "Sharpening\\Sharpening.ini");
+	GetPrivateProfileStringA("Default", "Strength", "0.75", value, 255, Filename);
 	SettingsSharpening.Strength = atof(value);
-	GetPrivateProfileStringA("Default","Clamp","0.1",value,255,Filename);
+	GetPrivateProfileStringA("Default", "Clamp", "0.1", value, 255, Filename);
 	SettingsSharpening.Clamp = atof(value);
-	GetPrivateProfileStringA("Default","Offset","2.0",value,255,Filename);
+	GetPrivateProfileStringA("Default", "Offset", "2.0", value, 255, Filename);
 	SettingsSharpening.Offset = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	strcat(Filename,"Shadows\\Shadows.ini");
-	GetPrivateProfileStringA("Default","ShadowIntensity","0.9",value,255,Filename);
+	strcat(Filename, "Shadows\\Shadows.ini");
+	GetPrivateProfileStringA("Default", "ShadowIntensity", "0.9", value, 255, Filename);
 	SettingsShadows.ShadowIntensity = atof(value);
-	GetPrivateProfileStringA("Default","SelfShadowIntensity","0.6",value,255,Filename);
+	GetPrivateProfileStringA("Default", "SelfShadowIntensity", "0.6", value, 255, Filename);
 	SettingsShadows.SelfShadowIntensity = atof(value);
 
 }
@@ -688,7 +745,18 @@ void SettingManager::SaveSettings(const char* Name) {
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
-	if (!strcmp(Name, "AmbientOcclusion")) {
+	if (!strcmp(Name, " Main")) {
+		WritePrivateProfileStringA("Main", "FoV", ToString(SettingsMain.FoV).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("Main", "ScreenshotKey", ToString(SettingsMain.ScreenshotKey).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("CameraMode", "NearDistanceFirst", ToString(SettingsMain.CameraModeNearDistanceFirst).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("CameraMode", "NearDistanceThird", ToString(SettingsMain.CameraModeNearDistanceThird).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("CameraMode", "OffsetX", ToString(SettingsMain.CameraModeOffset.x).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("CameraMode", "OffsetY", ToString(SettingsMain.CameraModeOffset.y).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("CameraMode", "OffsetZ", ToString(SettingsMain.CameraModeOffset.z).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("SleepingMode", "Rest", ToString(SettingsMain.SleepingModeRest).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("Menu", "StepValue", ToString(SettingsMain.MenuStepValue).c_str(), SettingsMain.MainSettingsFullFile);
+	}
+	else if (!strcmp(Name, "AmbientOcclusion")) {
 		WritePrivateProfileStringA("Effects", "EnableAmbientOcclusion", ToString(SettingsMain.EnableAmbientOcclusion).c_str(), SettingsMain.MainSettingsFullFile);
 		strcat(Filename,"AmbientOcclusion\\AmbientOcclusion.ini");
 		SettingsAmbientOcclusionList::iterator v = SettingsAmbientOcclusion.begin();
@@ -911,15 +979,9 @@ void SettingManager::SaveSettings(const char* Name) {
 			WritePrivateProfileStringA(v->first.c_str(), "causticsStrengthS", ToString(v->second.causticsStrengthS).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "choppiness", ToString(v->second.choppiness).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "depthDarkness", ToString(v->second.depthDarkness).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "Icechoppiness", ToString(v->second.Icechoppiness).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceEnabled", ToString(v->second.IceEnabled).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_B", ToString(v->second.IceinExtCoeff_B).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_G", ToString(v->second.IceinExtCoeff_G).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_R", ToString(v->second.IceinExtCoeff_R).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "Icereflectivity", ToString(v->second.Icereflectivity).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceshoreFactor", ToString(v->second.IceshoreFactor).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "Iceturbidity", ToString(v->second.Iceturbidity).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IcewaveWidth", ToString(v->second.IcewaveWidth).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "reflectivity", ToString(v->second.reflectivity).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "shoreFactor", ToString(v->second.shoreFactor).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "turbidity", ToString(v->second.turbidity).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "inExtCoeff_B", ToString(v->second.inExtCoeff_B).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "inExtCoeff_G", ToString(v->second.inExtCoeff_G).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "inExtCoeff_R", ToString(v->second.inExtCoeff_R).c_str(), Filename);
@@ -929,13 +991,21 @@ void SettingManager::SaveSettings(const char* Name) {
 			WritePrivateProfileStringA(v->first.c_str(), "LensTimeMultA", ToString(v->second.LensTimeMultA).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "LensTimeMultB", ToString(v->second.LensTimeMultB).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "LensViscosity", ToString(v->second.LensViscosity).c_str(), Filename);
+#if defined(OBLIVION)
+			WritePrivateProfileStringA(v->first.c_str(), "Icechoppiness", ToString(v->second.Icechoppiness).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "IceEnabled", ToString(v->second.IceEnabled).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_B", ToString(v->second.IceinExtCoeff_B).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_G", ToString(v->second.IceinExtCoeff_G).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_R", ToString(v->second.IceinExtCoeff_R).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "Icereflectivity", ToString(v->second.Icereflectivity).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "IceshoreFactor", ToString(v->second.IceshoreFactor).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "Iceturbidity", ToString(v->second.Iceturbidity).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "IcewaveWidth", ToString(v->second.IcewaveWidth).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "LODdistance", ToString(v->second.LODdistance).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "MinLOD", ToString(v->second.MinLOD).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "reflectivity", ToString(v->second.reflectivity).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "shoreFactor", ToString(v->second.shoreFactor).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "turbidity", ToString(v->second.turbidity).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "waveSpeed", ToString(v->second.waveSpeed).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "waveWidth", ToString(v->second.waveWidth).c_str(), Filename);
+#endif
 			v++;
 		}
 	}
@@ -947,97 +1017,111 @@ void SettingManager::SaveSettings(const char* Name) {
 	}
 }
 
-SettingsList SettingManager::GetShaders() {
+ShadersList SettingManager::GetShaders() {
 	
-	SettingsList Shaders;
+	ShadersList Shaders;
 
+	Shaders[" Main"] = "Main";
 	Shaders["AmbientOcclusion"] = "Ambient Occlusion";
+#if defined(OBLIVION)
 	Shaders["Blood"] = "Blood";
 	Shaders["BloodLens"] = "Blood Lens";
+#endif
 	Shaders["Bloom"] = "Bloom";
 	Shaders["Cinema"] = "Cinema";
 	Shaders["Coloring"] = "Coloring";
 	Shaders["DepthOfField"] = "Depth Of Field";
 	Shaders["GodRays"] = "God Rays";
+#if defined(OBLIVION)
 	Shaders["Grass"] = "Grass";
 	Shaders["HDR"] = "High Dynamic Range";
+#endif
 	Shaders["LowHF"] = "Low Health and Fatigue";
 	Shaders["MotionBlur"] = "Motion Blur";
+#if defined(OBLIVION)
 	Shaders["POM"] = "Parallax Occlusion Mapping";
 	Shaders["Precipitations"] = "Precipitations";
+#endif
 	Shaders["Sharpening"] = "Sharpening";
 	Shaders["SMAA"] = "Subpixel Morphological AA";
+#if defined(OBLIVION)
 	Shaders["Shadows"] = "Shadows";
 	Shaders["SnowAccumulation"] = "Snow Accumulation";
 	Shaders["Skin"] = "Skin";
 	Shaders["Terrain"] = "Terrain";
+#endif
 	Shaders["Underwater"] = "Underwater";
 	Shaders["Water"] = "Water";
 	Shaders["WaterLens"] = "Water Lens";
+#if defined(OBLIVION)
 	Shaders["WetWorld"] = "Wet World";
+#endif
 	return Shaders;
+
 }
 
-SettingsList SettingManager::GetSections(const char* Name) {
+SectionsList SettingManager::GetSections(const char* Name) {
 	
-	SettingsList Sections;
-
-	if (!strcmp(Name, "AmbientOcclusion")) {
+	SectionsList Sections;
+	
+	if (!strcmp(Name, " Main")) {
+		Sections.push_back("Main");
+		Sections.push_back("CameraMode");
+		Sections.push_back("SleepingMode");
+		Sections.push_back("Menu");
+	}
+	else if (!strcmp(Name, "AmbientOcclusion")) {
 		SettingsAmbientOcclusionList::iterator v = SettingsAmbientOcclusion.begin();
 		while (v != SettingsAmbientOcclusion.end()) {
-			Sections[v->first] = "";
+			Sections.push_back(v->first);
 			v++;
 		}
 	}
 	else if (!strcmp(Name, "Bloom")) {
 		SettingsBloomList::iterator v = SettingsBloom.begin();
 		while (v != SettingsBloom.end()) {
-			Sections[v->first] = "";
+			Sections.push_back(v->first);
 			v++;
 		}
 	}
 	else if (!strcmp(Name, "Coloring")) {
 		SettingsColoringList::iterator v = SettingsColoring.begin();
 		while (v != SettingsColoring.end()) {
-			Sections[v->first] = "";
+			Sections.push_back(v->first);
 			v++;
 		}
 	}
 	else if (!strcmp(Name, "DepthOfField")) {
 		SettingsDepthOfFieldList::iterator v = SettingsDepthOfField.begin();
 		while (v != SettingsDepthOfField.end()) {
-			Sections[v->first] = "";
+			Sections.push_back(v->first);
 			v++;
 		}
 	}
 	else if (!strcmp(Name, "MotionBlur")) {
 		SettingsMotionBlurList::iterator v = SettingsMotionBlur.begin();
 		while (v != SettingsMotionBlur.end()) {
-			Sections[v->first] = "";
+			Sections.push_back(v->first);
 			v++;
 		}
 	}
 	else if (!strcmp(Name, "Water")) {
 		SettingsWaterList::iterator v = SettingsWater.begin();
 		while (v != SettingsWater.end()) {
-			Sections[v->first] = "";
+			Sections.push_back(v->first);
 			v++;
 		}
 	}
-	else if (!strcmp(Name, "BloodLens")) {
-		Sections["Configure these settings by the Blood menu"] = "";
-	}
-	else if (!strcmp(Name, "SnowAccumulation") || !strcmp(Name, "WetWorld")) {
-		Sections["Configure these settings by the Precipitations menu"] = "";
-	}
-	else if (!strcmp(Name, "SMAA")) {
-		Sections["No settings to configure"] = "";
-	}
-	else if (!strcmp(Name, "Underwater") || !strcmp(Name, "WaterLens")) {
-		Sections["Configure these settings by the Water menu"] = "";
-	}
+	else if (!strcmp(Name, "BloodLens"))
+		Sections.push_back("Use the Blood menu");
+	else if (!strcmp(Name, "SnowAccumulation") || !strcmp(Name, "WetWorld"))
+		Sections.push_back("Use the Precipitations menu");
+	else if (!strcmp(Name, "SMAA"))
+		Sections.push_back("No settings to configure");
+	else if (!strcmp(Name, "Underwater") || !strcmp(Name, "WaterLens"))
+		Sections.push_back("Use the Water menu");
 	else
-		Sections["Default"] = "";
+		Sections.push_back("Default");
 
 	return Sections;
 }
@@ -1046,7 +1130,24 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 	
 	SettingsList SettingsShader;
 
-	if (!strcmp(Name, "AmbientOcclusion")) {
+	if (!strcmp(Name, " Main")) {
+		if (!strcmp(Section, "Main")) {
+			SettingsShader["FoV"] = SettingsMain.FoV;
+			SettingsShader["ScreenshotKey"] = SettingsMain.ScreenshotKey;
+		}
+		else if (!strcmp(Section, "CameraMode")) {
+			SettingsShader["NearDistanceFirst"] = SettingsMain.CameraModeNearDistanceFirst;
+			SettingsShader["NearDistanceThird"] = SettingsMain.CameraModeNearDistanceThird;
+			SettingsShader["OffsetX"] = SettingsMain.CameraModeOffset.x;
+			SettingsShader["OffsetY"] = SettingsMain.CameraModeOffset.y;
+			SettingsShader["OffsetZ"] = SettingsMain.CameraModeOffset.z;
+		}
+		else if (!strcmp(Section, "SleepingMode"))
+			SettingsShader["Rest"] = SettingsMain.SleepingModeRest;
+		else if (!strcmp(Section, "Menu"))
+			SettingsShader["StepValue"] = SettingsMain.MenuStepValue;
+	}
+	else if (!strcmp(Name, "AmbientOcclusion")) {
 		SettingsAmbientOcclusionStruct *sas = GetSettingsAmbientOcclusion(Section);
 		SettingsShader["AngleBias"] = sas->AngleBias;
 		SettingsShader["BlurDropThreshold"] = sas->BlurDropThreshold;
@@ -1214,15 +1315,9 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["causticsStrengthS"] = sws->causticsStrengthS;
 		SettingsShader["choppiness"] = sws->choppiness;
 		SettingsShader["depthDarkness"] = sws->depthDarkness;
-		SettingsShader["Icechoppiness"] = sws->Icechoppiness;
-		SettingsShader["IceEnabled"] = sws->IceEnabled;
-		SettingsShader["IceinExtCoeff_B"] = sws->IceinExtCoeff_B;
-		SettingsShader["IceinExtCoeff_G"] = sws->IceinExtCoeff_G;
-		SettingsShader["IceinExtCoeff_R"] = sws->IceinExtCoeff_R;
-		SettingsShader["Icereflectivity"] = sws->Icereflectivity;
-		SettingsShader["IceshoreFactor"] = sws->IceshoreFactor;
-		SettingsShader["Iceturbidity"] = sws->Iceturbidity;
-		SettingsShader["IcewaveWidth"] = sws->IcewaveWidth;
+		SettingsShader["reflectivity"] = sws->reflectivity;
+		SettingsShader["shoreFactor"] = sws->shoreFactor;
+		SettingsShader["turbidity"] = sws->turbidity;
 		SettingsShader["inExtCoeff_B"] = sws->inExtCoeff_B;
 		SettingsShader["inExtCoeff_G"] = sws->inExtCoeff_G;
 		SettingsShader["inExtCoeff_R"] = sws->inExtCoeff_R;
@@ -1232,374 +1327,53 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["LensTimeMultA"] = sws->LensTimeMultA;
 		SettingsShader["LensTimeMultB"] = sws->LensTimeMultB;
 		SettingsShader["LensViscosity"] = sws->LensViscosity;
+#if defined(OBLIVION)
+		SettingsShader["Icechoppiness"] = sws->Icechoppiness;
+		SettingsShader["IceEnabled"] = sws->IceEnabled;
+		SettingsShader["IceinExtCoeff_B"] = sws->IceinExtCoeff_B;
+		SettingsShader["IceinExtCoeff_G"] = sws->IceinExtCoeff_G;
+		SettingsShader["IceinExtCoeff_R"] = sws->IceinExtCoeff_R;
+		SettingsShader["Icereflectivity"] = sws->Icereflectivity;
+		SettingsShader["IceshoreFactor"] = sws->IceshoreFactor;
+		SettingsShader["Iceturbidity"] = sws->Iceturbidity;
+		SettingsShader["IcewaveWidth"] = sws->IcewaveWidth;
 		SettingsShader["LODdistance"] = sws->LODdistance;
 		SettingsShader["MinLOD"] = sws->MinLOD;
-		SettingsShader["reflectivity"] = sws->reflectivity;
-		SettingsShader["shoreFactor"] = sws->shoreFactor;
-		SettingsShader["turbidity"] = sws->turbidity;
 		SettingsShader["waveSpeed"] = sws->waveSpeed;
 		SettingsShader["waveWidth"] = sws->waveWidth;
+#endif
 	}
 	return SettingsShader;
 
 }
 
-float SettingManager::GetSetting(const char* Name, const char* Section, const char* Setting) {
-	
-	float Value;
-
-	if (!strcmp(Name, "AmbientOcclusion")) {
-		SettingsAmbientOcclusionStruct *sas = GetSettingsAmbientOcclusion(Section);
-		if (!strcmp(Setting, "AngleBias"))
-			Value = sas->AngleBias;
-		else if (!strcmp(Setting, "BlurDropThreshold"))
-			Value = sas->BlurDropThreshold;
-		else if (!strcmp(Setting, "BlurRadiusMultiplier"))
-			Value = sas->BlurRadiusMultiplier;
-		else if (!strcmp(Setting, "ClampStrength"))
-			Value = sas->ClampStrength;
-		else if (!strcmp(Setting, "Enabled"))
-			Value = sas->Enabled;
-		else if (!strcmp(Setting, "LumThreshold"))
-			Value = sas->LumThreshold;
-		else if (!strcmp(Setting, "RadiusMultiplier"))
-			Value = sas->RadiusMultiplier;
-		else if (!strcmp(Setting, "Range"))
-			Value = sas->Range;
-		else if (!strcmp(Setting, "StrengthMultiplier"))
-			Value = sas->StrengthMultiplier;
-	}
-	else if (!strcmp(Name, "Blood")) {
-		if (!strcmp(Setting, "LensChance"))
-			Value = SettingsBlood.LensChance;
-		else if (!strcmp(Setting, "LensColorR"))
-			Value = SettingsBlood.LensColorR;
-		else if (!strcmp(Setting, "LensColorG"))
-			Value = SettingsBlood.LensColorG;
-		else if (!strcmp(Setting, "LensColorB"))
-			Value = SettingsBlood.LensColorB;
-		else if (!strcmp(Setting, "LensIntensity"))
-			Value = SettingsBlood.LensIntensity;
-		else if (!strcmp(Setting, "LensTime"))
-			Value = SettingsBlood.LensTime;
-	}
-	else if (!strcmp(Name, "Bloom")) {
-		SettingsBloomStruct *sbs = GetSettingsBloom(Section);
-		if (!strcmp(Setting, "BloomIntensity"))
-			Value = sbs->BloomIntensity;
-		else if (!strcmp(Setting, "BloomSaturation"))
-			Value = sbs->BloomSaturation;
-		else if (!strcmp(Setting, "Luminance"))
-			Value = sbs->Luminance;
-		else if (!strcmp(Setting, "MiddleGray"))
-			Value = sbs->MiddleGray;
-		else if (!strcmp(Setting, "OriginalIntensity"))
-			Value = sbs->OriginalIntensity;
-		else if (!strcmp(Setting, "OriginalSaturation"))
-			Value = sbs->OriginalSaturation;
-		else if (!strcmp(Setting, "WhiteCutOff"))
-			Value = sbs->WhiteCutOff;
-	}
-	else if (!strcmp(Name, "Cinema")) {
-		if (!strcmp(Setting, "AspectRatio"))
-			Value = SettingsCinema.AspectRatio;
-		else if (!strcmp(Setting, "DialogMode"))
-			Value = SettingsCinema.DialogMode;
-		else if (!strcmp(Setting, "VignetteDarkness"))
-			Value = SettingsCinema.VignetteDarkness;
-		else if (!strcmp(Setting, "VignetteRadius"))
-			Value = SettingsCinema.VignetteRadius;
-	}
-	else if (!strcmp(Name, "Coloring")) {
-		SettingsColoringStruct *scs = GetSettingsColoring(Section);
-		if (!strcmp(Setting, "BaseGamma"))
-			Value = scs->BaseGamma;
-		else if (!strcmp(Setting, "Bleach"))
-			Value = scs->Bleach;
-		else if (!strcmp(Setting, "BleachLuma"))
-			Value = scs->BleachLuma;
-		else if (!strcmp(Setting, "ColorCurve"))
-			Value = scs->ColorCurve;
-		else if (!strcmp(Setting, "ColorCurveB"))
-			Value = scs->ColorCurveB;
-		else if (!strcmp(Setting, "ColorCurveG"))
-			Value = scs->ColorCurveG;
-		else if (!strcmp(Setting, "ColorCurveR"))
-			Value = scs->ColorCurveR;
-		else if (!strcmp(Setting, "Contrast"))
-			Value = scs->Contrast;
-		else if (!strcmp(Setting, "EffectGamma"))
-			Value = scs->EffectGamma;
-		else if (!strcmp(Setting, "EffectGammaB"))
-			Value = scs->EffectGammaB;
-		else if (!strcmp(Setting, "EffectGammaG"))
-			Value = scs->EffectGammaG;
-		else if (!strcmp(Setting, "EffectGammaR"))
-			Value = scs->EffectGammaR;
-		else if (!strcmp(Setting, "Fade"))
-			Value = scs->Fade;
-		else if (!strcmp(Setting, "Linearization"))
-			Value = scs->Linearization;
-		else if (!strcmp(Setting, "Saturation"))
-			Value = scs->Saturation;
-		else if (!strcmp(Setting, "Strength"))
-			Value = scs->Strength;
-	}
-	else if (!strcmp(Name, "DepthOfField")) {
-		SettingsDepthOfFieldStruct *sds = GetSettingsDepthOfField(Section);
-		if (!strcmp(Setting, "BaseBlurRadius"))
-			Value = sds->BaseBlurRadius;
-		else if (!strcmp(Setting, "BlurFallOff"))
-			Value = sds->BlurFallOff;
-		else if (!strcmp(Setting, "DialogMode"))
-			Value = sds->DialogMode;
-		else if (!strcmp(Setting, "DiameterRange"))
-			Value = sds->DiameterRange;
-		else if (!strcmp(Setting, "DistantBlur"))
-			Value = sds->DistantBlur;
-		else if (!strcmp(Setting, "DistantBlurEndRange"))
-			Value = sds->DistantBlurEndRange;
-		else if (!strcmp(Setting, "DistantBlurStartRange"))
-			Value = sds->DistantBlurStartRange;
-		else if (!strcmp(Setting, "Enabled"))
-			Value = sds->Enabled;
-		else if (!strcmp(Setting, "NearBlurCutOff"))
-			Value = sds->NearBlurCutOff;
-		else if (!strcmp(Setting, "Radius"))
-			Value = sds->Radius;
-	}
-	else if (!strcmp(Name, "GodRays")) {
-		if (!strcmp(Setting, "RayDensity"))
-			Value = SettingsGodRays.RayDensity;
-		else if (!strcmp(Setting, "RayIntensity"))
-			Value = SettingsGodRays.RayIntensity;
-		else if (!strcmp(Setting, "RayLength"))
-			Value = SettingsGodRays.RayLength;
-		else if (!strcmp(Setting, "GlobalMultiplier"))
-			Value = SettingsGodRays.GlobalMultiplier;
-		else if (!strcmp(Setting, "Saturate"))
-			Value = SettingsGodRays.Saturate;
-		else if (!strcmp(Setting, "LightShaftPasses"))
-			Value = SettingsGodRays.LightShaftPasses;
-		else if (!strcmp(Setting, "Luminance"))
-			Value = SettingsGodRays.Luminance;
-		else if (!strcmp(Setting, "RayR"))
-			Value = SettingsGodRays.RayR;
-		else if (!strcmp(Setting, "RayG"))
-			Value = SettingsGodRays.RayG;
-		else if (!strcmp(Setting, "RayB"))
-			Value = SettingsGodRays.RayB;
-		else if (!strcmp(Setting, "SunGlareEnabled"))
-			Value = SettingsGodRays.SunGlareEnabled;
-		else if (!strcmp(Setting, "RayVisibility"))
-			Value = SettingsGodRays.RayVisibility;
-	}
-	else if (!strcmp(Name, "Grass")) {
-		if (!strcmp(Setting, "GrassDensity"))
-			Value = SettingsGrass.GrassDensity;
-		else if (!strcmp(Setting, "MaxDistance"))
-			Value = SettingsGrass.MaxDistance;
-		else if (!strcmp(Setting, "MinDistance"))
-			Value = SettingsGrass.MinDistance;
-		else if (!strcmp(Setting, "MinHeight"))
-			Value = SettingsGrass.MinHeight;	
-		else if (!strcmp(Setting, "ScaleX"))
-			Value = SettingsGrass.ScaleX;	
-		else if (!strcmp(Setting, "ScaleY"))
-			Value = SettingsGrass.ScaleY;	
-		else if (!strcmp(Setting, "ScaleZ"))
-			Value = SettingsGrass.ScaleZ;	
-		else if (!strcmp(Setting, "WindCoefficient"))
-			Value = SettingsGrass.WindCoefficient;	
-		else if (!strcmp(Setting, "WindEnabled"))
-			Value = SettingsGrass.WindEnabled;	
-	}
-	else if (!strcmp(Name, "HDR")) {
-		if (!strcmp(Setting, "ToneMapping"))
-			Value = SettingsHDR.ToneMapping;
-		else if (!strcmp(Setting, "ToneMappingBlur"))
-			Value = SettingsHDR.ToneMappingBlur;
-		else if (!strcmp(Setting, "ToneMappingColor"))
-			Value = SettingsHDR.ToneMappingColor;
-	}
-	else if (!strcmp(Name, "LowHF")) {
-		if (!strcmp(Setting, "BlurMultiplier"))
-			Value = SettingsLowHF.BlurMultiplier;
-		else if (!strcmp(Setting, "DarknessMultiplier"))
-			Value = SettingsLowHF.DarknessMultiplier;
-		else if (!strcmp(Setting, "FatigueLimit"))
-			Value = SettingsLowHF.FatigueLimit;
-		else if (!strcmp(Setting, "HealthLimit"))
-			Value = SettingsLowHF.HealthLimit;
-		else if (!strcmp(Setting, "LumaMultiplier"))
-			Value = SettingsLowHF.LumaMultiplier;
-		else if (!strcmp(Setting, "VignetteMultiplier"))
-			Value = SettingsLowHF.VignetteMultiplier;
-	}
-	else if (!strcmp(Name, "MotionBlur")) {
-		SettingsMotionBlurStruct *sms = GetSettingsMotionBlur(Section);
-		if (!strcmp(Setting, "BlurCutOff"))
-			Value = sms->BlurCutOff;
-		else if (!strcmp(Setting, "BlurOffsetMax"))
-			Value = sms->BlurOffsetMax;
-		else if (!strcmp(Setting, "BlurScale"))
-			Value = sms->BlurScale;
-		else if (!strcmp(Setting, "Enabled"))
-			Value = sms->Enabled;
-		else if (!strcmp(Setting, "GaussianWeight"))
-			Value = sms->GaussianWeight;
-	}
-	else if (!strcmp(Name, "POM")) {
-		if (!strcmp(Setting, "HeightMapScale"))
-			Value = SettingsPOM.HeightMapScale;
-		else if (!strcmp(Setting, "MaxSamples"))
-			Value = SettingsPOM.MaxSamples;
-		else if (!strcmp(Setting, "MinSamples"))
-			Value = SettingsPOM.MinSamples;
-		else if (!strcmp(Setting, "ShadowSoftening"))
-			Value = SettingsPOM.ShadowSoftening;	
-	}
-	else if (!strcmp(Name, "Precipitations")) {
-		if (!strcmp(Setting, "Intensity"))
-			Value = SettingsPrecipitations.Intensity;
-		else if (!strcmp(Setting, "Size"))
-			Value = SettingsPrecipitations.Size;
-		else if (!strcmp(Setting, "Velocity"))
-			Value = SettingsPrecipitations.Velocity;
-		else if (!strcmp(Setting, "SnowIncrease"))
-			Value = SettingsPrecipitations.SnowIncrease;
-		else if (!strcmp(Setting, "SnowDecrease"))
-			Value = SettingsPrecipitations.SnowDecrease;
-		else if (!strcmp(Setting, "SnowSunPower"))
-			Value = SettingsPrecipitations.SnowSunPower;
-		else if (!strcmp(Setting, "SnowAmount"))
-			Value = SettingsPrecipitations.SnowAmount;
-		else if (!strcmp(Setting, "SnowBlurNormDropThreshhold"))
-			Value = SettingsPrecipitations.SnowBlurNormDropThreshhold;
-		else if (!strcmp(Setting, "SnowBlurRadiusMultiplier"))
-			Value = SettingsPrecipitations.SnowBlurRadiusMultiplier;
-		else if (!strcmp(Setting, "RainIncrease"))
-			Value = SettingsPrecipitations.RainIncrease;
-		else if (!strcmp(Setting, "RainDecrease"))
-			Value = SettingsPrecipitations.RainDecrease;
-		else if (!strcmp(Setting, "RainAmount"))
-			Value = SettingsPrecipitations.RainAmount;
-		else if (!strcmp(Setting, "PuddleCoeff_B"))
-			Value = SettingsPrecipitations.PuddleCoeff_B;
-		else if (!strcmp(Setting, "PuddleCoeff_G"))
-			Value = SettingsPrecipitations.PuddleCoeff_G;
-		else if (!strcmp(Setting, "PuddleCoeff_R"))
-			Value = SettingsPrecipitations.PuddleCoeff_R;
-		else if (!strcmp(Setting, "PuddleSpecularMultiplier"))
-			Value = SettingsPrecipitations.PuddleSpecularMultiplier;
-	}
-	else if (!strcmp(Name, "Shadows")) {
-		if (!strcmp(Setting, "SelfShadowIntensity"))
-			Value = SettingsShadows.SelfShadowIntensity;
-		else if (!strcmp(Setting, "ShadowIntensity"))
-			Value = SettingsShadows.ShadowIntensity;
-	}
-	else if (!strcmp(Name, "Sharpening")) {
-		if (!strcmp(Setting, "Clamp"))
-			Value = SettingsSharpening.Clamp;
-		else if (!strcmp(Setting, "Offset"))
-			Value = SettingsSharpening.Offset;
-		else if (!strcmp(Setting, "Strength"))
-			Value = SettingsSharpening.Strength;
-	}
-	else if (!strcmp(Name, "Skin")) {
-		if (!strcmp(Setting, "Attenuation"))
-			Value = SettingsSkin.Attenuation;
-		else if (!strcmp(Setting, "ExtCoeffBlue"))
-			Value = SettingsSkin.ExtCoeffBlue;
-		else if (!strcmp(Setting, "ExtCoeffGreen"))
-			Value = SettingsSkin.ExtCoeffGreen;
-		else if (!strcmp(Setting, "ExtCoeffRed"))
-			Value = SettingsSkin.ExtCoeffRed;
-		else if (!strcmp(Setting, "MaterialThickness"))
-			Value = SettingsSkin.MaterialThickness;
-		else if (!strcmp(Setting, "RimScalar"))
-			Value = SettingsSkin.RimScalar;
-		else if (!strcmp(Setting, "SpecularPower"))
-			Value = SettingsSkin.SpecularPower;
-	}
-	else if (!strcmp(Name, "Terrain")) {
-		if (!strcmp(Setting, "DistantNoise"))
-			Value = SettingsTerrain.DistantNoise;
-		else if (!strcmp(Setting, "DistantSpecular"))
-			Value = SettingsTerrain.DistantSpecular;
-		else if (!strcmp(Setting, "MiddleSpecular"))
-			Value = SettingsTerrain.MiddleSpecular;
-		else if (!strcmp(Setting, "NearSpecular"))
-			Value = SettingsTerrain.NearSpecular;
-	}
-	else if (!strcmp(Name, "Water")) {
-		SettingsWaterStruct *sws = GetSettingsWater(Section);
-		if (!strcmp(Setting, "causticsStrength"))
-			Value = sws->causticsStrength;
-		else if (!strcmp(Setting, "causticsStrengthS"))
-			Value = sws->causticsStrengthS;
-		else if (!strcmp(Setting, "choppiness"))
-			Value = sws->choppiness;
-		else if (!strcmp(Setting, "depthDarkness"))
-			Value = sws->depthDarkness;
-		else if (!strcmp(Setting, "Icechoppiness"))
-			Value = sws->Icechoppiness;
-		else if (!strcmp(Setting, "IceEnabled"))
-			Value = sws->IceEnabled;
-		else if (!strcmp(Setting, "IceinExtCoeff_B"))
-			Value = sws->IceinExtCoeff_B;
-		else if (!strcmp(Setting, "IceinExtCoeff_G"))
-			Value = sws->IceinExtCoeff_G;
-		else if (!strcmp(Setting, "IceinExtCoeff_R"))
-			Value = sws->IceinExtCoeff_R;
-		else if (!strcmp(Setting, "Icereflectivity"))
-			Value = sws->Icereflectivity;
-		else if (!strcmp(Setting, "IceshoreFactor"))
-			Value = sws->IceshoreFactor;
-		else if (!strcmp(Setting, "Iceturbidity"))
-			Value = sws->Iceturbidity;
-		else if (!strcmp(Setting, "IcewaveWidth"))
-			Value = sws->IcewaveWidth;
-		else if (!strcmp(Setting, "inExtCoeff_B"))
-			Value = sws->inExtCoeff_B;
-		else if (!strcmp(Setting, "inExtCoeff_G"))
-			Value = sws->inExtCoeff_G;
-		else if (!strcmp(Setting, "inExtCoeff_R"))
-			Value = sws->inExtCoeff_R;
-		else if (!strcmp(Setting, "inScattCoeff"))
-			Value = sws->inScattCoeff;
-		else if (!strcmp(Setting, "LensAmount"))
-			Value = sws->LensAmount;
-		else if (!strcmp(Setting, "LensTime"))
-			Value = sws->LensTime;
-		else if (!strcmp(Setting, "LensTimeMultA"))
-			Value = sws->LensTimeMultA;
-		else if (!strcmp(Setting, "LensTimeMultB"))
-			Value = sws->LensTimeMultB;
-		else if (!strcmp(Setting, "LensViscosity"))
-			Value = sws->LensViscosity;
-		else if (!strcmp(Setting, "LODdistance"))
-			Value = sws->LODdistance;
-		else if (!strcmp(Setting, "MinLOD"))
-			Value = sws->MinLOD;
-		else if (!strcmp(Setting, "reflectivity"))
-			Value = sws->reflectivity;
-		else if (!strcmp(Setting, "shoreFactor"))
-			Value = sws->shoreFactor;
-		else if (!strcmp(Setting, "turbidity"))
-			Value = sws->turbidity;
-		else if (!strcmp(Setting, "waveSpeed"))
-			Value = sws->waveSpeed;
-		else if (!strcmp(Setting, "waveWidth"))
-			Value = sws->waveWidth;
-	}
-	return Value;
-}
-
 void SettingManager::SetSetting(const char* Name, const char* Section, const char* Setting, float Value) {
 	
-	if (!strcmp(Name, "AmbientOcclusion")) {
+	if (!strcmp(Name, " Main")) {
+		if (!strcmp(Section, "Main")) {
+			if (!strcmp(Setting, "FoV"))
+				SettingsMain.FoV = Value;
+			else if (!strcmp(Setting, "ScreenshotKey"))
+				SettingsMain.ScreenshotKey = Value;
+		}
+		else if (!strcmp(Section, "CameraMode")) {
+			if (!strcmp(Setting, "NearDistanceFirst"))
+				SettingsMain.CameraModeNearDistanceFirst = Value;
+			else if (!strcmp(Setting, "NearDistanceThird"))
+				SettingsMain.CameraModeNearDistanceThird = Value;
+			else if (!strcmp(Setting, "OffsetX"))
+				SettingsMain.CameraModeOffset.x = Value;
+			else if (!strcmp(Setting, "OffsetY"))
+				SettingsMain.CameraModeOffset.y = Value;
+			else if (!strcmp(Setting, "OffsetZ"))
+				SettingsMain.CameraModeOffset.z = Value;
+		}
+		else if (!strcmp(Section, "SleepingMode"))
+			SettingsMain.SleepingModeRest = Value;
+		else if (!strcmp(Section, "Menu"))
+			SettingsMain.MenuStepValue = Value;
+	}
+	else if (!strcmp(Name, "AmbientOcclusion")) {
 		SettingsAmbientOcclusionStruct *sas = GetSettingsAmbientOcclusion(Section);
 		if (!strcmp(Setting, "AngleBias"))
 			sas->AngleBias = Value;
@@ -1949,81 +1723,56 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 
 bool SettingManager::GetEnabled(const char* Name)
 {
-	bool Value;
+	bool Value = false;
 
-	if (!strcmp(Name, "AmbientOcclusion")) {
+	if (!strcmp(Name, "AmbientOcclusion"))
 		Value = SettingsMain.EnableAmbientOcclusion;
-	}
-	else if (!strcmp(Name, "Blood")) {
+	else if (!strcmp(Name, "Blood"))
 		Value = SettingsMain.EnableBlood;
-	}
-	else if (!strcmp(Name, "BloodLens")) {
+	else if (!strcmp(Name, "BloodLens"))
 		Value = SettingsMain.EnableBloodLens;
-	}
-	else if (!strcmp(Name, "Bloom")) {
+	else if (!strcmp(Name, "Bloom"))
 		Value = SettingsMain.EnableBloom;
-	}
-	else if (!strcmp(Name, "Cinema")) {
+	else if (!strcmp(Name, "Cinema"))
 		Value = SettingsMain.EnableCinema;
-	}
-	else if (!strcmp(Name, "Coloring")) {
+	else if (!strcmp(Name, "Coloring"))
 		Value = SettingsMain.EnableColoring;
-	}
-	else if (!strcmp(Name, "DepthOfField")) {
+	else if (!strcmp(Name, "DepthOfField"))
 		Value = SettingsMain.EnableDepthOfField;
-	}
-	else if (!strcmp(Name, "GodRays")) {
+	else if (!strcmp(Name, "GodRays"))
 		Value = SettingsMain.EnableGodRays;
-	}
-	else if (!strcmp(Name, "Grass")) {
+	else if (!strcmp(Name, "Grass"))
 		Value = SettingsMain.EnableGrass;
-	}
-	else if (!strcmp(Name, "HDR")) {
+	else if (!strcmp(Name, "HDR"))
 		Value = SettingsMain.EnableHDR;
-	}
-	else if (!strcmp(Name, "LowHF")) {
+	else if (!strcmp(Name, "LowHF"))
 		Value = SettingsMain.EnableLowHF;
-	}
-	else if (!strcmp(Name, "MotionBlur")) {
+	else if (!strcmp(Name, "MotionBlur"))
 		Value = SettingsMain.EnableMotionBlur;
-	}
-	else if (!strcmp(Name, "POM")) {
+	else if (!strcmp(Name, "POM"))
 		Value = SettingsMain.EnablePOM;
-	}
-	else if (!strcmp(Name, "Precipitations")) {
+	else if (!strcmp(Name, "Precipitations"))
 		Value = SettingsMain.EnablePrecipitations;
-	}
-	else if (!strcmp(Name, "Shadows")) {
+	else if (!strcmp(Name, "Shadows"))
 		Value = SettingsMain.EnableShadows;
-	}
-	else if (!strcmp(Name, "Sharpening")) {
+	else if (!strcmp(Name, "Sharpening"))
 		Value = SettingsMain.EnableSharpening;
-	}
-	else if (!strcmp(Name, "Skin")) {
+	else if (!strcmp(Name, "Skin"))
 		Value = SettingsMain.EnableSkin;
-	}
-	else if (!strcmp(Name, "SMAA")) {
+	else if (!strcmp(Name, "SMAA"))
 		Value = SettingsMain.EnableSMAA;
-	}
-	else if (!strcmp(Name, "SnowAccumulation")) {
+	else if (!strcmp(Name, "SnowAccumulation"))
 		Value = SettingsMain.EnableSnowAccumulation;
-	}
-	else if (!strcmp(Name, "Terrain")) {
+	else if (!strcmp(Name, "Terrain"))
 		Value = SettingsMain.EnableTerrain;
-	}
-	else if (!strcmp(Name, "Underwater")) {
+	else if (!strcmp(Name, "Underwater"))
 		Value = SettingsMain.EnableUnderwater;
-	}
-	else if (!strcmp(Name, "Water")) {
+	else if (!strcmp(Name, "Water"))
 		Value = SettingsMain.EnableWater;
-	}
-	else if (!strcmp(Name, "WaterLens")) {
+	else if (!strcmp(Name, "WaterLens"))
 		Value = SettingsMain.EnableWaterLens;
-	}
-	else if (!strcmp(Name, "WetWorld")) {
+	else if (!strcmp(Name, "WetWorld"))
 		Value = SettingsMain.EnableWetWorld;
-	}
-
 	return Value;
 
 }
@@ -2119,7 +1868,6 @@ bool Settings::TrackSaveSettings() { // ecx is INISettingCollection*
 	
 	bool r = false;
 
-	*SettingNearDistance = 10.0;
 	if (TheSettingManager->SettingsMain.SaveSettings) r = (this->*SaveSettings)();
 	return r;
 
@@ -2136,43 +1884,44 @@ bool Settings::TrackLoadGame(BSFile* GameFile, char* FileName, UInt8 Arg3) { // 
 	TheSettingManager->GameLoading = true;
 	r = (this->*LoadGame)(GameFile, FileName, Arg3);
 	TheSettingManager->GameLoading = false;
-	TheEquipmentManager->LeftWeapons.clear();
-	std::ifstream ORSaveGame(TheSettingManager->GameFilePath,std::ios::in|std::ios::binary);
-	if (ORSaveGame.is_open()) {
-		ORSaveGame.read(ORRecord, 10);
-		if (!memcmp(ORRecord, "ORSAVEGAME", 10)) {
-			while (!ORSaveGame.eof()) {
-				ORSaveGame.read(ORRecordType, 1);
-				switch (ORRecordType[0])
-				{
+	if (r) {
+		TheEquipmentManager->LeftWeapons.clear();
+		std::ifstream ORSaveGame(TheSettingManager->GameFilePath, std::ios::in | std::ios::binary);
+		if (ORSaveGame.is_open()) {
+			ORSaveGame.read(ORRecord, 10);
+			if (!memcmp(ORRecord, "ORSAVEGAME", 10)) {
+				while (!ORSaveGame.eof()) {
+					ORSaveGame.read(ORRecordType, 1);
+					switch (ORRecordType[0]) {
 					case '0':
-						{
-							ORSaveGame.read(ORRecord, 8);
-							char* pORRecord = ORRecord;
-							UInt32 LeftWeaponID = *(UInt32*)pORRecord;
-							UInt32 Count = *(UInt32*)(pORRecord += 4);
-							TESForm* Form = LookupFormByID(LeftWeaponID);
-							if (Form) {
-								TESObjectARMO* LeftWeapon = (TESObjectARMO*)Oblivion_DynamicCast(Form, 0, RTTI_TESForm, RTTI_TESObjectARMO, 0);
-								if (LeftWeapon) {
-									char* ModelPath = LeftWeapon->bipedModel.bipedModel[0].nifPath.m_data;
-									LeftWeaponData LeftWeaponD;
-									LeftWeaponD.LeftWeapon = LeftWeapon;
-									LeftWeaponD.Count = 1;
-									TheEquipmentManager->LeftWeapons[std::string(ModelPath)] = LeftWeaponD;
-								}
+					{
+						ORSaveGame.read(ORRecord, 8);
+						char* pORRecord = ORRecord;
+						UInt32 LeftWeaponID = *(UInt32*)pORRecord;
+						UInt32 Count = *(UInt32*)(pORRecord += 4);
+						TESForm* Form = LookupFormByID(LeftWeaponID);
+						if (Form) {
+							TESObjectARMO* LeftWeapon = (TESObjectARMO*)Oblivion_DynamicCast(Form, 0, RTTI_TESForm, RTTI_TESObjectARMO, 0);
+							if (LeftWeapon) {
+								char* ModelPath = LeftWeapon->bipedModel.bipedModel[0].nifPath.m_data;
+								LeftWeaponData LeftWeaponD;
+								LeftWeaponD.LeftWeapon = LeftWeapon;
+								LeftWeaponD.Count = 1;
+								TheEquipmentManager->LeftWeapons[std::string(ModelPath)] = LeftWeaponD;
 							}
 						}
-						break;
+					}
+					break;
 					case '1':
 						ORSaveGame.read(ORRecord, 12);
 						break;
+					}
 				}
 			}
+			ORSaveGame.close();
 		}
-		ORSaveGame.close();
+		TheShaderManager->InitializeConstants();
 	}
-	TheShaderManager->InitializeConstants();
 	return r;
 
 }
@@ -2273,6 +2022,39 @@ void CreateSettingsHook() {
 	DetourAttach(&(PVOID&)SaveGame,			*((PVOID *)&TrackSaveGame));
 	DetourAttach(&(PVOID&)DeleteGame,		*((PVOID *)&TrackDeleteGame));
 	DetourAttach(&(PVOID&)CreateGameFile,	*((PVOID *)&TrackCreateGameFile));
+	DetourTransactionCommit();
+
+}
+#elif defined(SKYRIM)
+class Settings {
+
+public:
+	bool TrackLoadGame(char* FileName, UInt8 Arg2);
+
+};
+
+bool (__thiscall Settings::* LoadGame)(char*, UInt8);
+bool (__thiscall Settings::* TrackLoadGame)(char*, UInt8);
+bool Settings::TrackLoadGame(char* FileName, UInt8 Arg2) {
+
+	bool r;
+
+	TheSettingManager->GameLoading = true;
+	r = (this->*LoadGame)(FileName, Arg2);
+	TheSettingManager->GameLoading = false;
+	if (r) TheShaderManager->InitializeConstants();
+	return r;
+
+}
+
+void CreateSettingsHook() {
+
+	*((int *)&LoadGame)			= 0x0067B720;
+	TrackLoadGame				= &Settings::TrackLoadGame;
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)LoadGame,		*((PVOID *)&TrackLoadGame));
 	DetourTransactionCommit();
 
 }

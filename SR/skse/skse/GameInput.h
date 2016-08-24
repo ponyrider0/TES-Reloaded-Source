@@ -15,12 +15,41 @@ enum
 class BSInputDevice
 {
 public:
-	virtual UInt32	Unk_01(void);		// pure
-	virtual	void	Unk_02(float unk1);	// pure
-	virtual	void	Unk_03(void);		// pure
-	virtual bool	IsEnabled(void);	// Always 1 for non-gamepad?
+	virtual UInt32	Initialize();
+	virtual	void	GetInput(float unk1);
+	virtual	void	Unk_03(void);
+	virtual bool	IsEnabled();
 	virtual			~BSInputDevice();
-	virtual void	Unk_06(void);		// pure
+	virtual void	Unk_06(void);
+	
+	UInt32			DeviceType;						// 04
+	UInt32			unk008;							// 08
+	UInt32			unk00C;							// 0C	
+};
+
+class BSWin32KeyboardDevice : public BSInputDevice
+{
+public:
+	UInt32			unk010;							// 10
+	UInt32			unk014;							// 14
+	UInt32			unk018;							// 18
+	UInt32			unk01C;							// 1C
+	UInt32			unk020;							// 20
+	UInt32			unk024;							// 24
+	UInt32			unk028[(0x0F4 - 0x028) >> 2];	// 28 This (or part of this) is a class/struct
+	UInt8			PreviousState[0x100];			// F4
+	UInt8			CurrentState[0x100];			// 1F4
+};
+STATIC_ASSERT(sizeof(BSWin32KeyboardDevice) == 0x2F4);
+
+class BSWin32MouseDevice : public BSInputDevice
+{
+
+};
+
+class BSWin32GamepadDevice : public BSInputDevice
+{
+
 };
 
 // 10
@@ -100,10 +129,10 @@ class KinectEvent : public IDEvent, public InputEvent
 class InputEventDispatcher : public EventDispatcher<InputEvent,InputEvent*>
 {
 public:
-	UInt32			unk030;		// 030
-	BSInputDevice	* keyboard;	// 034
-	BSInputDevice	* mouse;	// 038
-	BSInputDevice	* gamepad;	// 03C
+	UInt32					unk030;		// 030
+	BSWin32KeyboardDevice*	keyboard;	// 034
+	BSWin32MouseDevice*		mouse;		// 038
+	BSWin32GamepadDevice*	gamepad;	// 03C
 	
 	bool	IsGamepadEnabled(void);
 };
@@ -186,10 +215,25 @@ public:
 	virtual void Unk_01();
 	virtual void Unk_02();
 	virtual void Unk_03();
-	virtual void Unk_04();
+	virtual void ManageButtonEvent(ButtonEvent* Arg1, int Arg2);
 
-	UInt32	unk04;				// 04
+	UInt8		unk04;			// 04
+	UInt8		pad04[3];
 };
+
+class MovementHandler {};
+class LookHandler {};
+class SprintHandler {};			// Size: 0x10
+class ReadyWeaponHandler {};
+class AutoMoveHandler {};
+class ToggleRunHandler {};
+class ActivateHandler {};		// Size: 0x10
+class JumpHandler {};
+class ShoutHandler {};			// Size: 0x10
+class AttackBlockHandler {};	// Size: 0x28
+class RunHandler {};
+class SneakHandler {};
+class TogglePOVHandler {};		// Size: 0x10
 
 //?
 class PlayerControls
@@ -198,18 +242,66 @@ public:
 	virtual			~PlayerControls();
 	virtual UInt32	Unk_01();
 
-//	void			** _vtbl;		// 00
-	BSTEventSink<void*> menuOpenCloseEvent;	// 04
-	BSTEventSink<void*> menuModeChangeEvent;	// 08
-	BSTEventSink<void*> furnitureEvent;	// 0C
-	UInt8			pad10[0x28];	// 10
-	UInt8			autoRun;		// 38
-	UInt8			runMode;		// 39
-	UInt8			pad3A[0x06];	// 3A
-	bool			remapMode;		// 40 - might be named differently
-	UInt8			pad41[3];		// 41
-	UInt32			unk44[(0x128 - 0x44) >> 2];	// 44
-	PlayerInputHandler * inputHandlers[13];	// 128
+	struct Modes
+	{
+		UInt32			LeftRight;		// 00 Left: 0xBF800000 - Right: 0x3F800000
+		UInt32			ForwardBack;	// 04 Forward: 0x3F800000 - Back: 0xBF800000
+		UInt32			unk08;			// 08
+		UInt32			unk0C;			// 0C
+		UInt32			unk10;			// 10
+		UInt32			unk14;			// 14
+		UInt32			unk18;			// 18
+		UInt32			unk1C;			// 1C
+		UInt32			unk20;			// 20
+		UInt8			AutoMove;		// 24
+		UInt8			AlwaysRun;		// 25
+		UInt8			unk26;			// 26
+		UInt8			TogglePOV;		// 27
+		UInt16			unk28;			// 28
+		UInt8			unk2A;			// 2A
+		UInt8			unk2B;			// 2B
+		UInt8			unk2C;			// 2C
+		UInt8			pad2A[3];
+	};
+
+//	void			** _vtbl;					// 000
+	BSTEventSink<void*> menuOpenCloseEvent;		// 004
+	BSTEventSink<void*> menuModeChangeEvent;	// 008
+	BSTEventSink<void*> furnitureEvent;			// 00C
+	UInt32				pad010;					// 010
+	Modes				modes;					// 014
+	UInt32				unk044;					// 044
+	UInt32				unk048;					// 048
+	UInt32				unk04C;					// 04C
+	UInt32				unk050;					// 050
+	UInt32				unk054;					// 054
+	UInt32				unk058;					// 058
+	UInt32				unk05C;					// 05C
+	UInt32				unk060;					// 060
+	UInt32				unk064;					// 064
+	UInt8				Processing;				// 068
+	UInt8				pad068[3];
+	UInt32				pad06C[(0x114 - 0x06C) >> 2];	// 06C
+	UInt32				unk114;					// 114
+	UInt32				unk118;					// 118
+	UInt32				unk11C;					// 11C
+	UInt32				unk120;					// 120
+	UInt32				unk124;					// 124
+	MovementHandler*	movementHandler;		// 128
+	LookHandler*		lookHandler;			// 12C
+	SprintHandler*		sprintHandler;			// 130
+	ReadyWeaponHandler*	readyWeaponHandler;		// 134
+	AutoMoveHandler*	autoMoveHandler;		// 138
+	ToggleRunHandler*	toggleRunHandler;		// 13C
+	ActivateHandler*	activateHandler;		// 140
+	JumpHandler*		jumpHandler;			// 144
+	ShoutHandler*		shoutHandler;			// 148
+	AttackBlockHandler*	attackBlockHandler;		// 14C
+	RunHandler*			runHandler;				// 150
+	SneakHandler*		sneakHandler;			// 154
+	TogglePOVHandler*	togglePOVHandler;		// 158
+	UInt8				unk15C;					// 15C
+	UInt8				pad15C[3];
 
 	static PlayerControls *	GetSingleton(void);
 
@@ -218,9 +310,8 @@ public:
 	MEMBER_FN_PREFIX(PlayerControls);
 	DEFINE_MEMBER_FN(ctor, PlayerControls *, 0x00774F20);
 };
-STATIC_ASSERT(offsetof(PlayerControls, runMode) == 0x039);
-STATIC_ASSERT(offsetof(PlayerControls, remapMode) == 0x040);
-STATIC_ASSERT(offsetof(PlayerControls, inputHandlers) == 0x128);
+STATIC_ASSERT(offsetof(PlayerControls, movementHandler) == 0x128);
+STATIC_ASSERT(sizeof(PlayerControls) == 0x160);
 
 // ?
 class MenuControls
@@ -238,7 +329,7 @@ public:
 
 	static MenuControls *	GetSingleton(void);
 };
-STATIC_ASSERT(offsetof(MenuControls, remapMode) == 0x042);
+STATIC_ASSERT(offsetof(MenuControls, remapMode) == 0x42);
 
 // 1A0
 class InputStringHolder

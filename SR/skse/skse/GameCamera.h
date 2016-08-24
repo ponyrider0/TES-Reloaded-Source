@@ -8,7 +8,7 @@
 #include "skse/NiObjects.h"
 #include "skse/NiTypes.h"
 
-class TESCamera;
+class PlayerCamera;
 class NiNode;
 
 class TESCameraState
@@ -17,17 +17,17 @@ public:
 	TESCameraState();
 	virtual ~TESCameraState();
 
-	virtual void OnStateStart();	// pure
-	virtual void OnStateEnd();	// pure
+	virtual void OnStateStart();
+	virtual void OnStateEnd();
 	virtual void OnUpdate(void * unk1);
 	virtual void Unk_04();
 	virtual void Unk_05();
-	virtual void Unk_06();	// pure
-	virtual void Unk_07();	// pure
-	virtual void Unk_08();	// pure
+	virtual void Unk_06();
+	virtual void Unk_07();
+	virtual void Unk_08();
 
 	BSIntrusiveRefCounted	refCount;		// 04
-	TESCamera				* camera;		// 08
+	PlayerCamera*			camera;			// 08
 	UInt32					stateId;		// 0C
 };
 
@@ -98,14 +98,12 @@ public:
 	FreeCameraState();
 	virtual ~FreeCameraState();
 
-	PlayerInputHandler		inputHandler;	// 10
-	float					unk18;			// 18
-	float					unk1C;			// 1C
-	float					unk20;			// 20
-	UInt32					unk24[0x04];	// 24
-	UInt16					unk34;			// 34
-	UInt8					unk36;			// 36
-	UInt8					unk37;			// 37
+	PlayerInputHandler		inputHandler;		// 10
+	NiPoint3				CameraPosition;		// 18
+	UInt32					unk24[0x04];		// 24
+	UInt16					unk34;				// 34
+	UInt8					unk36;				// 36
+	UInt8					unk37;				// 37
 };
 
 class AutoVanityState : public TESCameraState
@@ -166,28 +164,61 @@ class ThirdPersonState : public TESCameraState
 public:
 	ThirdPersonState();
 	virtual ~ThirdPersonState();
-	virtual void Unk_09(void);
-	virtual void Unk_0A(void);
-	virtual void UpdateMode(bool weaponDrawn);
+	virtual void Unk_09();
+	virtual void Unk_0A();
+	virtual void UpdateOverShoulder(bool IsWeaponOut);
+	virtual void Unk_0C();
+	virtual void PlayerToCamera(bool AllowVanityMode);
+	virtual void Unk_0E();
+	virtual void Unk_0F();
 
-	PlayerInputHandler		inputHandler;		// 10
-	NiNode					* cameraNode;		// 18
-	NiNode					* controllerNode;	// 1C
-	float					unk20[0x03];		// 20
-	UInt32					unk2C[0x04];		// 2C
-	float					fOverShoulderPosX;	// 3C
-	float					fOverShoulderCombatAddY;	// 40
-	float					fOverShoulderPosZ;	// 44
-	float					unk48[0x03];		// 48
-	UInt32					unk54[0x11];		// 54
-	float					unk98[0x03];		// 98
-	UInt32					unkA4[0x04];		// A4
-	UInt8					unkB4[0x07];		// B4
-	UInt8					padBB;
+	PlayerInputHandler		inputHandler;				// 10
+	NiNode					* cameraNode;				// 18
+	NiNode					* controllerNode;			// 1C
+	NiPoint3				CameraPosition;				// 20
+	float					unk2C;						// 2C
+	float					unk30;						// 30
+	float					unk34;						// 34
+	float					unk38;						// 38
+	float					OverShoulderPosX;			// 3C
+	float					OverShoulderPosY;			// 40
+	float					OverShoulderPosZ;			// 44
+	float					unk48;						// 48
+	float					unk4C;						// 4C
+	float					unk50;						// 50
+	float					unk54;						// 54
+	float					HeadDistance;				// 58
+	float					unk5C;						// 5C
+	UInt32					unk60;						// 60
+	float					unk64;						// 64
+	UInt32					unk68;						// 68
+	float					unk6C;						// 6C
+	NiPoint3				CameraPosition1;			// 70
+	float					unk7C;						// 7C
+	UInt32					unk80;						// 80
+	UInt32					unk84;						// 84
+	UInt32					unk88;						// 88
+	UInt32					unk8C;						// 8C
+	UInt32					unk90;						// 90
+	UInt32					unk94;						// 94
+	float					unkCameraOffsetX;			// 98
+	float					unkCameraOffsetY;			// 9C
+	float					unkCameraOffsetZ;			// A0
+	UInt32					unkA4;						// A4
+	UInt32					unkA8;						// A8
+	float					CameraHeadRotZ;				// AC
+	float					CameraHeadRotX;				// B0
+	UInt8					unkCamMode;					// B4
+	UInt8					unkB5;						// B5
+	UInt8					unkB6;						// B6
+	UInt8					unkB7;						// B7
+	UInt8					AnimCamMode;				// B8
+	UInt8					AllowCameraRotation;		// B9
+	UInt8					TogglePOV;					// BA
+	UInt8					padBA;
 };
-
-STATIC_ASSERT(offsetof(ThirdPersonState, fOverShoulderPosX) == 0x3C);
-STATIC_ASSERT(offsetof(ThirdPersonState, unk48) == 0x48);
+STATIC_ASSERT(offsetof(ThirdPersonState, HeadDistance) == 0x58);
+STATIC_ASSERT(sizeof(ThirdPersonState) == 0xBC);
 
 class BleedoutCameraState : public ThirdPersonState
 {
@@ -230,14 +261,14 @@ public:
 	virtual void SetNode(NiNode * node);
 	virtual void Update();
 
-	float		rotZ;	// 04
-	float		rotX;	// 08
-	NiPoint3	pos;	// 0C
-	float		zoom;	// 18
-	NiNode		* cameraNode;	// 1C - First child is usually NiCamera
-	TESCameraState	* cameraState;	// 20
-	UInt8		unk24;			// 24
-	UInt8		pad25[3];		// 25
+	float			rotZ;			// 04
+	float			rotX;			// 08
+	NiPoint3		pos;			// 0C
+	float			zoom;			// 18
+	NiNode*			cameraNode;		// 1C - First child is usually NiCamera
+	TESCameraState* cameraState;	// 20
+	UInt8			unk24;			// 24
+	UInt8			pad24[3];
 
 	MEMBER_FN_PREFIX(TESCamera);
 	DEFINE_MEMBER_FN(SetCameraState, UInt32, 0x006533D0, TESCameraState * cameraState);
@@ -261,11 +292,11 @@ public:
 		float		minFrustumHeight;	// 30
 	};
 
-	NiPoint3	areaBoundsMax;			// 28
-	NiPoint3	areaBoundsMin;			// 34
-	DefaultState	* defaultState;		// 40
-	NiObject	* niCamera;				// 44
-	float		northRotation;			// 48
+	NiPoint3		areaBoundsMax;		// 28
+	NiPoint3		areaBoundsMin;		// 34
+	DefaultState*	defaultState;		// 40
+	NiObject*		niCamera;			// 44
+	float			northRotation;		// 48
 
 	void SetDefaultStateMinFrustumDimensions(float width, float height);
 	void SetAreaBounds(NiPoint3 * maxBound, NiPoint3 * minBound);
@@ -321,26 +352,40 @@ public:
 		kCameraState_Dragon,
 		kNumCameraStates
 	};
-
-	UInt32 unk34[(0x6C - 0x28) >> 2];					// 34
-	TESCameraState * cameraStates[kNumCameraStates];	// 6C
-	UInt32	unkA0;										// A0
-	UInt32	unkA4;										// A4
-	UInt32	unkA8;										// A8
-	float	worldFOV;									// AC
-	float	firstPersonFOV;								// B0
-	UInt32	unkB4[(0xD0 - 0xB4) >> 2];					// B4
-	UInt8	unkD0;										// D0
-	UInt8	unkD1;										// D1
-	UInt8	unkD2;										// D2
-	UInt8	unkD3;										// D3
-	UInt8	unkD4;										// D4
-	UInt8	unkD5;										// D5
-	UInt8	padD6[2];									// D6
+	
+	UInt32							unk28;										// 28
+	UInt32							unk2C;										// 2C
+	UInt32							unk30[(0x6C - 0x30) >> 2];					// 30
+	FirstPersonState*				firstPersonState;							// 6C
+	AutoVanityState*				autoVanityState;							// 70
+	VATSCameraState*				vatsCameraState;							// 74
+	FreeCameraState*				freeCameraState;							// 78
+	IronSightsState*				ironSightsState;							// 7C
+	FurnitureCameraState*			furnitureCameraState;						// 80
+	PlayerCameraTransitionState*	playerCameraTransitionState;				// 84
+	TweenMenuCameraState*			tweenMenuCameraState;						// 88
+	ThirdPersonState*				thirdPersonState1;							// 8C
+	ThirdPersonState*				thirdPersonState2;							// 90
+	HorseCameraState*				horseCameraState;							// 94
+	BleedoutCameraState*			bleedoutCameraState;						// 98
+	DragonCameraState*				dragonCameraState;							// 9C
+	UInt32							unkA0;										// A0
+	UInt32							unkA4;										// A4
+	UInt32							unkA8;										// A8
+	float							worldFOV;									// AC
+	float							firstPersonFOV;								// B0
+	UInt32							unkB4[(0xD0 - 0xB4) >> 2];					// B4
+	UInt8							EnableAutoVanityMode;						// D0
+	UInt8							unkD1;										// D1
+	UInt8							AllowVanityMode;							// D2
+	UInt8							unkD3;										// D3
+	UInt8							unkD4;										// D4
+	UInt8							unkD5;										// D5
+	UInt8							padD5[2];
 
 	MEMBER_FN_PREFIX(PlayerCamera);
 	DEFINE_MEMBER_FN(UpdateThirdPerson, void, 0x0083C7E0, bool weaponDrawn);
 };
 
-STATIC_ASSERT(offsetof(PlayerCamera, cameraStates) == 0x6C);
-STATIC_ASSERT(offsetof(PlayerCamera, padD6) == 0xD6);
+STATIC_ASSERT(offsetof(PlayerCamera, firstPersonFOV) == 0xB0);
+STATIC_ASSERT(sizeof(PlayerCamera) == 0xD8);

@@ -133,10 +133,12 @@
     <ClCompile Include="..\..\TESReloaded\EventInterface.cpp" />
     <ClCompile Include="..\..\TESReloaded\FormHook.cpp" />
     <ClCompile Include="..\..\TESReloaded\FrameRateManager.cpp" />
+    <ClCompile Include="..\..\TESReloaded\GameMenuManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\Grass.cpp" />
     <ClCompile Include="..\..\TESReloaded\Hooking\detours\detoured.cpp" />
     <ClCompile Include="..\..\TESReloaded\Hooking\detours\detours.cpp" />
     <ClCompile Include="..\..\TESReloaded\Hooking\detours\disasm.cpp" />
+    <ClCompile Include="..\..\TESReloaded\KeyboardManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\Managers.cpp" />
     <ClCompile Include="..\..\TESReloaded\CommandManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\RenderHook.cpp" />
@@ -154,6 +156,7 @@
     <ClCompile Include="..\skse\skse\GameData.cpp" />
     <ClCompile Include="..\skse\skse\GameExtraData.cpp" />
     <ClCompile Include="..\skse\skse\GameFormComponents.cpp" />
+    <ClCompile Include="..\skse\skse\GameInput.cpp" />
     <ClCompile Include="..\skse\skse\GameMenus.cpp" />
     <ClCompile Include="..\skse\skse\GameReferences.cpp" />
     <ClCompile Include="..\skse\skse\GameRTTI.cpp" />
@@ -179,9 +182,11 @@
     <ClInclude Include="..\..\TESReloaded\EventInterface.h" />
     <ClInclude Include="..\..\TESReloaded\FormHook.h" />
     <ClInclude Include="..\..\TESReloaded\FrameRateManager.h" />
+    <ClInclude Include="..\..\TESReloaded\GameMenuManager.h" />
     <ClInclude Include="..\..\TESReloaded\Grass.h" />
     <ClInclude Include="..\..\TESReloaded\Hooking\detours\detoured.h" />
     <ClInclude Include="..\..\TESReloaded\Hooking\detours\detours.h" />
+    <ClInclude Include="..\..\TESReloaded\KeyboardManager.h" />
     <ClInclude Include="..\..\TESReloaded\Managers.h" />
     <ClInclude Include="..\..\TESReloaded\CommandManager.h" />
     <ClInclude Include="..\..\TESReloaded\RenderHook.h" />
@@ -199,6 +204,7 @@
     <ClInclude Include="..\skse\skse\GameData.h" />
     <ClInclude Include="..\skse\skse\GameExtraData.h" />
     <ClInclude Include="..\skse\skse\GameFormComponents.h" />
+    <ClInclude Include="..\skse\skse\GameInput.h" />
     <ClInclude Include="..\skse\skse\GameMenus.h" />
     <ClInclude Include="..\skse\skse\GameReferences.h" />
     <ClInclude Include="..\skse\skse\GameRTTI.h" />
