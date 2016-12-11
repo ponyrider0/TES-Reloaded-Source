@@ -18,6 +18,5 @@ void CreateWindowedModeHook() {
 
 	SafeWrite32(kPopupValue, WS_POPUP);
 	SafeWrite32(kPopupVisibleValue, WS_POPUP | WS_VISIBLE);
-	*SettingFullScreen = 0;
 
 }

@@ -1,4 +1,5 @@
 #include <string>
+#include <ctime>
 #define TextColorNormal D3DCOLOR_XRGB(TheSettingManager->SettingsMain.MenuTextColorNormal[0], TheSettingManager->SettingsMain.MenuTextColorNormal[1], TheSettingManager->SettingsMain.MenuTextColorNormal[2])
 #define TextShadowColorNormal D3DCOLOR_XRGB(TheSettingManager->SettingsMain.MenuTextShadowColorNormal[0], TheSettingManager->SettingsMain.MenuTextShadowColorNormal[1], TheSettingManager->SettingsMain.MenuTextShadowColorNormal[2])
 #define TextColorSelected D3DCOLOR_XRGB(TheSettingManager->SettingsMain.MenuTextColorSelected[0], TheSettingManager->SettingsMain.MenuTextColorSelected[1], TheSettingManager->SettingsMain.MenuTextColorSelected[2])
@@ -26,30 +27,37 @@ GameMenuManager::GameMenuManager()
 {
 
 	_MESSAGE("Starting the menu manager...");
+	TheGameMenuManager = this;
+
 	SelectedColumn = 0;
 	SelectedStatus = false;
 	SelectedRow[0] = SelectedRow[1] = SelectedRow[2] = 0;
 	SelectedPage[0] = SelectedPage[1] = SelectedPage[2] = 0;
 	Enabled = false;
 	EditingMode = false;
+	LastTime = 0;
+	FrameRate = 0;
 	RectTitle = { TitleRectX, TitleRectY, TitleRectX + TitleRectSize, TitleRectY + TextSizeNormal };
 	RectLine = new D3DRECT { TitleRectX, TitleRectY + TextSizeNormal + 2, TitleRectX + TitleRectSize, TitleRectY + TextSizeNormal + 4 };
 	SetRect(&RectStatus, RectLine->x1, RectLine->y1 + 4, RectLine->x2, RectLine->y2 + TextSizeNormal);
 	D3DXCreateFont(TheRenderManager->device, TextSizeNormal, 0, FW_NORMAL, 1, false, DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, TextFont, &FontNormal);
 	D3DXCreateFont(TheRenderManager->device, TextSizeNormal, 0, FW_BOLD, 1, false, DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, TextFont, &FontSelected);
+	memcpy(IntValues, "ScreenshotKeyGrassDensityLightShaftPasses\0", 42);
+	memcpy(BoolValues, "EnabledDialogModeRestDistantBlurSunGlareEnabledFPSOverlay\0", 58);
 
 }
 
 void GameMenuManager::Render()
 {
 
-	if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeyEnable)) {
+	if (!TheUtilityManager->IsConsole() && TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeyEnable)) {
 		Enabled = !Enabled;
 		EditingMode = false;
 	}
 
 	if (Enabled) {
 		const char* Text = NULL;
+		char SettingFirst[40];
 		size_t ListSize = 0;
 
 		if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeyEditing) && SelectedColumn == 2) {
@@ -76,21 +84,21 @@ void GameMenuManager::Render()
 				SelectedPage[SelectedColumn] += 1;
 				SelectedRow[SelectedColumn] = 0;
 			}
-			if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeyAdd) && SelectedColumn == 0) TheEffectManager->SetEffectEnabled(SelectedShader, !SelectedStatus);
-			if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeySubtract) && SelectedColumn == 0) TheEffectManager->SetEffectEnabled(SelectedShader, !SelectedStatus);
+			if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeyAdd) && SelectedColumn == 0) TheShaderManager->EnableEffect(SelectedShader, !SelectedStatus);
+			if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeySubtract) && SelectedColumn == 0) TheShaderManager->EnableEffect(SelectedShader, !SelectedStatus);
 			if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeyAdd) && SelectedColumn == 2) {
-				if (strstr(SelectedSetting, "Enabled") || !strcmp(SelectedSetting, "DialogMode") || !strcmp(SelectedSetting, "Rest"))
+				if (strstr(BoolValues, SelectedSetting))
 					SelectedValue = !SelectedValue;
-				else if (strstr(SelectedSetting, "Key") || !strcmp(SelectedSetting, "GrassDensity") || !strcmp(SelectedSetting, "LightShaftPasses"))
+				else if (strstr(IntValues, SelectedSetting))
 					SelectedValue += 1.0f;
 				else
 					SelectedValue += TheSettingManager->SettingsMain.MenuStepValue;
 				TheSettingManager->SetSetting(SelectedShader, SelectedSection, SelectedSetting, SelectedValue);
 			}
 			if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.MenuKeySubtract) && SelectedColumn == 2) {
-				if (strstr(SelectedSetting, "Enabled") || !strcmp(SelectedSetting, "DialogMode") || !strcmp(SelectedSetting, "Rest"))
+				if (strstr(BoolValues, SelectedSetting))
 					SelectedValue = !SelectedValue;
-				else if (strstr(SelectedSetting, "Key") || !strcmp(SelectedSetting, "GrassDensity") || !strcmp(SelectedSetting, "LightShaftPasses"))
+				else if (strstr(IntValues, SelectedSetting))
 					SelectedValue -= 1.0f;
 				else
 					SelectedValue -= TheSettingManager->SettingsMain.MenuStepValue;
@@ -205,7 +213,8 @@ void GameMenuManager::Render()
 		SettingsList::iterator Setting = Settings.begin();
 		for (int i = 0; i < ListSize; i++) {
 			if (i >= MaxRows * SelectedPage[2] && i < MaxRows * (SelectedPage[2] + 1)) {
-				if (!Setting->first.find("Enabled") || !Setting->first.find("Key") || Setting->first == "GrassDensity" || Setting->first == "LightShaftPasses" || Setting->first == "DialogMode" || Setting->first == "Rest")
+				strcpy(SettingFirst, Setting->first.c_str());
+				if (strstr(IntValues, SettingFirst) || strstr(BoolValues, SettingFirst))
 					sprintf(SettingValue, "%.0f", Setting->second);
 				else
 					sprintf(SettingValue, TheSettingManager->SettingsMain.MenuValueFormat, Setting->second);
@@ -215,7 +224,7 @@ void GameMenuManager::Render()
 				Rect.bottom += TextSizeNormal + RowSpace;
 				SetRect(&RectShadow, Rect.left + 1, Rect.top + 1, Rect.right + 1, Rect.bottom + 1);
 				if (SelectedRow[2] == Rows[2]) {
-					strcpy(SelectedSetting, Setting->first.c_str());
+					strcpy(SelectedSetting, SettingFirst);
 					SelectedValue = Setting->second;
 					if (SelectedColumn == 2) {
 						if (EditingMode) {
@@ -242,6 +251,18 @@ void GameMenuManager::Render()
 			}
 			Setting++;
 		}
+	}
+	
+	if (TheSettingManager->SettingsMain.FPSOverlay) {
+		char Text[4];
+
+		if (difftime(TheFrameRateManager->CurrentTime, LastTime) >= 1.0f) FrameRate = TheFrameRateManager->FrameRate;
+		sprintf(Text, "%d", FrameRate);
+		SetRect(&Rect, 9, 6, 9 + TitleRectSize, 6 + TextSizeNormal);
+		SetRect(&RectShadow, Rect.left + 1, Rect.top + 1, Rect.right + 1, Rect.bottom + 1);
+		FontSelected->DrawTextA(NULL, Text, -1, &RectShadow, DT_LEFT, TextShadowColorSelected);
+		FontSelected->DrawTextA(NULL, Text, -1, &Rect, DT_LEFT, TextColorSelected);
+		LastTime = TheFrameRateManager->CurrentTime;
 	}
 
 }

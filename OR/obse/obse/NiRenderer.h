@@ -5,8 +5,6 @@
 #include <d3d9.h>
 
 class NiGeometryGroup;
-class NiDX9RenderState;			// 0x1148
-	// Fn14 = DeleteMaterial
 class NiDX9VertexBufferManager;	// 0x100
 class NiDX9IndexBufferManager;	// 0x4C
 class NiDX9TextureManager;		// 0x10
@@ -20,7 +18,6 @@ class NiTriShape;
 class NiTriStrips;
 class NiParticles;
 class NiLines;
-class NiDX9RenderedTextureData;
 class NiDX9RenderedCubeMapData;
 class NiDX9DynamicTextureData;
 class NiD3DShaderInterface;
@@ -28,8 +25,9 @@ class NiAccumulator;
 class NiGeometryGroupManager;
 class NiDX9AdapterDesc;
 class NiDX9DeviceDesc;
-class NiD3DDefaultShader;
+class NiD3DShader;
 class NiDX92DBufferData;
+class NiDX9ShaderConstantManager;
 
 // 14
 class Ni2DBuffer : public NiObject
@@ -51,7 +49,7 @@ public:
 
 };
 
-class NiDX92DBufferData : public NiRefObject // This seems to be a "MustInherit" class
+class NiDX92DBufferData : public NiRefObject
 {
 public:
 	NiDX92DBufferData();
@@ -77,6 +75,35 @@ public:
 	IDirect3DSurface9*		Surface;												// 0C
 };
 
+class NiDX9ImplicitBufferData : public NiDX92DBufferData
+{
+public:
+	NiDX9ImplicitBufferData();
+	~NiDX9ImplicitBufferData();
+
+	NiPixelFormat*			PixelFormat;											// 10
+	D3DPRESENT_PARAMETERS	PresentParams;											// 14
+	IDirect3DDevice9*		Device;													// 4C
+};
+
+class NiDX9ImplicitDepthStencilBufferData : public NiDX92DBufferData
+{
+public:
+	NiDX9ImplicitDepthStencilBufferData();
+	~NiDX9ImplicitDepthStencilBufferData();
+
+
+};
+
+class NiDX9TextureBufferData : public NiDX92DBufferData
+{
+public:
+	NiDX9TextureBufferData();
+	~NiDX9TextureBufferData();
+
+
+};
+
 // 24
 class NiRenderTargetGroup : public NiObject
 {
@@ -88,8 +115,8 @@ public:
 	virtual UInt32					GetHeight(UInt32 Index);										// 14
 	virtual UInt32					GetDepthStencilWidth();											// 15
 	virtual UInt32					GetDepthStencilHeight();										// 16
-	virtual const TextureFormat*	GetPixelFormat(UInt32 Index);									// 17
-	virtual const TextureFormat*	GetDepthStencilPixelFormat();									// 18
+	virtual const NiPixelFormat*	GetPixelFormat(UInt32 Index);									// 17
+	virtual const NiPixelFormat*	GetDepthStencilPixelFormat();									// 18
 	virtual UInt32					GetBufferCount(void);											// 19
 	virtual bool					AttachBuffer(Ni2DBuffer* Buffer, UInt32 Index);					// 1A
 	virtual bool					AttachDepthStencilBuffer(NiDepthStencilBuffer* DepthBuffer);	// 1B
@@ -100,12 +127,117 @@ public:
 	virtual void*					GetRenderTargetData(UInt32 RenderTargetIndex);					// 20
 	virtual void*					GetDepthStencilBufferRendererData();							// 21
 
-	Ni2DBuffer*						targets[4];					// 08
+	Ni2DBuffer*						RenderTargets[4];			// 08
 	UInt32							numRenderTargets;			// 18
 	NiDepthStencilBuffer*			DepthStencilBuffer;			// 1C
 	void*							RenderData;					// 20
 
 };
+
+class NiDX9RenderState : public NiRefObject
+{
+public:
+	NiDX9RenderState();
+	virtual ~NiDX9RenderState();
+
+	virtual void					SetAlpha(void *AlphaProperty);					// 02
+	virtual void					SetDither(void *DitherProperty);				// 03
+	virtual void					SetFog(NiFogProperty *FogProperty);				// 04
+	virtual void					SetMaterial(void *u1);							// 05
+	virtual void					SetShadeMode(void *ShadeProperty);				// 06
+	virtual void					SetSpecular(void *SpecularProperty);			// 07
+	virtual void					SetStencil(void *StencilProperty);				// 08
+	virtual void					SetWireframe(void *WireframeProperty);			// 09
+	virtual void 					SetZBuffer(void *ZBufferProperty);				// 0A
+	virtual void					RestoreAlpha(void);								// 0B
+	virtual void					SetVertexBlending(UInt16 u1);					// 0C
+	virtual void					SetNormalization(void *u1);						// 0D
+	virtual void					func_0E(UInt32 u1);								// 0E - doesn't do anything
+	virtual float					GetVar088(void);								// 0F
+	virtual void					func_10(float u1);								// 10
+	virtual void					func_11(float u1, float u2);					// 11
+	virtual BOOL					func_12(void);									// 12
+	virtual void					func_13(BOOL u1);								// 13
+	virtual void					func_14(UInt32 u1);								// 14
+	virtual void					InitializeRenderStates(void);					// 15
+	virtual void					BackUpAllStates(void);							// 16
+	virtual void 					RestoreRenderState(D3DRENDERSTATETYPE state);	// 17
+	virtual void					RestoreAllRenderStates(void);					// 18
+	virtual void 					SetRenderState(D3DRENDERSTATETYPE state, UInt32 value, UInt8 BackUp);	// 19
+	virtual UInt32					GetRenderState(D3DRENDERSTATETYPE state);		// 1A
+	virtual void					ClearPixelShaders(void);						// 1B
+	virtual void					BackUpPixelShader(void);						// 1C
+	virtual void					func_1D(void);									// 1D
+	virtual void					SetPixelShader(IDirect3DPixelShader9* PixelShader, UInt8 BackUp);		// 1E
+	virtual IDirect3DPixelShader9*	GetPixelShader();								// 1F
+	virtual	void					RestorePixelShader(void);						// 20
+	virtual void					RemovePixelShader(IDirect3DPixelShader9* PixelShader);					// 21
+	virtual void					SetVertexShader(IDirect3DVertexShader9* pShader, UInt8 BackUp);			// 22 = 0
+	virtual IDirect3DVertexShader9*	GetVertexShader();								// 23 = 0
+	virtual void					RestoreVertexShader(void);						// 24 = 0
+	virtual void					RemoveVertexShader(IDirect3DVertexShader9* pShader);						// 25 = 0
+	virtual void					SetFVF(UInt32 FVF, UInt8 BackUp);					// 26 = 0
+	virtual UInt32					GetFVF(void);									// 27 = 0
+	virtual void					RestoreFVF(void);								// 28 = 0
+	virtual void					RemoveFVF(UInt32 FVF);							// 29 = 0
+	virtual void					SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl, UInt8 BackUp);	// 2A = 0
+	virtual IDirect3DVertexDeclaration9*	GetVertexDeclaration(void);				// 2B = 0
+	virtual void					RestoreVertexDeclaration(void);					// 2C = 0
+	virtual void					RemoveVertexDeclatation(IDirect3DVertexDeclaration9* pDecl);			// 2D = 0
+	virtual void					InitTextureStageState();						// 2E
+	virtual void					func_2F(void);									// 2F
+	virtual void					func_30(UInt32 u1, UInt32 u2);					// 30
+	virtual void					func_31(void);									// 31
+	virtual void 					SetTextureStageState(UInt32 Stage, D3DTEXTURESTAGESTATETYPE Type, UInt32 Value, UInt8 BackUp);	// 32
+	virtual UInt32					func_33(UInt32 u1, UInt32 u2);					// 33
+	virtual void					SetSamplerState(UInt32 Sampler, D3DSAMPLERSTATETYPE Type, UInt32 Value, UInt8 BackUp);				// 34 = 0
+	virtual UInt32 					GetSamplerState(UInt32 Sampler, D3DSAMPLERSTATETYPE Type);				// 35 = 0
+	virtual void					RestoreSamplerState(UInt32 Sampler, D3DSAMPLERSTATETYPE Type);			// 36 = 0
+	virtual void					ClearTextureList(void);							// 37
+	virtual void					SetTexture(UInt32 Sampler, IDirect3DBaseTexture9* pTexture);	// 38
+	virtual IDirect3DBaseTexture9*	GetTexture(UInt32 Sampler);						// 39
+	virtual void					RemoveTexture(IDirect3DBaseTexture9* pTexture);	// 3A
+	virtual void					SetSoftwareVertexProcessing(UInt8 bSoftware);	// 3B
+	virtual UInt8					GetSoftwareVertexProcessing(void);				// 3C
+	virtual void					SetVar_0FF4(UInt8 u1);							// 3D
+	virtual UInt8					GetVar_0FF4(void);								// 3E
+	virtual void					SetVar_0FF5(UInt8 u1);							// 3F
+	virtual UInt8					GetVar_0FF5(void);								// 40
+	virtual void					Reset(void);									// 41
+	virtual void					func_042(void);									// 42 = 0
+	
+	struct NiRenderStateSetting
+	{
+		UInt32 CurrentValue;
+		UInt32 PreviousValue;
+	};
+	
+	UInt32							Flags;							// 0008
+	UInt32							unk000C[(0x0074 - 0x000C) >> 2];// 000C
+	NiAlphaProperty*				DisabledAlphaProperty;			// 0074
+	float							CameraNear;						// 0078
+	float							CameraFar;						// 007C
+	float							CameraDepthRange;				// 0080
+	float							MaxFogFactor;					// 0084
+	float							MaxFogValue;					// 0088
+	NiColor							CurrentFogColor;				// 008C
+	UInt32							unk0098[(0x0120 - 0x0098) >> 2];// 0098
+	NiRenderStateSetting			RenderStateSettings[256];		// 0120
+	NiRenderStateSetting			TextureStageStateSettings[128];	// 0920
+	NiRenderStateSetting			SamplerStateSettings[80];		// 0D20
+	UInt32							unk0FA0[(0x0FF0 - 0x0FA0) >> 2];// 0FA0
+	NiDX9ShaderConstantManager*		ShaderConstantManager;			// 0FF0
+	UInt8							ForceNormalizeNormals;			// 0FF4
+	UInt8							InternalNormalizeNormals;		// 0FF5
+	UInt8							UsingSoftwareVP;				// 0FF6
+	UInt8							Declaration;					// 0FF7
+	IDirect3DDevice9*				Device;							// 0FF8
+	NiDX9Renderer*					Renderer;						// 0FFC
+	UInt32							unk1000[(0x1018 - 0x1000) >> 2];// 1000
+	D3DCAPS9						Caps;							// 1018
+};
+
+STATIC_ASSERT(sizeof(NiDX9RenderState) == 0x1148);
 
 // 210
 class NiRenderer : public NiObject
@@ -113,6 +245,15 @@ class NiRenderer : public NiObject
 public:
 	NiRenderer();
 	~NiRenderer();
+	
+	enum ClearFlags
+	{
+		kClear_BACKBUFFER = 0x1,
+		kClear_STENCIL = 0x2,
+		kClear_ZBUFFER = 0x4,
+		kClear_NONE = 0,
+		kClear_ALL = kClear_BACKBUFFER | kClear_STENCIL | kClear_ZBUFFER
+	};
 
 	enum
 	{
@@ -184,7 +325,7 @@ public:
 	virtual void			Clear(float * rect, UInt32 flags) = 0;
 	virtual void			SetupCamera(NiPoint3 * pos, NiPoint3 * at, NiPoint3 * up, NiPoint3 * right, NiFrustum * frustum, float * viewport) = 0;
 	virtual void			Unk_51(void) = 0;			// reset transforms?
-	virtual bool			BeginUsingRenderTargetGroup(NiRenderTargetGroup * renderTarget, UInt32 clearFlags) = 0;
+	virtual bool			BeginUsingRenderTargetGroup(NiRenderTargetGroup* renderTarget, ClearFlags clearFlags);
 	virtual bool			EndUsingRenderTargetGroup(void) = 0;
 	virtual void			BeginBatch(UInt32 arg0, UInt32 arg1);	// set unk61C, unk620
 	virtual void			EndBatch(void);
@@ -210,7 +351,7 @@ public:
 	NiAccumulator			* accumulator;			// 008
 	NiPropertyState			* propertyState;		// 00C
 	NiDynamicEffectState	* dynamicEffectState;	// 010
-	UInt32	pad014[(0x080 - 0x014) >> 2];	// 00C
+	UInt32				pad014[(0x080 - 0x014) >> 2];	// 00C
 	CriticalSection		RendererLock;				// 080
 	CriticalSection		PrecacheCriticalSection;	// 100
 	CriticalSection		SourceDataCriticalSection;	// 180
@@ -469,7 +610,7 @@ public:
 	RefreshRate				refreshRate;				// A8C
 	UInt8					unkA90;						// A90
 	UInt8					padA91[3];					// A91
-	NiD3DDefaultShader*		defaultShader;				// A94
+	NiD3DShader*			defaultShader;				// A94
 	NiTArray <CallbackA98>	unkA98;						// A98
 	NiTArray <void *>		unkAA8;						// AA8
 	NiTArray <LostDeviceCallback>	lostDeviceCallbacks;	// AB8
@@ -491,12 +632,12 @@ public:
 	NiAccumulator();
 	~NiAccumulator();
 
-	virtual void	Start(NiCamera * camera);
-	virtual void	Stop(void);
-	virtual void	Add(NiCulledGeoList * list) = 0;
+	virtual void	Start(NiCamera* camera);
+	virtual void	Stop();
+	virtual void	Add(NiVisibleArray* list);
 	virtual bool	Fn_16(void);
 
-	NiCamera	* camera;	// 08
+	NiCamera*		camera;	// 08
 };
 
 // 34
@@ -508,8 +649,13 @@ public:
 
 	virtual void	Fn_17(void);
 
-	// ###
-	UInt32	pad0C[(0x34 - 0x0C) >> 2];	// 0C
+	UInt32			pad0C[(0x20 - 0x0C) >> 2];	// 0C
+	UInt32			NumItems;	// 20
+	UInt32			MaxItems;	// 24
+	NiGeometry**	Items;		// 28
+	float*			Depths;		// 2C
+	UInt32			CurrItem;	// 30
+
 };
 
 // 38

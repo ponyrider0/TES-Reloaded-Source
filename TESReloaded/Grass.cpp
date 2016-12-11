@@ -1,8 +1,6 @@
 #if defined(OBLIVION)
 #include "obse_common\SafeWrite.h"
 #include "obse\GameData.h"
-#elif defined(SKYRIM)
-#include "skse\SafeWrite.h"
 #endif
 #include "Grass.h"
 
@@ -39,12 +37,6 @@ static __declspec(naked) void GrassHook()
 void CreateGrassHook() {
 	
 	WriteRelJump(kGrassHook, (UInt32)GrassHook);
-
-}
-#elif defined(SKYRIM)
-void CreateGrassHook() {
-
-
 
 }
 #endif

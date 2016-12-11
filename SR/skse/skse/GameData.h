@@ -206,7 +206,6 @@ public:
 	LoadedAreaBound*	loadedAreaBound;	// E4
 };
 STATIC_ASSERT(sizeof(TES) == 0xE8);
-STATIC_ASSERT(offsetof(TES, loadedAreaBound)  == 0xE4);
 
 extern TES ** g_TES;
 

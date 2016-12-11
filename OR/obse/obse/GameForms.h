@@ -342,7 +342,7 @@ public:
 
 	// TODO: determine which of these are in BaseFormComponent
 	virtual bool	Unk_03(BaseFormComponent * arg);	// return false if equal - compares names, typeID, flags
-	virtual void	Destroy(bool noDealloc);	// delete form? pass false to free the object's memory
+	virtual void	Destroy(bool Dealloc);
 	virtual void	Unk_05(void);	// destroy form components
 	virtual void	Unk_06(void);	// call unk01 on form components
 	virtual bool	LoadForm(ModEntry* modEntry);
@@ -390,7 +390,7 @@ public:
 	virtual void	Unk_31(void);
 	virtual void	Unk_32(void);
 	virtual bool	Unk_33(TESObjectREFR* refr0, TESObjectREFR* refr1, UInt32 unk2); // related to activate, refr1 is activating refr, refr0 is a reference to this TESForm being activated, seen unk2 == 0
-	virtual const char *	GetName(void);	// not sure which objects this works on, doesn't seem to work on player or random objects
+	virtual const char *	GetName();	// not sure which objects this works on, doesn't seem to work on player or random objects
 	virtual const char *	GetEditorName(); // returns nothing at runtime (return the editorname for TESObjectCELL)
 	virtual void	SetName(const char * name);
 
@@ -1297,11 +1297,11 @@ public:
 	TESModel	groundModel[2];		// 038
 	TESIcon		icon[2];			// 068
 
-	UInt32 GetSlot() const;
-	void SetSlot(UInt32 slot);
+	UInt32		GetSlot() const;
+	void		SetSlot(UInt32 slot);
 	bool		IsPlayable() const;
 	void		SetPlayable(bool bPlayable);
-	void  SetPath(const char* newPath, UInt32 whichPath, bool bfemalePath);
+	void		SetPath(const char* newPath, UInt32 whichPath, bool bfemalePath);
 	const char* GetPath(UInt32 whichPath, bool bFemalePath);
 };
 
@@ -4010,9 +4010,18 @@ public:
 	UInt16				unk36;
 	TESSound			* loopSound;		// 38
 	float				waterSimVals[11];	// 3C .. 64
-	UInt32				shallowColorRGB;	// 68
-	UInt32				deepColorRGB;		// 6C
-	UInt32				reflectColorRGB;	// 70
+	UInt8				shallowColorR;		// 68
+	UInt8				shallowColorG;
+	UInt8				shallowColorB;
+	UInt8				shallowColorA;
+	UInt8				deepColorR;			// 6C
+	UInt8				deepColorG;
+	UInt8				deepColorB;
+	UInt8				deepColorA;
+	UInt8				reflectColorR;		// 70
+	UInt8				reflectColorG;
+	UInt8				reflectColorB;
+	UInt8				reflectColorA;
 	UInt32				textureBlend;		// 74
 	float				rainSimVals[5];		// 78 .. 88
 	float				displacementSimVals[5];	// 8C .. 9C

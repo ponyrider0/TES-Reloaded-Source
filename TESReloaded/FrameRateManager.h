@@ -1,10 +1,10 @@
 #pragma once
 
-enum RequestEnum
+enum FrameRateRequestType
 {
-	None,
-	TurnUp,
-	TurnDown,
+	FrameRateRequestType_None,
+	FrameRateRequestType_TurnUp,
+	FrameRateRequestType_TurnDown,
 };
 
 class FrameRateManager // Never disposed
@@ -13,14 +13,20 @@ class FrameRateManager // Never disposed
 public:
 	FrameRateManager();
 
-	void						SetFrame(int FrameRate);
+	void						Set();
+	void						SetFrameTime(float CurrentFrameTime);
 	bool						IsOutGrid(NiAVObject* Object);
 	
+	int							FrameRate;
+	time_t						CurrentTime;
+	float						ElapsedTime;
+
 private:
-	void						SetNearObjects();
 	float						GetDistance(NiAVObject* Object);
-	int							GridDistant;
+	
+	float						LastFrameTime;
 	int							FrameCounter;
-	RequestEnum					Request;
+	int							GridDistant;
+	FrameRateRequestType		RequestType;
 
 };

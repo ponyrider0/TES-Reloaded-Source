@@ -57,8 +57,8 @@ public:
 		kMode_NiBound,	// aka sphere tests
 	};
 
-	NiVector3	m_kLocalVelocity;	// 00C
-	NiVector3	m_kWorldVelocity;	// 018
+	NiPoint3	m_kLocalVelocity;	// 00C
+	NiPoint3	m_kWorldVelocity;	// 018
 	UInt32		m_ePropagationMode;	// 024 - init'd to 2
 	UInt32		m_eCollisionMode;	// 028 - init'd to 3
 	NiBoundingVolume	* m_pkModelABV;	// 02C

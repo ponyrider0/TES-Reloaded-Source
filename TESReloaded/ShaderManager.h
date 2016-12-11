@@ -1,63 +1,39 @@
 #pragma once
-
 #include <d3d9.h>
 #include <d3dx9mesh.h>
 
-enum ShaderTypeEnum
+#define EFFECTQUADFORMAT D3DFVF_XYZ | D3DFVF_TEX1
+
+enum EffectRecordType
 {
-	Vertex,
-	Pixel,
+	EffectRecordType_Underwater,
+	EffectRecordType_WaterLens,
+	EffectRecordType_GodRays,
+	EffectRecordType_DepthOfField,
+	EffectRecordType_AmbientOcclusion,
+	EffectRecordType_Coloring,
+	EffectRecordType_Cinema,
+	EffectRecordType_Bloom,
+	EffectRecordType_SnowAccumulation,
+	EffectRecordType_BloodLens,
+	EffectRecordType_SMAA,
+	EffectRecordType_MotionBlur,
+	EffectRecordType_LowHF,
+	EffectRecordType_WetWorld,
+	EffectRecordType_Sharpening,
+	EffectRecordType_Custom,
 };
 
-struct RuntimeVariable {
-  int offset, length;
-  const char *name;
-  union mem {
-    bool condition;
-    struct iv { int vec[4]; } *integer;
-    struct fv { float vec[4]; } *floating;
-    struct tv { D3DSAMPLERSTATETYPE Type; DWORD Value; } *state;
-    IDirect3DBaseTexture9 *texture;
-  } vals;
-};
-
-class RuntimeShaderRecord
+enum ShaderType
 {
-public:
-	RuntimeShaderRecord();
-	~RuntimeShaderRecord();
-
-	void					CreateCT();
-	void					SetCT();
-	bool					LoadShader(const char *Name);
-	DWORD*					LoadTexture(const char *sName, int *TexNum, DWORD *States);
-	void*					pCustomCT;
-
-	IDirect3DTexture9 **	pCopyRT; 
-	IDirect3DTexture9 **	pCopyDS;
-
-	RuntimeVariable *		pBool;
-	RuntimeVariable *		pInt4;
-	RuntimeVariable *		pFloat4;
-	RuntimeVariable *		pTexture;
-	RuntimeVariable *		pSampler;
-
-	char					Name[24];
-	void*					pFunction;
-	char* 					pSource;
-	ID3DXBuffer*			pErrors;
-	ID3DXBuffer*			pShader;
-	ID3DXConstantTable*		pTable;
-	ShaderTypeEnum			ShaderType;
-
+	ShaderType_Vertex,
+	ShaderType_Pixel,
 };
 
 struct ShaderConstants
 {
-
-	D3DXVECTOR4		rcpres;
-	D3DXVECTOR4		rcpresh;
-	D3DXVECTOR4		rcpresd;
+	D3DXVECTOR4		ReciprocalResolution;
+	D3DXVECTOR4		ReciprocalResolutionWater;
 
 	D3DXVECTOR4		SunDir;
 	D3DXVECTOR4		SunTiming;
@@ -65,8 +41,6 @@ struct ShaderConstants
 	D3DXVECTOR4		GameTime;
 	D3DXVECTOR4		TikTiming;
 	D3DXVECTOR4		TextureData;
-	float			FoV;
-	float			FrameTime;
 	
 	TESWeather*		pWeather;
 	TESObjectCELL*	currentCell;
@@ -79,26 +53,21 @@ struct ShaderConstants
 	D3DXVECTOR4		oldfogColor;
 	D3DXVECTOR4		sunColor;
 	D3DXVECTOR4		oldsunColor;
+	D3DXVECTOR4		fogData;
 
-	float			fogStart;
 	float			currentfogStart;
 	float			oldfogStart;
-	float			fogEnd;
 	float			currentfogEnd;
 	float			oldfogEnd;
-	float			WaterHeight;
 	bool			HasWater;
-	
+
 	// Water settings
-	D3DXVECTOR4		Water_waveSpeed;
 	D3DXVECTOR4		Water_waterCoefficients;
 	D3DXVECTOR4		Water_waveParams;
 	D3DXVECTOR4		Water_waterVolume;
-	D3DXVECTOR4		Water_foamAndLODSettings;
-	D3DXVECTOR4		Water_depthColor;
+	D3DXVECTOR4		Water_waterSettings;
+	D3DXVECTOR4		Water_deepColor;
 	D3DXVECTOR4		Water_shallowColor;
-	float			Water_depthDarkness;
-	float			Water_IceAmount;
 
 	// HDR settings
 	D3DXVECTOR4		HDR_ToneMapping;
@@ -108,80 +77,52 @@ struct ShaderConstants
 
 	// POM settings
 	D3DXVECTOR4		POM_ParallaxData;
-	
+
 	// Terrain settings
 	D3DXVECTOR4		Terrain_Data;
 
 	// Skin settings
 	D3DXVECTOR4		Skin_SkinData;
 	D3DXVECTOR4		Skin_SkinColor;
-	
+
 	// Shadows settings
 	D3DXVECTOR4		Shadows_Data;
-	
+
 	// Precipitations settings
 	D3DXVECTOR4		Precipitations_Data;
 
 	// WaterLens settings
 	D3DXVECTOR4		WaterLens_Time;
-	float			WaterLens_Amount;
-	float			WaterLens_Viscosity;
+	float			WaterLens_TimeAmount;
 	float			WaterLens_Percent;
 
 	// GodRays settings
 	D3DXVECTOR4		GodRays_Ray;
 	D3DXVECTOR4		GodRays_RayColor;
-	int				GodRays_LightShaftPasses;
-	float			GodRays_RayDensity;
-	float			GodRays_RayVisibility;
-	float			GodRays_Saturate;
-	float			GodRays_Luminance;
-	float			GodRays_GlobalMultiplier;
+	D3DXVECTOR4		GodRays_Data;
 
 	// Depth Of Field settings
 	bool			DepthOfField_Enabled;
-	bool			DepthOfField_DistantBlur;
-	float			DepthOfField_DistantBlurStartRange;
-	float			DepthOfField_DistantBlurEndRange;
-	float			DepthOfField_BaseBlurRadius;
-	float			DepthOfField_BlurFallOff;
-	float			DepthOfField_Radius;
-	float			DepthOfField_DiameterRange;
-	float			DepthOfField_NearBlurCutOff;
+	D3DXVECTOR4		DepthOfField_Blur;
+	D3DXVECTOR4		DepthOfField_Data;
 
 	// Ambient Occlusion settings
 	bool			AmbientOcclusion_Enabled;
-	float			AmbientOcclusion_RadiusMultiplier;
-	float			AmbientOcclusion_StrengthMultiplier;
-	float			AmbientOcclusion_ClampStrength;
-	float			AmbientOcclusion_AngleBias;
-	float			AmbientOcclusion_Range;
-	float			AmbientOcclusion_LumThreshold;
-	float			AmbientOcclusion_BlurDropThreshold;
-	float			AmbientOcclusion_BlurRadiusMultiplier;
+	D3DXVECTOR4		AmbientOcclusion_AOData;
+	D3DXVECTOR4		AmbientOcclusion_Data;
 
 	// Coloring settings
 	D3DXVECTOR4		Coloring_ColorCurve;
 	D3DXVECTOR4		Coloring_EffectGamma;
-	float			Coloring_Strength;
-	float			Coloring_BaseGamma;
-	float			Coloring_Fade;
-	float			Coloring_Contrast;
-	float			Coloring_Saturation;
-	float			Coloring_Bleach;
-	float			Coloring_BleachLuma;
-	float			Coloring_Linearization;
-	
+	D3DXVECTOR4		Coloring_Data;
+	D3DXVECTOR4		Coloring_Values;
+
 	// Cinema settings
-	float			Cinema_AspectRatio;
-	float			Cinema_VignetteRadius;
-	float			Cinema_VignetteDarkness;
+	D3DXVECTOR4		Cinema_Data;
 
 	// Bloom settings
+	D3DXVECTOR4		Bloom_BloomData;
 	D3DXVECTOR4		Bloom_BloomValues;
-	float			Bloom_Luminance;
-	float			Bloom_MiddleGray;
-	float			Bloom_WhiteCutOff;
 
 	// SnowAccumulation settings
 	D3DXVECTOR4		SnowAccumulation_Params;
@@ -191,29 +132,94 @@ struct ShaderConstants
 	D3DXVECTOR4		BloodLens_BloodColor;
 	D3DXVECTOR4		BloodLens_Time;
 	float			BloodLens_Percent;
-	
+
 	// MotionBlur settings
 	D3DXVECTOR4		MotionBlur_BlurParams;
+	D3DXVECTOR4		MotionBlur_Data;
 	float			MotionBlur_oldAngleX;
 	float			MotionBlur_oldAngleZ;
-	float			MotionBlur_AmountX;
-	float			MotionBlur_AmountY;
 	float			MotionBlur_oldAmountX;
 	float			MotionBlur_oldAmountY;
 	float			MotionBlur_oldoldAmountX;
 	float			MotionBlur_oldoldAmountY;
-	
-	//LowHF settings
-	D3DXVECTOR4		LowHF_Params;
+
+	// LowHF settings
+	D3DXVECTOR4		LowHF_Data;
 	float			LowHF_HealthCoeff;
 	float			LowHF_FatigueCoeff;
 
-	//WetWorld settings
+	// WetWorld settings
 	D3DXVECTOR4		WetWorld_Coeffs;
-	float			WetWorld_RainAmount;
-	float			WetWorld_RippleWeight;
+	D3DXVECTOR4		WetWorld_Data;
+
+	// Sharpening settings
+	D3DXVECTOR4		Sharpening_Data;
 
 };
+
+struct ShaderValue
+{
+	UInt32				RegisterIndex;
+	UInt32				RegisterCount;
+	union {
+	D3DXVECTOR4*		Value;
+	TextureRecord*		Texture;
+	};
+};
+
+class ShaderProgram
+{
+public:
+	void					SetConstantTableValue(LPCSTR Name, UInt32 Index);
+
+	ShaderValue*			FloatShaderValues;
+	UInt32					FloatShaderValuesCount;
+	ShaderValue*			TextureShaderValues;
+	UInt32					TextureShaderValuesCount;
+};
+
+class ShaderRecord : public ShaderProgram // Never disposed
+{
+public:
+	ShaderRecord();
+
+	void					CreateCT();
+	void					SetCT();
+	bool					LoadShader(const char* Name);
+	
+	ShaderType				Type;
+	bool					HasCT;
+	bool					HasRB; 
+	bool					HasDB;
+	void*					pFunction;
+	char* 					pSource;
+	ID3DXBuffer*			pErrors;
+	ID3DXBuffer*			pShader;
+	ID3DXConstantTable*		pTable;
+
+};
+
+class EffectRecord : public ShaderProgram
+{
+
+public:
+	EffectRecord();
+	~EffectRecord();
+
+	bool						LoadEffect(const char* Name);
+	void						CreateCT();
+	void						SetCT();
+	void						Render(IDirect3DDevice9* D3DDevice, IDirect3DSurface9* RenderTarget, IDirect3DSurface9* RenderedSurface, bool ClearRenderTarget);
+
+	bool						Enabled;
+	char*	 					pSource;
+	ID3DXBuffer*				pErrors;
+	ID3DXEffect*				pEffect;
+
+};
+
+typedef std::map<std::string, EffectRecord*> CustomEffectRecordList;
+typedef std::map<std::string, D3DXVECTOR4> CustomConstants;
 
 class ShaderManager // Never disposed
 {
@@ -222,16 +228,44 @@ public:
 	ShaderManager();
 
 	void					InitializeConstants();
-	void					UpdateFrameConstants();
-	float					GetShaderConst(const char* Name, const char* Const);
+	void					UpdateConstants();
 	void					BeginScene();
-	RuntimeShaderRecord*	LoadShader(const char *Name);
+	ShaderRecord*			LoadShader(const char *Name);
+	void					CreateEffect(EffectRecordType EffectType);
+	bool					LoadEffect(EffectRecord* TheEffect, char* Filename, char* CustomEffectName);
+	void					DisposeEffect(EffectRecord* TheEffect);
+	void					RenderEffects();
+	void					EnableEffect(const char* Name, bool Value);
+	void					SetShaderValue(const char* Name, const char* ConstantName, D3DXVECTOR4 Value);
+	void					SetCustomShaderValue(const char* Name, const char* ConstantName, D3DXVECTOR4 Value);
 
+	struct					EffectQuad { float x, y, z; float u, v; };
 	ShaderConstants			ShaderConst;
-	IDirect3DSurface9*		RenderSurface;
-	IDirect3DTexture9* 		RenderTexture;
-	bool					RenderSurfaceFilled;
+	CustomConstants			CustomConst;
+	IDirect3DTexture9*		SourceTexture;
+	IDirect3DSurface9*		SourceSurface;
+	IDirect3DTexture9* 		RenderedTexture;
+	IDirect3DSurface9*		RenderedSurface;
+	IDirect3DTexture9*		RenderTextureSMAA;
+	IDirect3DSurface9*		RenderSurfaceSMAA;
+	bool					RenderedBufferFilled;
 	bool					DepthBufferFilled;
-	time_t					currentTime;
-
+	IDirect3DVertexBuffer9*	EffectVertex;
+	EffectRecord*			UnderwaterEffect;
+	EffectRecord*			WaterLensEffect;
+	EffectRecord*			GodRaysEffect;
+	EffectRecord*			DepthOfFieldEffect;
+	EffectRecord*			AmbientOcclusionEffect;
+	EffectRecord*			ColoringEffect;
+	EffectRecord*			CinemaEffect;
+	EffectRecord*			BloomEffect;
+	EffectRecord*			SnowAccumulationEffect;
+	EffectRecord*			BloodLensEffect;
+	EffectRecord*			SMAAEffect;
+	EffectRecord*			MotionBlurEffect;
+	EffectRecord*			LowHFEffect;
+	EffectRecord*			WetWorldEffect;
+	EffectRecord*			SharpeningEffect;
+	EffectRecord*			CustomEffect;
+	CustomEffectRecordList	CustomEffectRecords;
 };

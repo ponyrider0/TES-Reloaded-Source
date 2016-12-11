@@ -25,6 +25,7 @@ class BGSHazard;
 class TESNPC;
 class TESWorldSpace;
 class BSExtraData;
+class TESObjectACTI;
 
 typedef TESForm * (* _LookupFormByID)(UInt32 id);
 extern const _LookupFormByID LookupFormByID;
@@ -2969,18 +2970,18 @@ public:
 		float	unk1C;		// 1C - init'd to 0
 		float	fogNearAW;	// Above water fog near place distance
 		float	fogFarAW;	// Above water fog far plane distance
-		UInt8	ShallowColorR;
-		UInt8	ShallowColorG;
-		UInt8	ShallowColorB;
-		UInt8	ShallowColorA;
-		UInt8	DepthColorR;
-		UInt8	DepthColorG;
-		UInt8	DepthColorB;
-		UInt8	DepthColorA;
-		UInt8	ReflectionColorR;
-		UInt8	ReflectionColorG;
-		UInt8	ReflectionColorB;
-		UInt8	ReflectionColorA;
+		UInt8	shallowColorR;
+		UInt8	shallowColorG;
+		UInt8	shallowColorB;
+		UInt8	shallowColorA;
+		UInt8	deepColorR;
+		UInt8	deepColorG;
+		UInt8	deepColorB;
+		UInt8	deepColorA;
+		UInt8	reflectionColorR;
+		UInt8	reflectionColorG;
+		UInt8	reflectionColorB;
+		UInt8	reflectionColorA;
 		UInt8	unk34;		// 34 - init'd to 0
 		UInt8	pad35[3];	// 35
 		float	unk38;		// 38 - init'd to 0.1
@@ -3049,7 +3050,7 @@ public:
 	UInt8		unk075;		// 075
 	UInt8		pad076[2];	// 076
 	UInt32		unk078;		// 078
-	UInt32		unk07C;		// 07C
+	BGSSoundDescriptorForm* SoundDescriptor; // 07C
 	Properties	properties;	// 080
 	UInt32		unk164[3];	// 164
 	UInt32		unk170;		// 170
@@ -3065,7 +3066,7 @@ public:
 	UInt32		unk198;		// 198
 	UInt32		unk19C;		// 19C
 	UInt32		unk1A0;		// 1A0
-	UInt32		unk1A4;		// 1A4
+	TESObjectACTI*	Activator;	// 1A4
 	UInt32		unk1A8;		// 1A8
 	void		* unk1AC;	// 1AC - refcounted ptr
 	UInt32		unk1B0;		// 1B0

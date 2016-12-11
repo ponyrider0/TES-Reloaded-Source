@@ -9,6 +9,8 @@ public:
 	GameMenuManager();
 
 	void			Render();
+
+private:
 	bool			Enabled;
 	bool			EditingMode;
 	UInt8			Pages[3];
@@ -23,8 +25,8 @@ public:
 	char			SelectedShader[40];
 	char			SelectedSection[40];
 	char			SelectedSetting[40];
-
-private:
+	char			IntValues[80];
+	char			BoolValues[80];
 	ID3DXFont*		FontSelected;
 	ID3DXFont*		FontNormal;
 	D3DRECT*		RectLine;
@@ -32,5 +34,7 @@ private:
 	RECT			RectStatus;
 	RECT			Rect;
 	RECT			RectShadow;
+	int				FrameRate;
+	time_t			LastTime;
 
 };

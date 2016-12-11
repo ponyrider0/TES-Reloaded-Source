@@ -21,10 +21,10 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 1_2_0_0|Win32'">
-    <LocalDebuggerCommand>$(OblivionPath)TESConstructionSet.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>C:\Bethesda Softworks\Oblivion\TESConstructionSet.exe</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 1_2_0_0|Win32'">
-    <LocalDebuggerWorkingDirectory>$(OblivionPath)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>C:\Bethesda Softworks\Oblivion</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 1_2_0_0|Win32'">
     <LocalDebuggerAttach>true</LocalDebuggerAttach>

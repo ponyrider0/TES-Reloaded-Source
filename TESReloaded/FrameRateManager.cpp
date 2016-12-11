@@ -7,21 +7,26 @@
 
 FrameRateManager::FrameRateManager() {
 
+	_MESSAGE("Starting the framerate manager...");
+	TheFrameRateManager = this;
+
 	FrameCounter = 0;
+	FrameRate = 0;
+	LastFrameTime = 0.0f;
+	ElapsedTime = 0.0f;
 	GridDistant = *SettingGridDistantCount;
 
 }
 
-void FrameRateManager::SetFrame(int FrameRate) {
+void FrameRateManager::Set() {
 	
 	if (FrameRate < TheSettingManager->SettingsMain.FrameRateAverage - TheSettingManager->SettingsMain.FrameRateGap) {
 		FrameCounter++;
 		if (FrameCounter == TheSettingManager->SettingsMain.FrameRateDelay) {
 			FrameCounter = 0;
 			GridDistant -= TheSettingManager->SettingsMain.FrameRateGridStep;
-			if (GridDistant < TheSettingManager->SettingsMain.FrameRateGridMin)
-				GridDistant = TheSettingManager->SettingsMain.FrameRateGridMin;
-			Request = TurnDown;
+			if (GridDistant < TheSettingManager->SettingsMain.FrameRateGridMin) GridDistant = TheSettingManager->SettingsMain.FrameRateGridMin;
+			RequestType = FrameRateRequestType_TurnDown;
 		}
 	}
 	else if (FrameRate > TheSettingManager->SettingsMain.FrameRateAverage + TheSettingManager->SettingsMain.FrameRateGap) {
@@ -30,23 +35,17 @@ void FrameRateManager::SetFrame(int FrameRate) {
 			FrameCounter = 0;
 			if (*SettingLODFadeOutMultActors == 15.0f && *SettingLODFadeOutMultObjects == 15.0f) {
 				GridDistant += TheSettingManager->SettingsMain.FrameRateGridStep;
-				if (GridDistant > *SettingGridDistantCount)
-					GridDistant = *SettingGridDistantCount;
+				if (GridDistant > *SettingGridDistantCount) GridDistant = *SettingGridDistantCount;
 			}
-			Request = TurnUp;
+			RequestType = FrameRateRequestType_TurnUp;
 		}
 	}
 	else {
 		FrameCounter = 0;
-		Request = None;
+		RequestType = FrameRateRequestType_None;
 	}
-	SetNearObjects();
 
-}
-
-void FrameRateManager::SetNearObjects() {
-
-	if (Request == TurnDown) {
+	if (RequestType == FrameRateRequestType_TurnDown) {
 		if (GridDistant == TheSettingManager->SettingsMain.FrameRateGridMin) {
 			if (*SettingLODFadeOutMultObjects > TheSettingManager->SettingsMain.FrameRateFadeMinObjects) {
 				*SettingLODFadeOutMultItems = *SettingLODFadeOutMultObjects = *SettingLODFadeOutMultObjects - TheSettingManager->SettingsMain.FrameRateFadeStep;
@@ -60,7 +59,7 @@ void FrameRateManager::SetNearObjects() {
 			}
 		}
 	}
-	else if (Request == TurnUp) {
+	else if (RequestType == FrameRateRequestType_TurnUp) {
 		if (*SettingLODFadeOutMultActors < 15.0f) {
 			*SettingLODFadeOutMultActors = *SettingLODFadeOutMultActors + TheSettingManager->SettingsMain.FrameRateFadeStep;
 			if (*SettingLODFadeOutMultActors > 15.0f)
@@ -72,6 +71,14 @@ void FrameRateManager::SetNearObjects() {
 				*SettingLODFadeOutMultItems = *SettingLODFadeOutMultObjects = 15;
 		}
 	}
+
+}
+
+void FrameRateManager::SetFrameTime(float CurrentFrameTime) {
+	
+	ElapsedTime = CurrentFrameTime - LastFrameTime;
+	LastFrameTime = CurrentFrameTime;
+	FrameRate = 1.0f / ElapsedTime;
 
 }
 

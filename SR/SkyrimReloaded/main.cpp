@@ -1,4 +1,5 @@
-#define HookD3DDevice 0  // This hooks the D3D Device. Only for developing/debugging when needed.
+#define HookD3DDevice 0
+#define WaitForDebugger 0
 
 #include "skse\PapyrusVM.h"
 #include "skse\PapyrusNativeFunctions.h"
@@ -6,8 +7,6 @@
 #include "ShaderIOHook.h"
 #include "FormHook.h"
 #include "Grass.h"
-#include "WindowedMode.h"
-#include "EventInterface.h"
 #include "CameraMode.h"
 #include "SleepingMode.h"
 #if HookD3DDevice
@@ -25,26 +24,28 @@ namespace SRPapyrus
 {
 	const char* SRClass = "SRCommands";
 
-	float GetCustomEffectValue(StaticFunctionTag* FunctionTag, BSFixedString Name, BSFixedString Const)
+	bool SetShaderValue(StaticFunctionTag* FunctionTag, BSFixedString Name, BSFixedString Const, float Value1, float Value2, float Value3, float Value4)
 	{
 		double result;
+		float Value[4] = { Value1, Value2, Value3, Value4 };
 
-		TheCommandManager->Commands.GetCustomEffectValue(&result, Name.data, Const.data);
+		TheCommandManager->Commands.SetShaderValue(&result, Name.data, Const.data, Value);
 		return result;
 	}
 	
-	bool SetCustomEffectValue(StaticFunctionTag* FunctionTag, BSFixedString Name, BSFixedString Const, float Value)
+	bool SetCustomShaderValue(StaticFunctionTag* FunctionTag, BSFixedString Name, BSFixedString Const, float Value1, float Value2, float Value3, float Value4)
 	{
 		double result;
+		float Value[4] = { Value1, Value2, Value3, Value4 };
 
-		TheCommandManager->Commands.SetCustomEffectValue(&result, Name.data, Const.data, Value);
+		TheCommandManager->Commands.SetCustomShaderValue(&result, Name.data, Const.data, Value);
 		return result;
 	}
 
 	bool RegisterCommands(VMClassRegistry* registry)
 	{
-		registry->RegisterFunction(new NativeFunction2<StaticFunctionTag, float, BSFixedString, BSFixedString>("SRGetCustomEffectValue", SRClass, GetCustomEffectValue, registry));
-		registry->RegisterFunction(new NativeFunction3<StaticFunctionTag, bool, BSFixedString, BSFixedString, float>("SRSetCustomEffectValue", SRClass, SetCustomEffectValue, registry));
+		registry->RegisterFunction(new NativeFunction6<StaticFunctionTag, bool, BSFixedString, BSFixedString, float, float, float, float>("SetShaderValue", SRClass, SetShaderValue, registry));
+		registry->RegisterFunction(new NativeFunction6<StaticFunctionTag, bool, BSFixedString, BSFixedString, float, float, float, float>("SetCustomShaderValue", SRClass, SetCustomShaderValue, registry));
 		return true;
 	}
 
@@ -85,12 +86,16 @@ bool SKSEPlugin_Load(const SKSEInterface* skse)
 		CreateRenderHook();
 		CreateFormLoadHook();
 		CreateSettingsHook();
-		//if (TheSettingManager->SettingsMain.EnableBloodLens) CreateEventHook();
-		if (TheSettingManager->SettingsMain.GrassMode) CreateGrassHook();
-		if (TheSettingManager->SettingsMain.WindowedMode) CreateWindowedModeHook();
+		CreateGameEventHook();
+
 		if (TheSettingManager->SettingsMain.CameraMode) CreateCameraModeHook();
-		if (TheSettingManager->SettingsMain.EquipmentMode) CreateEquipmentHook();
 		if (TheSettingManager->SettingsMain.SleepingMode) CreateSleepingModeHook();
+
+#ifdef _DEBUG
+	#if WaitForDebugger
+			while (!IsDebuggerPresent()) Sleep(10);
+	#endif
+#endif
 	}
 	return true;
 }

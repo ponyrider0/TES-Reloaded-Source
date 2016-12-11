@@ -22,7 +22,7 @@ public:
 	~NiRenderTargetGroup();
 
 	UInt32							unk08;						// 08
-	Ni2DBuffer*						targets[4];					// 0C
+	Ni2DBuffer*						RenderTargets[4];			// 0C
 	UInt32							numRenderTargets;			// 1C
 	NiDepthStencilBuffer*			DepthStencilBuffer;			// 20
 	void*							RenderData;					// 24

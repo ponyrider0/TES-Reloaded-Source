@@ -56,6 +56,8 @@ class NiScreenTexture;
 class NiPSysModifier;
 class NiRenderer;
 class NiGeometryData;
+class NiSkinInstance;
+class NiShader;
 
 // 0AC
 class NiAVObject : public NiObjectNET
@@ -560,17 +562,17 @@ public:
 	NiGeometry();
 	~NiGeometry();
 
-	virtual void	Render(NiRenderer * arg);
-	virtual void	Unk_22(NiRenderer * arg);
-	virtual void	SetGeomData(NiObject * obj);
+	virtual void	Render(NiRenderer* arg);
+	virtual void	Unk_22(NiRenderer* arg);
+	virtual void	SetGeomData(NiObject* obj);
 	virtual void	Unk_24(void);		// geomData->Unk_15()
-	virtual void	Unk_25(NiRenderer * arg);
+	virtual void	Unk_25(NiRenderer* arg);
 
-	NiPropertyState			* unk0AC;	// 0AC
-	NiDynamicEffectState	* unk0B0;	// 0B0
-	NiGeometryData			* geomData;	// 0B4
-	NiObject				* skinData;	// 0B8
-	NiObject				* shader;	// 0BC
+	NiPropertyState*		propertyState;		// 0AC
+	NiDynamicEffectState*	dynamicEffectState;	// 0B0
+	NiGeometryData*			geomData;			// 0B4
+	NiSkinInstance*			skinData;			// 0B8
+	NiShader*				shader;				// 0BC
 };
 
 // C0

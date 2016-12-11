@@ -1,5 +1,6 @@
 #if defined(OBLIVION)
 #include "obse\GameData.h"
+#define SetCurrentVertexStream TheRenderManager->renderState->SetFVF(EFFECTQUADFORMAT, false)
 #define kSky 0x00B365C4
 #define fogNight_nearFog fogNight.nearFog
 #define fogNight_farFog fogNight.farFog
@@ -10,9 +11,18 @@
 #define GetPlayerFatiguePercent (float)(*g_thePlayer)->GetActorValue(kActorVal_Fatigue) / (float)(*g_thePlayer)->GetBaseActorValue(kActorVal_Fatigue)
 #define CurrentBlend *WaterBlend
 #define WaterLevel TheUtilityManager->GetWaterHeight(ShaderConst.currentCell)
+#define DeepColorR deepColorR
+#define DeepColorG deepColorG
+#define DeepColorB deepColorB
+#define DeepColorA deepColorA
+#define ShallowColorR shallowColorR
+#define ShallowColorG shallowColorG
+#define ShallowColorB shallowColorB
+#define ShallowColorA shallowColorA
 #elif defined(SKYRIM)
 #include "skse\GameData.h"
 #include "skse\GameCamera.h"
+#define SetCurrentVertexStream D3DDevice->SetFVF(EFFECTQUADFORMAT)
 #define kSky 0x01B1160C
 #define eColor_Fog kColorType_FogNear
 #define eColor_Sun kColorType_Sun
@@ -32,82 +42,205 @@
 #define LightingData InteriorData
 #define lighting interiorData
 #define WaterLevel TheUtilityManager->GetWaterHeight(*g_thePlayer)
+#define DeepColorR properties.deepColorR
+#define DeepColorG properties.deepColorG
+#define DeepColorB properties.deepColorB
+#define DeepColorA properties.deepColorA
+#define ShallowColorR properties.shallowColorR
+#define ShallowColorG properties.shallowColorG
+#define ShallowColorB properties.shallowColorB
+#define ShallowColorA properties.shallowColorA
 #endif
-#include <assert.h>
 #include <fstream>
 #include <ctime>
 
-RuntimeShaderRecord::RuntimeShaderRecord() {
+void ShaderProgram::SetConstantTableValue(LPCSTR Name, UInt32 Index)
+{
+	if (!strcmp(Name, "TESR_Tick"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.TikTiming;
+	else if (!strcmp(Name, "TESR_ToneMapping"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.HDR_ToneMapping;
+	else if (!strcmp(Name, "TESR_ParallaxData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.POM_ParallaxData;
+	else if (!strcmp(Name, "TESR_GrassScale"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Grass_Scale;
+	else if (!strcmp(Name, "TESR_TerrainData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Terrain_Data;
+	else if (!strcmp(Name, "TESR_SkinData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Skin_SkinData;
+	else if (!strcmp(Name, "TESR_SkinColor"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Skin_SkinColor;
+	else if (!strcmp(Name, "TESR_ShadowsData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Shadows_Data;
+	else if (!strcmp(Name, "TESR_PrecipitationsData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Precipitations_Data;
+	else if (!strcmp(Name, "TESR_WorldTransform"))
+		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->worldMatrix;
+	else if (!strcmp(Name, "TESR_ViewTransform"))
+		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->viewMatrix;
+	else if (!strcmp(Name, "TESR_ProjectionTransform"))
+		FloatShaderValues[Index].Value = (D3DXVECTOR4*)&TheRenderManager->projMatrix;
+	else if (!strcmp(Name, "TESR_ReciprocalResolution"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.ReciprocalResolution;
+	else if (!strcmp(Name, "TESR_ReciprocalResolutionWater"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.ReciprocalResolutionWater;
+	else if (!strcmp(Name, "TESR_CameraForward"))
+		FloatShaderValues[Index].Value = &TheRenderManager->CameraForward;
+	else if (!strcmp(Name, "TESR_CameraPosition"))
+		FloatShaderValues[Index].Value = &TheRenderManager->CameraPosition;
+	else if (!strcmp(Name, "TESR_SunDirection"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.SunDir;
+	else if (!strcmp(Name, "TESR_SunTiming"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.SunTiming;
+	else if (!strcmp(Name, "TESR_SunAmount"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.SunAmount;
+	else if (!strcmp(Name, "TESR_GameTime"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.GameTime;
+	else if (!strcmp(Name, "TESR_TextureData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.TextureData;
+	else if (!strcmp(Name, "TESR_WaterCoefficients"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water_waterCoefficients;
+	else if (!strcmp(Name, "TESR_WaveParams"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water_waveParams;
+	else if (!strcmp(Name, "TESR_WaterVolume"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water_waterVolume;
+	else if (!strcmp(Name, "TESR_WaterSettings"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water_waterSettings;
+	else if (!strcmp(Name, "TESR_WaterDeepColor"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water_deepColor;
+	else if (!strcmp(Name, "TESR_WaterShallowColor"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Water_shallowColor;
+	else if (!strcmp(Name, "TESR_FogColor"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.fogColor;
+	else if (!strcmp(Name, "TESR_SunColor"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.sunColor;
+	else if (!strcmp(Name, "TESR_FogData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.fogData;
+	else if (!strcmp(Name, "TESR_AmbientOcclusionAOData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.AmbientOcclusion_AOData;
+	else if (!strcmp(Name, "TESR_AmbientOcclusionData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.AmbientOcclusion_Data;
+	else if (!strcmp(Name, "TESR_BloodLensParams"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.BloodLens_Params;
+	else if (!strcmp(Name, "TESR_BloodLensColor"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.BloodLens_BloodColor;
+	else if (!strcmp(Name, "TESR_BloomData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Bloom_BloomData;
+	else if (!strcmp(Name, "TESR_BloomValues"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Bloom_BloomValues;
+	else if (!strcmp(Name, "TESR_CinemaData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Cinema_Data;
+	else if (!strcmp(Name, "TESR_ColoringColorCurve"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Coloring_ColorCurve;
+	else if (!strcmp(Name, "TESR_ColoringEffectGamma"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Coloring_EffectGamma;
+	else if (!strcmp(Name, "TESR_ColoringData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Coloring_Data;
+	else if (!strcmp(Name, "TESR_ColoringValues"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Coloring_Values;
+	else if (!strcmp(Name, "TESR_DepthOfFieldBlur"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.DepthOfField_Blur;
+	else if (!strcmp(Name, "TESR_DepthOfFieldData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.DepthOfField_Data;
+	else if (!strcmp(Name, "TESR_GodRaysRay"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.GodRays_Ray;
+	else if (!strcmp(Name, "TESR_GodRaysRayColor"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.GodRays_RayColor;
+	else if (!strcmp(Name, "TESR_GodRaysData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.GodRays_Data;
+	else if (!strcmp(Name, "TESR_LowHFData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.LowHF_Data;
+	else if (!strcmp(Name, "TESR_MotionBlurParams"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.MotionBlur_BlurParams;
+	else if (!strcmp(Name, "TESR_MotionBlurData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.MotionBlur_Data;
+	else if (!strcmp(Name, "TESR_SharpeningData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.Sharpening_Data;
+	else if (!strcmp(Name, "TESR_SnowAccumulationParams"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.SnowAccumulation_Params;
+	else if (!strcmp(Name, "TESR_WaterLensData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.WaterLens_Time;
+	else if (!strcmp(Name, "TESR_WetWorldCoeffs"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.WetWorld_Coeffs;
+	else if (!strcmp(Name, "TESR_WetWorldData"))
+		FloatShaderValues[Index].Value = &TheShaderManager->ShaderConst.WetWorld_Data;
+	else {
+		_MESSAGE("Custom constant found: %s", Name);
+		D3DXVECTOR4 v; v.x = v.y = v.z = v.w = 0.0f;
+		TheShaderManager->CustomConst[Name] = v;
+		FloatShaderValues[Index].Value = &TheShaderManager->CustomConst[Name];
+	}
+}
 
-	Name[0]	  = NULL;
-	pCustomCT = NULL;
-	pBool     = NULL;
-	pInt4     = NULL;
-	pFloat4   = NULL;
-	pTexture  = NULL;
-	pCopyRT	  = NULL;
-	pCopyDS   = NULL;
-	pFunction = NULL;
-	pSource   = NULL;
-	pShader   = NULL;
-	pTable    = NULL;
-	pErrors   = NULL;
+ShaderRecord::ShaderRecord() {
+
+	HasCT		= false;
+	HasRB		= false;
+	HasDB		= false;
+	pFunction	= NULL;
+	pSource		= NULL;
+	pShader		= NULL;
+	pTable		= NULL;
+	pErrors		= NULL;
+	FloatShaderValuesCount = 0;
+	TextureShaderValuesCount = 0;
 
 }
 
-RuntimeShaderRecord::~RuntimeShaderRecord() {} // Never disposed
-
-bool RuntimeShaderRecord::LoadShader(const char *Name) {
+bool ShaderRecord::LoadShader(const char* Name) {
   
 	char FileName[MAX_PATH];
 	char FileNameBinary[MAX_PATH];
 
 	strcpy(FileName, ShadersPath);
-	if (!memcmp(Name,"WATER",5)) {
+	if (!memcmp(Name, "WATER", 5)) {
 		if (!TheSettingManager->SettingsMain.EnableWater) return false;
 		strcat(FileName, "Water\\");
 	}
-	else if (!memcmp(Name,"GRASS",5)) {
+	else if (!memcmp(Name, "GRASS", 5)) {
 		if (!TheSettingManager->SettingsMain.EnableGrass) return false;
 		strcat(FileName, "Grass\\");
 	}
-	else if (!memcmp(Name,"PRECIP",6)) {
+	else if (!memcmp(Name, "PRECIP", 6)) {
 		if (!TheSettingManager->SettingsMain.EnablePrecipitations) return false;
 		strcat(FileName, "Precipitations\\");
 	}
-	else if (!memcmp(Name,"HDR",3)) {
+	else if (!memcmp(Name, "HDR", 3)) {
 		if (!TheSettingManager->SettingsMain.EnableHDR) return false;
 		strcat(FileName, "HDR\\");
 	}
-	else if (!memcmp(Name,"PAR",3)) {
+	else if (!memcmp(Name, "PAR", 3)) {
 		if (!TheSettingManager->SettingsMain.EnablePOM) return false;
 		strcat(FileName, "POM\\");
 	}
-	else if (!memcmp(Name,"SKIN",4)) {
+	else if (!memcmp(Name, "SKIN", 4)) {
 		if (!TheSettingManager->SettingsMain.EnableSkin) return false;
 		strcat(FileName, "Skin\\");
 	}
-	else if (!memcmp(Name,"SLS2001",7) || !memcmp(Name,"SLS2064.vso",11) || !memcmp(Name,"SLS2068.pso",11) || !memcmp(Name,"SLS2042.vso",11) || !memcmp(Name,"SLS2048.pso",11) || !memcmp(Name,"SLS2043.vso",11) || !memcmp(Name,"SLS2049.pso",11)) {
+	else if (!memcmp(Name, "SLS2001", 7) || !memcmp(Name, "SLS2064.vso", 11) || !memcmp(Name, "SLS2068.pso", 11) || !memcmp(Name, "SLS2042.vso", 11) || !memcmp(Name, "SLS2048.pso", 11) || !memcmp(Name, "SLS2043.vso", 11) || !memcmp(Name, "SLS2049.pso", 11)) {
 		if (!TheSettingManager->SettingsMain.EnableTerrain) return false;
 		strcat(FileName, "Terrain\\");
 	}
-	else if (!memcmp(Name,"GDECALS.vso",11) || !memcmp(Name,"GDECAL.pso",10) || !memcmp(Name,"SLS2040.vso",11) || !memcmp(Name,"SLS2046.pso",11)) {
+	else if (!memcmp(Name, "GDECALS.vso", 11) || !memcmp(Name, "GDECAL.pso", 10) || !memcmp(Name, "SLS2040.vso", 11) || !memcmp(Name, "SLS2046.pso", 11)) {
 		if (!TheSettingManager->SettingsMain.EnableBlood) return false;
 		strcat(FileName, "Blood\\");
 	}
-	else if (!memcmp(Name,"SLS2073.vso",11) || !memcmp(Name,"SLS2074.vso",11) || !memcmp(Name,"SLS2075.vso",11) || !memcmp(Name,"SLS2080.pso",11) || !memcmp(Name,"SLS2081.pso",11)) {
+	else if (!memcmp(Name, "SLS2073.vso", 11) || !memcmp(Name, "SLS2074.vso", 11) || !memcmp(Name, "SLS2075.vso", 11) || !memcmp(Name, "SLS2080.pso", 11) || !memcmp(Name, "SLS2081.pso", 11)) {
 		if (!TheSettingManager->SettingsMain.EnableShadows) return false;
 		strcat(FileName, "Shadows\\");
+	}
+	else if (!memcmp(Name, "NIGHTEYE", 8)) {
+		if (!TheSettingManager->SettingsMain.EnableNightEye) return false;
+		strcat(FileName, "NightEye\\");
 	}
 	else
 		FileName[0] = NULL;
 
 	if (FileName[0]) {
-		strcpy(this->Name, Name);
 		strcat(FileName, Name);
 		strcpy(FileNameBinary, FileName);
 		strcat(FileName, ".hlsl");
-		std::ifstream FileSource(FileName, std::ios::in|std::ios::binary|std::ios::ate);
+		std::ifstream FileSource(FileName, std::ios::in | std::ios::binary | std::ios::ate);
 		if (FileSource.is_open()) {
 			std::streampos size = FileSource.tellg();
 			pSource = new char [size];
@@ -115,11 +248,11 @@ bool RuntimeShaderRecord::LoadShader(const char *Name) {
 			FileSource.read(pSource, size);
 			FileSource.close();
 			if (strstr(Name, ".vso"))
-				ShaderType = Vertex;
+				Type = ShaderType_Vertex;
 			else if (strstr(Name, ".pso"))
-				ShaderType = Pixel;
+				Type = ShaderType_Pixel;
 			if (TheSettingManager->SettingsMain.DevelopCompileShaders) {
-				D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (ShaderType == Vertex ? "vs_3_0" : "ps_3_0"), NULL, &pShader, &pErrors, &pTable);
+				D3DXCompileShaderFromFileA(FileName, NULL, NULL, "main", (Type == ShaderType_Vertex ? "vs_3_0" : "ps_3_0"), NULL, &pShader, &pErrors, &pTable);
 				if (pErrors) _MESSAGE((char*)pErrors->GetBufferPointer());
 				if (pShader) {
 					std::ofstream FileBinary(FileNameBinary,std::ios::out|std::ios::binary);
@@ -130,7 +263,7 @@ bool RuntimeShaderRecord::LoadShader(const char *Name) {
 				}
 			}
 			else {
-				std::ifstream FileBinary(FileNameBinary,std::ios::in|std::ios::binary|std::ios::ate);
+				std::ifstream FileBinary(FileNameBinary, std::ios::in | std::ios::binary | std::ios::ate);
 				if (FileBinary.is_open()) {
 					size = FileBinary.tellg();
 					D3DXCreateBuffer(size, &pShader);
@@ -141,7 +274,7 @@ bool RuntimeShaderRecord::LoadShader(const char *Name) {
 					D3DXGetShaderConstantTable((const DWORD*)pShaderBuffer, &pTable);
 				}
 				else
-					_MESSAGE("ERROR: Shader %s not found. Try to enable the CompileShader option to attempt to recompile the shaders.", FileNameBinary);
+					_MESSAGE("ERROR: Shader %s not found. Try to enable the CompileShader option to recompile the shaders.", FileNameBinary);
 			}
 			if (pShader) {
 				pFunction = pShader->GetBufferPointer();
@@ -154,476 +287,329 @@ bool RuntimeShaderRecord::LoadShader(const char *Name) {
 	return false;
 }
 
-DWORD *RuntimeShaderRecord::LoadTexture(const char *sName, int *TexNum, DWORD *States) {
+void ShaderRecord::CreateCT() {
 
-  if (pSource && strstr(sName, "sampler")) {
-    const char *key = "sampler";
-    std::string tName(sName);
-    std::string tPath(sName);
-
-    tName.replace(tName.find(key), strlen(key), "tex");
-    tPath.replace(tPath.find(key), strlen(key), "path");
-
-    const char *sampler = strstr(pSource, sName);
-    const char *texture = strstr(pSource, tName.c_str());
-    const char *texpath = strstr(pSource, tPath.c_str());
-
-    /* all different position */
-    if (((texture != sampler) || !texture) &&
-        ((texture != texpath) || !texpath) &&
-        ((sampler != texpath))) {
-      const char *samplert = sampler;
-      while (--samplert > pSource)
-	if (*samplert == ';')
-	  break;
-
-      const char *samplerb = (sampler  ? strchr(sampler     , '{') : NULL);
-      const char *textureb = (texture  ? strchr(texture     , '"') : NULL);
-      const char *texpathb = (texpath  ? strchr(texpath     , '"') : NULL);
-      const char *samplere = (samplerb ? strchr(samplerb + 1, '}') : NULL);
-      const char *texturee = (textureb ? strchr(textureb + 1, '"') : NULL);
-      const char *texpathe = (texpathb ? strchr(texpathb + 1, '"') : NULL);
-
-      // check for the sampler-type
-      // check there is no ";" between the sampler and it's beginning block "{"
-      // check there is no ";" between the texture and it's ending block ";"
-      const char *sampleri = (samplert ? strstr(samplert, "sampler") : NULL);
-      const char *samplerc = (sampler  ? strchr(sampler , ';') : NULL);
-      const char *texturec = (texture  ? strchr(texture , ';') : NULL);
-      const char *texpathc = (texpath  ? strchr(texpath , ';') : NULL);
-
-      if ((sampleri <  sampler ) && (textureb || texpathb) && ((texturec >= texturee) || (texpathc >= texpathe))) {
-      	char buf[256];
-      	int len;
-
-		if (textureb) {
-		  len = texturee - (textureb + 1); if (len > 0)
-		  strncpy(buf, textureb + 1, len);
-		}
-		else if (texpathb) {
-		  len = texpathe - (texpathb + 1); if (len > 0)
-		  strncpy(buf, texpathb + 1, len);
-		}
-
-		if (len > 0) {
-		  buf[len] = '\0';
-		  if (sampleri[7] == 'C') *TexNum = TheTextureManager->LoadTexture(buf, TR_CUBIC);
-		  if (sampleri[7] == '3') *TexNum = TheTextureManager->LoadTexture(buf, TR_VOLUMETRIC);
-		  if (sampleri[7] == '2') *TexNum = TheTextureManager->LoadTexture(buf, TR_PLANAR);
-		  if (sampleri[7] == ' ') *TexNum = TheTextureManager->LoadTexture(buf, TR_PLANAR);
-		}
-      }
-
-      if ((sampleri <  sampler ) && (samplerc >= samplerb) && (samplere >  samplerb)) {
-		char buf[1024];
-		int len;
-
-		len = samplere - (samplerb + 1); if (len > 0)
-		strncpy(buf, samplerb + 1, len);
-
-		if (len > 0) {
-		  buf[len] = '\0';
-
-		  const char *au = strstr(buf, "AddressU");
-		  const char *av = strstr(buf, "AddressV");
-		  const char *aw = strstr(buf, "AddressW");
-		  const char *mp = strstr(buf, "MIPFILTER");
-		  const char *mn = strstr(buf, "MINFILTER");
-		  const char *mg = strstr(buf, "MAGFILTER");
-		  const char *bc = strstr(buf, "Bordercolor");
-
-		  if (au) {
-			char *end = (char *)strchr(au, ';'); if (end) *end = '\0';
-			/**/ if (strstr(au, "WRAP"      )) { *States++ = D3DSAMP_ADDRESSU; *States++ = D3DTADDRESS_WRAP; }
-			else if (strstr(au, "MIRROR"    )) { *States++ = D3DSAMP_ADDRESSU; *States++ = D3DTADDRESS_MIRROR; }
-			else if (strstr(au, "CLAMP"     )) { *States++ = D3DSAMP_ADDRESSU; *States++ = D3DTADDRESS_CLAMP; }
-			else if (strstr(au, "BORDER"    )) { *States++ = D3DSAMP_ADDRESSU; *States++ = D3DTADDRESS_BORDER; }
-			else if (strstr(au, "MIRRORONCE")) { *States++ = D3DSAMP_ADDRESSU; *States++ = D3DTADDRESS_MIRRORONCE; }
-		  }
-		  if (av) {
-			char *end = (char *)strchr(av, ';'); if (end) *end = '\0';
-			/**/ if (strstr(av, "WRAP"      )) { *States++ = D3DSAMP_ADDRESSV; *States++ = D3DTADDRESS_WRAP; }
-			else if (strstr(av, "MIRROR"    )) { *States++ = D3DSAMP_ADDRESSV; *States++ = D3DTADDRESS_MIRROR; }
-			else if (strstr(av, "CLAMP"     )) { *States++ = D3DSAMP_ADDRESSV; *States++ = D3DTADDRESS_CLAMP; }
-			else if (strstr(av, "BORDER"    )) { *States++ = D3DSAMP_ADDRESSV; *States++ = D3DTADDRESS_BORDER; }
-			else if (strstr(av, "MIRRORONCE")) { *States++ = D3DSAMP_ADDRESSV; *States++ = D3DTADDRESS_MIRRORONCE; }
-		  }
-		  if (aw) {
-			char *end = (char *)strchr(aw, ';'); if (end) *end = '\0';
-			/**/ if (strstr(aw, "WRAP"      )) { *States++ = D3DSAMP_ADDRESSW; *States++ = D3DTADDRESS_WRAP; }
-			else if (strstr(aw, "MIRROR"    )) { *States++ = D3DSAMP_ADDRESSW; *States++ = D3DTADDRESS_MIRROR; }
-			else if (strstr(aw, "CLAMP"     )) { *States++ = D3DSAMP_ADDRESSW; *States++ = D3DTADDRESS_CLAMP; }
-			else if (strstr(aw, "BORDER"    )) { *States++ = D3DSAMP_ADDRESSW; *States++ = D3DTADDRESS_BORDER; }
-			else if (strstr(aw, "MIRRORONCE")) { *States++ = D3DSAMP_ADDRESSW; *States++ = D3DTADDRESS_MIRRORONCE; }
-		  }
-		  if (mp) {
-			char *end = (char *)strchr(mp, ';'); if (end) *end = '\0';
-			/**/ if (strstr(mp, "NONE"         )) { *States++ = D3DSAMP_MIPFILTER; *States++ = D3DTEXF_NONE; }
-			else if (strstr(mp, "POINT"        )) { *States++ = D3DSAMP_MIPFILTER; *States++ = D3DTEXF_POINT; }
-			else if (strstr(mp, "LINEAR"       )) { *States++ = D3DSAMP_MIPFILTER; *States++ = D3DTEXF_LINEAR; }
-			else if (strstr(mp, "ANISOTROPIC"  )) { *States++ = D3DSAMP_MIPFILTER; *States++ = D3DTEXF_ANISOTROPIC; }
-			else if (strstr(mp, "PYRAMIDALQUAD")) { *States++ = D3DSAMP_MIPFILTER; *States++ = D3DTEXF_PYRAMIDALQUAD; }
-			else if (strstr(mp, "GAUSSIANQUAD" )) { *States++ = D3DSAMP_MIPFILTER; *States++ = D3DTEXF_GAUSSIANQUAD; }
-		  }
-		  if (mn) {
-			char *end = (char *)strchr(mn, ';'); if (end) *end = '\0';
-			/**/ if (strstr(mn, "NONE"         )) { *States++ = D3DSAMP_MINFILTER; *States++ = D3DTEXF_NONE; }
-			else if (strstr(mn, "POINT"        )) { *States++ = D3DSAMP_MINFILTER; *States++ = D3DTEXF_POINT; }
-			else if (strstr(mn, "LINEAR"       )) { *States++ = D3DSAMP_MINFILTER; *States++ = D3DTEXF_LINEAR; }
-			else if (strstr(mn, "ANISOTROPIC"  )) { *States++ = D3DSAMP_MINFILTER; *States++ = D3DTEXF_ANISOTROPIC; }
-			else if (strstr(mn, "PYRAMIDALQUAD")) { *States++ = D3DSAMP_MINFILTER; *States++ = D3DTEXF_PYRAMIDALQUAD; }
-			else if (strstr(mn, "GAUSSIANQUAD" )) { *States++ = D3DSAMP_MINFILTER; *States++ = D3DTEXF_GAUSSIANQUAD; }
-		  }
-		  if (mg) {
-			char *end = (char *)strchr(mg, ';'); if (end) *end = '\0';
-			/**/ if (strstr(mg, "NONE"         )) { *States++ = D3DSAMP_MAGFILTER; *States++ = D3DTEXF_NONE; }
-			else if (strstr(mg, "POINT"        )) { *States++ = D3DSAMP_MAGFILTER; *States++ = D3DTEXF_POINT; }
-			else if (strstr(mg, "LINEAR"       )) { *States++ = D3DSAMP_MAGFILTER; *States++ = D3DTEXF_LINEAR; }
-			else if (strstr(mg, "ANISOTROPIC"  )) { *States++ = D3DSAMP_MAGFILTER; *States++ = D3DTEXF_ANISOTROPIC; }
-			else if (strstr(mg, "PYRAMIDALQUAD")) { *States++ = D3DSAMP_MAGFILTER; *States++ = D3DTEXF_PYRAMIDALQUAD; }
-			else if (strstr(mg, "GAUSSIANQUAD" )) { *States++ = D3DSAMP_MAGFILTER; *States++ = D3DTEXF_GAUSSIANQUAD; }
-		  }
-		  if (bc) {
-			char *end = (char *)strchr(bc, ';'); if (end) *end = '\0';
-
-			/* currently fixed */
-			float col = 0.0; /*sscanf("Bordercolor = %f", &col);*/
-			*States++ = D3DSAMP_BORDERCOLOR;
-			*States++ = *((DWORD *)&col);
-		  }
-		}
-      }
-    }
-  }
-
-  return States;
-}
-
-void RuntimeShaderRecord::CreateCT() {
-
-	D3DXCONSTANTTABLE_DESC desc;
-	D3DXCONSTANT_DESC cnst;
-	UINT count = 1;
-    
-    int lcls[4] = {0};
-    int nums[4] = {0};
-    int cnts[5] = {0};
-    int size;
+	D3DXCONSTANTTABLE_DESC ConstantTableDesc;
+	D3DXCONSTANT_DESC ConstantDesc;
+	D3DXHANDLE Handle;
+	UINT ConstantCount = 1;
+	UInt32 FloatIndex = 0;
+	UInt32 TextureIndex = 0;
 	
-	pTable->GetDesc(&desc);
-    for (int c = 0; c < desc.Constants; c++) {
-		D3DXHANDLE handle = pTable->GetConstant(NULL, c);
-		pTable->GetConstantDesc(handle, &cnst, &count);
-
-		if (cnst.RegisterSet <= 4) {
-			if ((cnst.Name == strstr(cnst.Name, "cust_")) || (cnst.Name == strstr(cnst.Name, "glob_")) || (cnst.Name == strstr(cnst.Name, "oblv_")))
-				lcls[cnst.RegisterSet] += cnst.RegisterCount;
-			if ((cnst.Name == strstr(cnst.Name, "obge_")) || (cnst.Name == strstr(cnst.Name, "oblv_")) || (cnst.Name == strstr(cnst.Name, "glob_")) || (cnst.Name == strstr(cnst.Name, "cust_")))
-				nums[cnst.RegisterSet] += 1;
-		}
+	pTable->GetDesc(&ConstantTableDesc);
+    for (int c = 0; c < ConstantTableDesc.Constants; c++) {
+		Handle = pTable->GetConstant(NULL, c);
+		pTable->GetConstantDesc(Handle, &ConstantDesc, &ConstantCount);
+		if (ConstantDesc.RegisterSet == D3DXRS_FLOAT4 && !memcmp(ConstantDesc.Name, "TESR_", 5)) FloatShaderValuesCount += 1;
+		if (ConstantDesc.RegisterSet == D3DXRS_SAMPLER && !memcmp(ConstantDesc.Name, "TESR_", 5)) TextureShaderValuesCount += 1;
     }
-
-    /* check if there is anything we have to do by ourself or
-    * if all the variables are handled by Oblivion
-    */
-    if (nums[D3DXRS_BOOL   ]) nums[D3DXRS_BOOL   ]++;
-    if (nums[D3DXRS_INT4   ]) nums[D3DXRS_INT4   ]++;
-    if (nums[D3DXRS_FLOAT4 ]) nums[D3DXRS_FLOAT4 ]++;
-    if (nums[D3DXRS_SAMPLER]) nums[D3DXRS_SAMPLER]++;
-
-    if (nums[D3DXRS_BOOL] + nums[D3DXRS_INT4] + nums[D3DXRS_FLOAT4] + nums[D3DXRS_SAMPLER]) {
-
-      /* we allocate all resources in one big contiguous block */
-      size = ((nums[D3DXRS_BOOL   ] + nums[D3DXRS_INT4   ] + nums[D3DXRS_FLOAT4 ] + nums[D3DXRS_SAMPLER] + nums[D3DXRS_SAMPLER]) * sizeof(struct RuntimeVariable)) +
-			 ((lcls[D3DXRS_INT4   ] * sizeof(RuntimeVariable::mem::iv)) + (lcls[D3DXRS_FLOAT4 ] * sizeof(RuntimeVariable::mem::fv)) + (lcls[D3DXRS_SAMPLER] * sizeof(RuntimeVariable::mem::tv) * 16));
-
-      pCustomCT = calloc(size, 1);
-      pBool    = (RuntimeVariable *)pCustomCT;
-      pInt4    = pBool    + nums[D3DXRS_BOOL   ];
-      pFloat4  = pInt4    + nums[D3DXRS_INT4   ];
-      pTexture = pFloat4  + nums[D3DXRS_FLOAT4 ];
-      pSampler = pTexture + nums[D3DXRS_SAMPLER];
-      RuntimeVariable::mem::iv *ivs = (RuntimeVariable::mem::iv *)(pSampler + nums[D3DXRS_SAMPLER]);
-      RuntimeVariable::mem::fv *fvs = (RuntimeVariable::mem::fv *)(ivs      + lcls[D3DXRS_INT4   ]);
-      RuntimeVariable::mem::tv *tvs = (RuntimeVariable::mem::tv *)(fvs      + lcls[D3DXRS_FLOAT4 ]);
-      assert((void *)((char *)pCustomCT + size) == (void *)(tvs      + lcls[D3DXRS_SAMPLER] * 16));
-
-      for (int c = 0; c < desc.Constants; c++) {
-		D3DXHANDLE handle = pTable->GetConstant(NULL, c);
-		pTable->GetConstantDesc(handle, &cnst, &count);
-
-		if (cnst.RegisterSet > 4)
-		  continue;
-		if ((cnst.Name != strstr(cnst.Name, "obge_")) && (cnst.Name != strstr(cnst.Name, "oblv_")) && (cnst.Name != strstr(cnst.Name, "glob_")) && (cnst.Name != strstr(cnst.Name, "cust_")))
-		  continue;
-
-		switch (cnst.RegisterSet) {
-		  case D3DXRS_BOOL:
-			/**/ if (cnst.Name == strstr(cnst.Name, "obge_"))
-			  break;
-			else if (cnst.Name == strstr(cnst.Name, "oblv_"))
-			  break;
-			else if (cnst.Name == strstr(cnst.Name, "glob_"))
-			  break;
-			else if (cnst.Name == strstr(cnst.Name, "cust_")) {
-			  if (cnst.DefaultValue)
-				pBool[cnts[D3DXRS_BOOL]].vals.condition = *((bool *)cnst.DefaultValue);
+	HasCT = FloatShaderValuesCount + TextureShaderValuesCount;
+    if (HasCT) {
+		FloatShaderValues = (ShaderValue*)malloc(FloatShaderValuesCount * sizeof(ShaderValue));
+		TextureShaderValues = (ShaderValue*)malloc(TextureShaderValuesCount * sizeof(ShaderValue));
+		for (int c = 0; c < ConstantTableDesc.Constants; c++) {
+			Handle = pTable->GetConstant(NULL, c);
+			pTable->GetConstantDesc(Handle, &ConstantDesc, &ConstantCount);
+			if (!memcmp(ConstantDesc.Name, "TESR_", 5)) {
+				switch (ConstantDesc.RegisterSet)
+				{
+					case D3DXRS_FLOAT4:
+						SetConstantTableValue(ConstantDesc.Name, FloatIndex);
+						FloatShaderValues[FloatIndex].RegisterIndex = ConstantDesc.RegisterIndex;
+						FloatShaderValues[FloatIndex].RegisterCount = ConstantDesc.RegisterCount;
+						FloatIndex++;
+ 						break;
+					case D3DXRS_SAMPLER:
+						if (!strcmp(ConstantDesc.Name, WordRenderedBuffer)) HasRB = true;
+						if (!strcmp(ConstantDesc.Name, WordDepthBuffer)) HasDB = true;
+						TextureShaderValues[TextureIndex].Texture = TheTextureManager->LoadTexture(pSource, ConstantDesc.RegisterIndex);
+						TextureShaderValues[TextureIndex].RegisterIndex = ConstantDesc.RegisterIndex;
+						TextureShaderValues[TextureIndex].RegisterCount = 1;
+						TextureIndex++;
+						break;
+				}
 			}
-
-			pBool[cnts[D3DXRS_BOOL]].offset = cnst.RegisterIndex;
-			pBool[cnts[D3DXRS_BOOL]].length = cnst.RegisterCount;
-			pBool[cnts[D3DXRS_BOOL]].name = cnst.Name;
-				  cnts[D3DXRS_BOOL]++;
-			break;
-		  case D3DXRS_INT4:
-			/**/ if (cnst.Name == strstr(cnst.Name, "obge_"))
-			  break;
-			else if (cnst.Name == strstr(cnst.Name, "oblv_"))
-			  break;
-			else if (cnst.Name == strstr(cnst.Name, "glob_"))
-			  break;
-			else if (cnst.Name == strstr(cnst.Name, "cust_")) {
-			  if (cnst.DefaultValue)
-				memcpy(ivs, cnst.DefaultValue, cnst.RegisterCount * sizeof(int) * 4);
-			  pInt4[cnts[D3DXRS_INT4]].vals.integer = ivs; ivs += cnst.RegisterCount;
-			}
-
-			pInt4[cnts[D3DXRS_INT4]].offset = cnst.RegisterIndex;
-			pInt4[cnts[D3DXRS_INT4]].length = cnst.RegisterCount;
-			pInt4[cnts[D3DXRS_INT4]].name = cnst.Name;
-				  cnts[D3DXRS_INT4]++;
-			break;
-		  case D3DXRS_FLOAT4:
-			if (cnst.Name == strstr(cnst.Name, "obge_")) {
-			  if (cnst.Name == strstr(cnst.Name, "obge_Tick"))
-				pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.TikTiming;
-			  else if (cnst.Name == strstr(cnst.Name, "obge_ToneMapping"))
-				pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.HDR_ToneMapping;
-			  else if (cnst.Name == strstr(cnst.Name, "obge_ParallaxData"))
-				pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.POM_ParallaxData;
-			  else if (cnst.Name == strstr(cnst.Name, "obge_GrassScale"))
-				pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Grass_Scale;
-			  else if (cnst.Name == strstr(cnst.Name, "obge_TerrainData"))
-				pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Terrain_Data;
-			  else if (cnst.Name == strstr(cnst.Name, "obge_SkinData"))
-				pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Skin_SkinData;
-			  else if (cnst.Name == strstr(cnst.Name, "obge_SkinColor"))
-				pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Skin_SkinColor;
-			  else if (cnst.Name == strstr(cnst.Name, "obge_ShadowsData"))
-				  pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Shadows_Data;
-			  else if (cnst.Name == strstr(cnst.Name, "obge_PrecipitationsData"))
-				  pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Precipitations_Data;
-			  else
-				break;
-			}
-			else if (cnst.Name == strstr(cnst.Name, "oblv_")) {
-				  if (cnst.Name == strstr(cnst.Name, "oblv_WorldTransform_CURRENTPASS"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheRenderManager->worldMatrix;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_ViewTransform_CURRENTPASS"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheRenderManager->viewMatrix;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_ProjectionTransform_CURRENTPASS"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheRenderManager->projMatrix;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_ReciprocalResolution_CURRENTPASS"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.rcpres;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_ReciprocalResolution_WATERHEIGHTMAPPASS"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.rcpresh;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_ReciprocalResolution_WATERDISPLACEMENTPASS"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.rcpresd;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_CameraForward"))
-					  pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheRenderManager->CameraForward;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_CameraPosition"))
-					  pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheRenderManager->CameraPosition;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_SunDirection"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.SunDir;
-				  else if (cnst.Name == strstr(cnst.Name, "oblv_SunTiming"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.SunTiming;
-				  else if  (cnst.Name == strstr(cnst.Name, "oblv_GameTime"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.GameTime;
-				  else if  (cnst.Name == strstr(cnst.Name, "oblv_TexData0")) {
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.TextureData;
-				  }
-				  else
-					break;
-			}
-			else if (cnst.Name == strstr(cnst.Name, "glob_")) {
-				if (cnst.Name == strstr(cnst.Name, "glob_waveSpeed"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Water_waveSpeed;
-				else if (cnst.Name == strstr(cnst.Name, "glob_waterCoefficients"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Water_waterCoefficients;
-				else if (cnst.Name == strstr(cnst.Name, "glob_waveParams"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Water_waveParams;
-				else if (cnst.Name == strstr(cnst.Name, "glob_waterVolume"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Water_waterVolume;
-				else if (cnst.Name == strstr(cnst.Name, "glob_foamAndLODSettings"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.Water_foamAndLODSettings;
-				else if (cnst.Name == strstr(cnst.Name, "glob_fogColor"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.fogColor;
-				else if (cnst.Name == strstr(cnst.Name, "glob_sunColor"))
-					pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = (RuntimeVariable::mem::fv *)&TheShaderManager->ShaderConst.sunColor;
-				else
-					break;
-			}
-			else if (cnst.Name == strstr(cnst.Name, "cust_")) {
-			  if (cnst.DefaultValue)
-				memcpy(fvs, cnst.DefaultValue, cnst.RegisterCount * sizeof(float) * 4);
-			  pFloat4[cnts[D3DXRS_FLOAT4]].vals.floating = fvs; fvs += cnst.RegisterCount;
-			}
-
-			pFloat4[cnts[D3DXRS_FLOAT4]].offset = cnst.RegisterIndex;
-			pFloat4[cnts[D3DXRS_FLOAT4]].length = cnst.RegisterCount;
-			pFloat4[cnts[D3DXRS_FLOAT4]].name = cnst.Name;
-					cnts[D3DXRS_FLOAT4]++;
- 			break;
-		  case D3DXRS_SAMPLER:
-			if (cnst.Name == strstr(cnst.Name, "oblv_")) {
-			  if (cnst.Name == strstr(cnst.Name, "oblv_CurrRendertarget0_CURRENTPASS")) {
-				pCopyRT = (IDirect3DTexture9 **)&pTexture[cnts[D3DXRS_SAMPLER]].vals.texture;
-				(*pCopyRT) = TheShaderManager->RenderTexture;
-			  }
-			  else if (cnst.Name == strstr(cnst.Name, "oblv_CurrDepthStenzilZ_CURRENTPASS")) {
-				pCopyDS = (IDirect3DTexture9 **)&pTexture[cnts[D3DXRS_SAMPLER]].vals.texture;
-				(*pCopyDS) = TheRenderManager->DepthTexture;
-			  }
-			  else
-			  break;
-			}
-			else if ((cnst.Name == strstr(cnst.Name, "glob_")) || (cnst.Name == strstr(cnst.Name, "cust_"))) {
-				int tnm = 0;
-				int sts = (RuntimeVariable::mem::tv *)LoadTexture(cnst.Name,(int *)&tnm,(DWORD *)tvs) - tvs;
-
-				  /* specific sampler-states have been defined */
-				  if (tvs->Type) {
-					assert(sts < 16);
-
-					pSampler[cnts[D3DXRS_SAMPLER + 1]].vals.state = tvs; tvs += sts + 1;
-					pSampler[cnts[D3DXRS_SAMPLER + 1]].offset = cnst.RegisterIndex;
-					pSampler[cnts[D3DXRS_SAMPLER + 1]].length = cnst.RegisterCount;
-					pSampler[cnts[D3DXRS_SAMPLER + 1]].name = cnst.Name;
-					cnts[D3DXRS_SAMPLER + 1]++;
-				  }
-
-				  pTexture[cnts[D3DXRS_SAMPLER]].vals.texture = TheTextureManager->GetTexture(tnm)->GetTexture();
-			}
-
-			pTexture[cnts[D3DXRS_SAMPLER]].offset = cnst.RegisterIndex;
-			pTexture[cnts[D3DXRS_SAMPLER]].length = cnst.RegisterCount;
-			pTexture[cnts[D3DXRS_SAMPLER]].name = cnst.Name;
-			cnts[D3DXRS_SAMPLER]++;
-			break;
 		}
-      }
-
-      assert(cnts[D3DXRS_BOOL	    ] <= nums[D3DXRS_BOOL	]);
-      assert(cnts[D3DXRS_INT4	    ] <= nums[D3DXRS_INT4	]);
-      assert(cnts[D3DXRS_FLOAT4	    ] <= nums[D3DXRS_FLOAT4	]);
-      assert(cnts[D3DXRS_SAMPLER    ] <= nums[D3DXRS_SAMPLER    ]);
-      assert(cnts[D3DXRS_SAMPLER + 1] <= nums[D3DXRS_SAMPLER    ]);
-
-      if (!cnts[D3DXRS_BOOL	  ]) pBool    = NULL;
-      if (!cnts[D3DXRS_INT4	  ]) pInt4    = NULL;
-      if (!cnts[D3DXRS_FLOAT4	  ]) pFloat4  = NULL;
-      if (!cnts[D3DXRS_SAMPLER	  ]) pTexture = NULL;
-      if (!cnts[D3DXRS_SAMPLER + 1]) pSampler = NULL;
-  }
+	}
 
 }
 
-void RuntimeShaderRecord::SetCT() {
+void ShaderRecord::SetCT() {
+	
+	ShaderValue* Value;
 
-	if (pCustomCT) {
-		RuntimeVariable *rV;
-
-		if (pCopyRT && !TheShaderManager->RenderSurfaceFilled) {
-			TheRenderManager->device->StretchRect(TheRenderManager->currentRTGroup->targets[0]->data->Surface, NULL, TheShaderManager->RenderSurface, NULL, D3DTEXF_NONE);
-			TheShaderManager->RenderSurfaceFilled = true;
+	if (HasCT) {
+		if (HasRB && !TheShaderManager->RenderedBufferFilled) {
+			TheRenderManager->device->StretchRect(TheRenderManager->currentRTGroup->RenderTargets[0]->data->Surface, NULL, TheShaderManager->RenderedSurface, NULL, D3DTEXF_NONE);
+			TheShaderManager->RenderedBufferFilled = true;
 		}
-		if (pCopyDS && !TheShaderManager->DepthBufferFilled) {
+		if (HasDB && !TheShaderManager->DepthBufferFilled) {
 			TheRenderManager->ResolveDepthBuffer();
 			TheShaderManager->DepthBufferFilled = true;
 		}
-		if (rV = pTexture) do {
-				TheRenderManager->device->SetTexture(rV->offset, rV->vals.texture);
+		for (int c = 0; c < TextureShaderValuesCount; c++) {
+			Value = &TextureShaderValues[c];
+			if (Value->Texture->Texture) TheRenderManager->device->SetTexture(Value->RegisterIndex, Value->Texture->Texture);
+			if (Value->Texture->SamplerStates[0]) {
+				for (int t = 1; t < SamplerStatesMax; t++) {
+					if (Value->Texture->SamplerStates[t]) TheRenderManager->SetSamplerState(Value->RegisterIndex, (D3DSAMPLERSTATETYPE)(t), &Value->Texture->SamplerStates[t], true);
+				}
 			}
-			while ((++rV)->length);
-		if (rV = pSampler) do {
-				RuntimeVariable::mem::tv *rT;
-				if (rT = rV->vals.state) do {
-						TheRenderManager->device->SetSamplerState(rV->offset, rT->Type, rT->Value);
-					}
-					while ((++rT)->Type);
-			}
-			while ((++rV)->length);
-		if (rV = pBool) do {
-				if (ShaderType == Vertex)
-					TheRenderManager->device->SetVertexShaderConstantB(rV->offset, (const BOOL *)&rV->vals.condition, rV->length);
-				else
-					TheRenderManager->device->SetPixelShaderConstantB(rV->offset, (const BOOL *)&rV->vals.condition, rV->length);
-			}
-			while ((++rV)->length);
-		if (rV = pInt4) do {
-				if (ShaderType == Vertex)
-					TheRenderManager->device->SetVertexShaderConstantI(rV->offset, (const int *)rV->vals.integer, rV->length);
-				else
-					TheRenderManager->device->SetPixelShaderConstantI(rV->offset, (const int *)rV->vals.integer, rV->length);
-			}
-			while ((++rV)->length);
-		if (rV = pFloat4) do {
-				if (ShaderType == Vertex)
-					TheRenderManager->device->SetVertexShaderConstantF(rV->offset, (const float *)rV->vals.floating, rV->length);
-				else
-					TheRenderManager->device->SetPixelShaderConstantF(rV->offset, (const float *)rV->vals.floating, rV->length);
-			}
-			while ((++rV)->length);
+		}
+		for (int c = 0; c < FloatShaderValuesCount; c++) {
+			Value = &FloatShaderValues[c];
+			if (Type == ShaderType_Vertex)
+				TheRenderManager->device->SetVertexShaderConstantF(Value->RegisterIndex, (const float *)Value->Value, Value->RegisterCount);
+			else
+				TheRenderManager->device->SetPixelShaderConstantF(Value->RegisterIndex, (const float *)Value->Value, Value->RegisterCount);
+		}
 	}
+
+}
+
+EffectRecord::EffectRecord() {
+
+	pSource = NULL;
+	pEffect = NULL;
+	pErrors = NULL;
+	Enabled = false;
+	FloatShaderValuesCount = 0;
+	TextureShaderValuesCount = 0;
+
+}
+
+EffectRecord::~EffectRecord() {
+
+	if (pEffect) { pEffect->Release(); pEffect = NULL; }
+	if (pErrors) { pErrors->Release(); pErrors = NULL; }
+
+}
+
+bool EffectRecord::LoadEffect(const char* Name) {
+
+	char FileName[MAX_PATH];
+	bool Compiled = true;
+
+	strcpy(FileName, Name);
+	strcat(FileName, ".hlsl");
+	std::ifstream FileSource(FileName, std::ios::in | std::ios::binary | std::ios::ate);
+	if (FileSource.is_open()) {
+		std::streampos size = FileSource.tellg();
+		pSource = new char[size];
+		FileSource.seekg(0, std::ios::beg);
+		FileSource.read(pSource, size);
+		FileSource.close();
+		if (TheSettingManager->SettingsMain.DevelopCompileEffects) {
+			Compiled = false;
+			ID3DXEffectCompiler* pCompiler = NULL;
+			ID3DXBuffer* pEffectBuffer = NULL;
+			D3DXCreateEffectCompilerFromFileA(FileName, NULL, NULL, NULL, &pCompiler, &pErrors);
+			if (pErrors) _MESSAGE((char*)pErrors->GetBufferPointer());
+			if (pCompiler) {
+				pCompiler->CompileEffect(NULL, &pEffectBuffer, &pErrors);
+				if (pErrors) _MESSAGE((char*)pErrors->GetBufferPointer());
+			}
+			if (pEffectBuffer) {
+				std::ofstream FileBinary(Name, std::ios::out | std::ios::binary);
+				FileBinary.write((char*)pEffectBuffer->GetBufferPointer(), pEffectBuffer->GetBufferSize());
+				FileBinary.flush();
+				FileBinary.close();
+				Compiled = true;
+				_MESSAGE("Effect compiled: %s", FileName);
+			}
+			if (pEffectBuffer) pEffectBuffer->Release();
+			if (pCompiler) pCompiler->Release();
+		}
+		if (Compiled) {
+			D3DXCreateEffectFromFileA(TheRenderManager->device, Name, NULL, NULL, NULL, NULL, &pEffect, &pErrors);
+			if (pErrors) _MESSAGE((char*)pErrors->GetBufferPointer());
+			if (pEffect) {
+				CreateCT();
+				_MESSAGE("Effect loaded: %s", Name);
+				return true;
+			}
+		}
+	}
+	return false;
+
+}
+
+void EffectRecord::CreateCT() {
+
+	D3DXEFFECT_DESC ConstantTableDesc;
+	D3DXPARAMETER_DESC ConstantDesc;
+	D3DXHANDLE Handle;
+	UINT ConstantCount = 1;
+	UInt32 FloatIndex = 0;
+	UInt32 TextureIndex = 0;
+
+	pEffect->GetDesc(&ConstantTableDesc);
+	for (int c = 0; c < ConstantTableDesc.Parameters; c++) {
+		Handle = pEffect->GetParameter(NULL, c);
+		pEffect->GetParameterDesc(Handle, &ConstantDesc);
+		if ((ConstantDesc.Class == D3DXPC_VECTOR || ConstantDesc.Class == D3DXPC_MATRIX_ROWS) && !memcmp(ConstantDesc.Name, "TESR_", 5)) FloatShaderValuesCount += 1;
+		if (ConstantDesc.Class == D3DXPC_OBJECT && ConstantDesc.Type >= D3DXPT_SAMPLER && ConstantDesc.Type <= D3DXPT_SAMPLERCUBE && !memcmp(ConstantDesc.Name, "TESR_", 5)) TextureShaderValuesCount += 1;
+	}
+	FloatShaderValues = (ShaderValue*)malloc(FloatShaderValuesCount * sizeof(ShaderValue));
+	TextureShaderValues = (ShaderValue*)malloc(TextureShaderValuesCount * sizeof(ShaderValue));
+	for (int c = 0; c < ConstantTableDesc.Parameters; c++) {
+		Handle = pEffect->GetParameter(NULL, c);
+		pEffect->GetParameterDesc(Handle, &ConstantDesc);
+		if (!memcmp(ConstantDesc.Name, "TESR_", 5)) {
+			switch (ConstantDesc.Class) {
+				case D3DXPC_VECTOR:
+				case D3DXPC_MATRIX_ROWS:
+					SetConstantTableValue(ConstantDesc.Name, FloatIndex);
+					FloatShaderValues[FloatIndex].RegisterIndex = (UInt32)Handle;
+					FloatShaderValues[FloatIndex].RegisterCount = ConstantDesc.Rows;
+					FloatIndex++;
+					break;
+				case D3DXPC_OBJECT:
+					if (ConstantDesc.Class == D3DXPC_OBJECT && ConstantDesc.Type >= D3DXPT_SAMPLER && ConstantDesc.Type <= D3DXPT_SAMPLERCUBE) {
+						TextureShaderValues[TextureIndex].Texture = TheTextureManager->LoadTexture(pSource, TextureIndex);
+						TextureShaderValues[TextureIndex].RegisterIndex = TextureIndex;
+						TextureShaderValues[TextureIndex].RegisterCount = 1;
+						TextureIndex++;
+					}
+					break;
+			}
+		}
+	}
+
+}
+
+void EffectRecord::SetCT() {
+
+	ShaderValue* Value;
+
+	for (int c = 0; c < TextureShaderValuesCount; c++) {
+		Value = &TextureShaderValues[c];
+		if (Value->Texture->Texture) TheRenderManager->device->SetTexture(Value->RegisterIndex, Value->Texture->Texture);
+	}
+	for (int c = 0; c < FloatShaderValuesCount; c++) {
+		Value = &FloatShaderValues[c];
+		if (Value->RegisterCount == 1)
+			pEffect->SetVector((D3DXHANDLE)Value->RegisterIndex, Value->Value);
+		else
+			pEffect->SetMatrix((D3DXHANDLE)Value->RegisterIndex, (D3DXMATRIX*)Value->Value);
+	}
+
+}
+
+void EffectRecord::Render(IDirect3DDevice9* D3DDevice, IDirect3DSurface9* RenderTarget, IDirect3DSurface9* RenderedSurface, bool ClearRenderTarget) {
+
+	UINT Passes;
+
+	pEffect->Begin(&Passes, NULL);
+	for (int p = 0; p < Passes; p++) {
+		if (ClearRenderTarget) D3DDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1, 0);
+		pEffect->BeginPass(p);
+		D3DDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+		pEffect->EndPass();
+		D3DDevice->StretchRect(RenderTarget, NULL, RenderedSurface, NULL, D3DTEXF_NONE);
+	}
+	pEffect->End();
 
 }
 
 ShaderManager::ShaderManager() {
 
 	_MESSAGE("Starting the shaders manager...");
+	TheShaderManager = this;
+
 	LARGE_INTEGER freq;
+	float uadj, vadj;
+	void* VertexPointer;
+
+	SourceTexture = NULL;
+	SourceSurface = NULL;
+	RenderedTexture = NULL;
+	RenderedSurface = NULL;
+	RenderTextureSMAA = NULL;
+	RenderSurfaceSMAA = NULL;
+	RenderedBufferFilled = false;
+	DepthBufferFilled = false;
+	EffectVertex = NULL;
+	UnderwaterEffect = NULL;
+	WaterLensEffect = NULL;
+	GodRaysEffect = NULL;
+	DepthOfFieldEffect = NULL;
+	AmbientOcclusionEffect = NULL;
+	ColoringEffect = NULL;
+	CinemaEffect = NULL;
+	BloomEffect = NULL;
+	SnowAccumulationEffect = NULL;
+	BloodLensEffect = NULL;
+	SMAAEffect = NULL;
+	MotionBlurEffect = NULL;
+	LowHFEffect = NULL;
+	WetWorldEffect = NULL;
+	SharpeningEffect = NULL;
+	CustomEffect = NULL;
+	InitializeConstants();
 
 	QueryPerformanceFrequency(&freq);
 	ShaderConst.TikTiming.w = (freq.QuadPart);
-	ShaderConst.rcpres.x = 1.0f / TheRenderManager->width;
-	ShaderConst.rcpres.y = 1.0f / TheRenderManager->height;
-	ShaderConst.rcpres.z = TheRenderManager->width / TheRenderManager->height;
-	ShaderConst.rcpres.w = TheRenderManager->width * TheRenderManager->height;
-	ShaderConst.rcpresh.x = 1.0f / WaterHeightMapSize;
-	ShaderConst.rcpresh.y = 1.0f / WaterHeightMapSize;
-	ShaderConst.rcpresh.z = WaterHeightMapSize / WaterHeightMapSize;
-	ShaderConst.rcpresh.w = WaterHeightMapSize * WaterHeightMapSize;
-	ShaderConst.rcpresd.x = 1.0f / WaterDisplacementMapSize;
-	ShaderConst.rcpresd.y = 1.0f / WaterDisplacementMapSize;
-	ShaderConst.rcpresd.z = WaterDisplacementMapSize / WaterDisplacementMapSize;
-	ShaderConst.rcpresd.w = WaterDisplacementMapSize * WaterDisplacementMapSize;
-	InitializeConstants();
-	RenderSurfaceFilled = false;
-	DepthBufferFilled = false;
-	RenderTexture = NULL;
-	RenderSurface = NULL;
-	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &RenderTexture, NULL);
-	RenderTexture->GetSurfaceLevel(0, &RenderSurface);
+	ShaderConst.ReciprocalResolution.x = 1.0f / TheRenderManager->width;
+	ShaderConst.ReciprocalResolution.y = 1.0f / TheRenderManager->height;
+	ShaderConst.ReciprocalResolution.z = TheRenderManager->width / TheRenderManager->height;
+	ShaderConst.ReciprocalResolution.w = 0.0f; // Reserved to store the FoV
+	ShaderConst.ReciprocalResolutionWater.x = 1.0f / WaterHeightMapSize;
+	ShaderConst.ReciprocalResolutionWater.y = 1.0f / WaterHeightMapSize;
+	ShaderConst.ReciprocalResolutionWater.z = 1.0f / WaterDisplacementMapSize;
+	ShaderConst.ReciprocalResolutionWater.w = 1.0f / WaterDisplacementMapSize;
+
+	uadj = (1.0f / (float)TheRenderManager->width) * 0.5f;
+	vadj = (1.0f / (float)TheRenderManager->height) * 0.5f;
+	EffectQuad ShaderVertices[] = {
+		{ -1.0f,  1.0f, 1.0f, 0.0f + uadj, 0.0f + vadj },
+		{ -1.0f, -1.0f, 1.0f, 0.0f + uadj, 1.0f + vadj },
+		{  1.0f,  1.0f, 1.0f, 1.0f + uadj, 0.0f + vadj },
+		{  1.0f, -1.0f, 1.0f, 1.0f + uadj, 1.0f + vadj }
+	};
+	TheRenderManager->device->CreateVertexBuffer(4 * sizeof(EffectQuad), D3DUSAGE_WRITEONLY, EFFECTQUADFORMAT, D3DPOOL_DEFAULT, &EffectVertex, 0);
+	EffectVertex->Lock(0, 0, &VertexPointer, 0);
+	CopyMemory(VertexPointer, ShaderVertices, sizeof(ShaderVertices));
+	EffectVertex->Unlock();
+	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &SourceTexture, NULL);
+	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &RenderedTexture, NULL);
+	TheRenderManager->device->CreateTexture(TheRenderManager->width, TheRenderManager->height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &RenderTextureSMAA, NULL);
+	SourceTexture->GetSurfaceLevel(0, &SourceSurface);
+	RenderedTexture->GetSurfaceLevel(0, &RenderedSurface);
+	RenderTextureSMAA->GetSurfaceLevel(0, &RenderSurfaceSMAA);
+	
+	if (TheSettingManager->SettingsMain.EnableUnderwater) CreateEffect(EffectRecordType_Underwater);
+	if (TheSettingManager->SettingsMain.EnableWaterLens) CreateEffect(EffectRecordType_WaterLens);
+	if (TheSettingManager->SettingsMain.EnableGodRays) CreateEffect(EffectRecordType_GodRays);
+	if (TheSettingManager->SettingsMain.EnableDepthOfField) CreateEffect(EffectRecordType_DepthOfField);
+	if (TheSettingManager->SettingsMain.EnableAmbientOcclusion) CreateEffect(EffectRecordType_AmbientOcclusion);
+	if (TheSettingManager->SettingsMain.EnableColoring) CreateEffect(EffectRecordType_Coloring);
+	if (TheSettingManager->SettingsMain.EnableCinema) CreateEffect(EffectRecordType_Cinema);
+	if (TheSettingManager->SettingsMain.EnableBloom) CreateEffect(EffectRecordType_Bloom);
+	if (TheSettingManager->SettingsMain.EnableSnowAccumulation) CreateEffect(EffectRecordType_SnowAccumulation);
+	if (TheSettingManager->SettingsMain.EnableBloodLens) CreateEffect(EffectRecordType_BloodLens);
+	if (TheSettingManager->SettingsMain.EnableSMAA) CreateEffect(EffectRecordType_SMAA);
+	if (TheSettingManager->SettingsMain.EnableMotionBlur) CreateEffect(EffectRecordType_MotionBlur);
+	if (TheSettingManager->SettingsMain.EnableLowHF) CreateEffect(EffectRecordType_LowHF);
+	if (TheSettingManager->SettingsMain.EnableWetWorld) CreateEffect(EffectRecordType_WetWorld);
+	if (TheSettingManager->SettingsMain.EnableSharpening) CreateEffect(EffectRecordType_Sharpening);
+	if (TheSettingManager->SettingsMain.CustomEffects) CreateEffect(EffectRecordType_Custom);
 
 }
 
 void ShaderManager::InitializeConstants()
 {
 	ShaderConst.pWeather = NULL;
-	ShaderConst.WaterLens_Percent = 0;
-	ShaderConst.BloodLens_Percent = 0;
-	ShaderConst.SnowAccumulation_Params.w = 0;
-	ShaderConst.WetWorld_RainAmount = 0;
-	ShaderConst.FrameTime = 0;
-	ShaderConst.LowHF_HealthCoeff = 0;
-	ShaderConst.LowHF_FatigueCoeff = 0;
+	ShaderConst.WaterLens_Percent = 0.0f;
+	ShaderConst.BloodLens_Percent = 0.0f;
+	ShaderConst.SnowAccumulation_Params.w = 0.0f;
+	ShaderConst.WetWorld_Data.x = 0.0f;
 }
 
-void ShaderManager::UpdateFrameConstants() {
+void ShaderManager::UpdateConstants() {
 
 	LARGE_INTEGER tick;
 	SettingsWaterStruct *sws = NULL;
-	
 	Sky* pSky = *(Sky**)kSky;
 	NiAVObject* SunRoot = (NiAVObject*)pSky->sun->SunBillboard->m_parent;
 	TESClimate* currentClimate = pSky->firstClimate;
@@ -632,7 +618,12 @@ void ShaderManager::UpdateFrameConstants() {
 	bool IsThirdPersonView;
 
 	QueryPerformanceCounter(&tick);
-	time(&currentTime);
+	TheFrameRateManager->CurrentTime = time(NULL);
+	ShaderConst.TikTiming.x = (float)(tick.QuadPart) / ShaderConst.TikTiming.w;
+	ShaderConst.TikTiming.y = (float)(tick.QuadPart) * 1000 / ShaderConst.TikTiming.w;
+	ShaderConst.TikTiming.z = (float)(tick.QuadPart) * 1000000 / ShaderConst.TikTiming.w;
+	TheFrameRateManager->SetFrameTime(ShaderConst.TikTiming.x);
+
 	if (TheSettingManager->SettingsMain.CameraMode)
 		IsThirdPersonView = !TheRenderManager->FirstPersonView;
 	else
@@ -642,10 +633,6 @@ void ShaderManager::UpdateFrameConstants() {
 	ShaderConst.currentCell = (*g_thePlayer)->parentCell;
 	if (ShaderConst.currentCell) {
 		ShaderConst.currentWorldSpace = ShaderConst.currentCell->worldSpace;
-
-		ShaderConst.TikTiming.x = (float)(tick.QuadPart) * 1    * 1    / ShaderConst.TikTiming.w;
-		ShaderConst.TikTiming.y = (float)(tick.QuadPart) * 1000 * 1    / ShaderConst.TikTiming.w;
-		ShaderConst.TikTiming.z = (float)(tick.QuadPart) * 1000 * 1000 / ShaderConst.TikTiming.w;
 	
 		ShaderConst.SunTiming.x = currentClimate->sunriseBegin / 6.0f - 1.0f;
 		ShaderConst.SunTiming.y = currentClimate->sunriseEnd / 6.0f;
@@ -661,7 +648,7 @@ void ShaderManager::UpdateFrameConstants() {
 		ShaderConst.SunDir.x = SunRoot->m_localTransform.pos.x;
 		ShaderConst.SunDir.y = SunRoot->m_localTransform.pos.y;
 		ShaderConst.SunDir.z = SunRoot->m_localTransform.pos.z;
-		TheUtilityManager->NormalizeVector3(ShaderConst.SunDir);
+		TheUtilityManager->NormalizeVector3(&ShaderConst.SunDir);
 
 		if (ShaderConst.GameTime.y > ShaderConst.SunTiming.w || ShaderConst.GameTime.y < ShaderConst.SunTiming.x)
 			ShaderConst.SunDir.z = -ShaderConst.SunDir.z;
@@ -850,14 +837,20 @@ void ShaderManager::UpdateFrameConstants() {
 				ShaderConst.sunColor.z = ShaderConst.oldsunColor.z - ((ShaderConst.oldsunColor.z - ShaderConst.sunColor.z) * weatherPercent);
 				ShaderConst.sunColor.w = ShaderConst.SunAmount.w;
 
-				ShaderConst.fogStart = ShaderConst.oldfogStart - ((ShaderConst.oldfogStart - ShaderConst.currentfogStart) * weatherPercent);
-				ShaderConst.fogEnd = ShaderConst.oldfogEnd - ((ShaderConst.oldfogEnd - ShaderConst.currentfogEnd) * weatherPercent);
+				ShaderConst.fogData.x = ShaderConst.oldfogStart - ((ShaderConst.oldfogStart - ShaderConst.currentfogStart) * weatherPercent);
+				ShaderConst.fogData.y = ShaderConst.oldfogEnd - ((ShaderConst.oldfogEnd - ShaderConst.currentfogEnd) * weatherPercent);
+				ShaderConst.fogData.z = ShaderConst.currentsunGlare;
 
 				if (weatherPercent == 1.0f) ShaderConst.pWeather = currentWeather;
 			}
 		}
 		else {
 			ShaderConst.SunDir.w = 0.0f;
+			ShaderConst.SunAmount.x = 0.0f;
+			ShaderConst.SunAmount.y = 1.0f;
+			ShaderConst.SunAmount.z = 0.0f;
+			ShaderConst.SunAmount.w = 0.0f;
+			ShaderConst.currentsunGlare = 0.5f;
 			TESObjectCELL::LightingData* LightData = ShaderConst.currentCell->lighting;
 			ShaderConst.fogColor.x = LightData->fog.r / 255.0f;
 			ShaderConst.fogColor.y = LightData->fog.g / 255.0f;
@@ -869,10 +862,9 @@ void ShaderManager::UpdateFrameConstants() {
 			ShaderConst.sunColor.z = LightData->ambient.b / 255.0f;
 			ShaderConst.sunColor.w = ShaderConst.SunAmount.w;
 
-			ShaderConst.fogStart = LightData->fogNear;
-			ShaderConst.fogEnd = LightData->fogFar;
-
-			ShaderConst.currentsunGlare = 0.5f;
+			ShaderConst.fogData.x = LightData->fogNear;
+			ShaderConst.fogData.y = LightData->fogFar;
+			ShaderConst.fogData.z = ShaderConst.currentsunGlare;
 		}
 		
 		if (CurrentBlend == 0.25f)
@@ -886,6 +878,20 @@ void ShaderManager::UpdateFrameConstants() {
 		if (sws == NULL) sws = TheSettingManager->GetSettingsWater("Default");
 
 		if (TheSettingManager->SettingsMain.EnableWater || TheSettingManager->SettingsMain.EnableUnderwater) {
+			TESWaterForm* currentWater = TheUtilityManager->GetWaterForm(ShaderConst.currentCell);
+			
+			if (currentWater) {
+				ShaderConst.Water_deepColor.x = currentWater->DeepColorR / 255.0f;
+				ShaderConst.Water_deepColor.y = currentWater->DeepColorG / 255.0f;
+				ShaderConst.Water_deepColor.z = currentWater->DeepColorB / 255.0f;
+				ShaderConst.Water_deepColor.w = currentWater->DeepColorA / 255.0f;
+			
+				ShaderConst.Water_shallowColor.x = currentWater->ShallowColorR / 255.0f;
+				ShaderConst.Water_shallowColor.y = currentWater->ShallowColorG / 255.0f;
+				ShaderConst.Water_shallowColor.z = currentWater->ShallowColorB / 255.0f;
+				ShaderConst.Water_shallowColor.w = currentWater->ShallowColorA / 255.0f;
+			}
+
 			ShaderConst.Water_waterCoefficients.x = sws->inExtCoeff_R;
 			ShaderConst.Water_waterCoefficients.y = sws->inExtCoeff_G;
 			ShaderConst.Water_waterCoefficients.z = sws->inExtCoeff_B;
@@ -893,68 +899,49 @@ void ShaderManager::UpdateFrameConstants() {
 
 			ShaderConst.Water_waveParams.x = sws->choppiness;
 			ShaderConst.Water_waveParams.y = sws->waveWidth;
+			ShaderConst.Water_waveParams.z = sws->waveSpeed;
 			ShaderConst.Water_waveParams.w = sws->reflectivity;
 
-			ShaderConst.Water_foamAndLODSettings.z = sws->LODdistance;
-			ShaderConst.Water_foamAndLODSettings.w = sws->MinLOD;
+			ShaderConst.Water_waterSettings.x = WaterLevel;
+			ShaderConst.Water_waterSettings.y = sws->depthDarkness;
+			ShaderConst.Water_waterSettings.z = sws->LODdistance;
+			ShaderConst.Water_waterSettings.w = sws->MinLOD;
 
 			ShaderConst.Water_waterVolume.x = sws->causticsStrength * ShaderConst.currentsunGlare;
 			ShaderConst.Water_waterVolume.y = sws->shoreFactor;
 			ShaderConst.Water_waterVolume.z = sws->turbidity;
 			ShaderConst.Water_waterVolume.w = sws->causticsStrengthS;
-
-			ShaderConst.Water_depthDarkness = sws->depthDarkness;
+			
 			ShaderConst.HasWater = ShaderConst.currentCell->flags0 & TESObjectCELL::kFlags0_HasWater;
-			ShaderConst.WaterHeight = WaterLevel;
 		}		
 
 		if (TheSettingManager->SettingsMain.EnableSnowAccumulation) {
 			if (currentWeather->precipType == 8) {
-				if (ShaderConst.SnowAccumulation_Params.w < TheSettingManager->SettingsPrecipitations.SnowAmount)
-					ShaderConst.SnowAccumulation_Params.w = ShaderConst.SnowAccumulation_Params.w + TheSettingManager->SettingsPrecipitations.SnowIncrease;
-				if (sws->IceEnabled)
-					if (ShaderConst.currentWorldSpace && ShaderConst.SnowAccumulation_Params.w >= TheSettingManager->SettingsPrecipitations.SnowAmount)
-						ShaderConst.Water_waveSpeed.x = 0.0f;
+				if (ShaderConst.SnowAccumulation_Params.w < TheSettingManager->SettingsPrecipitations.SnowAmount) ShaderConst.SnowAccumulation_Params.w = ShaderConst.SnowAccumulation_Params.w + TheSettingManager->SettingsPrecipitations.SnowIncrease;
 			}
 			else {
 				if (ShaderConst.SnowAccumulation_Params.w > 0.0f)
 					ShaderConst.SnowAccumulation_Params.w = ShaderConst.SnowAccumulation_Params.w - TheSettingManager->SettingsPrecipitations.SnowDecrease;
-				if (ShaderConst.SnowAccumulation_Params.w < 0.0f)
+				else if (ShaderConst.SnowAccumulation_Params.w < 0.0f)
 					ShaderConst.SnowAccumulation_Params.w = 0.0f;
-				if (ShaderConst.SnowAccumulation_Params.w == 0.0f)
-					ShaderConst.Water_waveSpeed.x = sws->waveSpeed;
-			}
-			if (ShaderConst.Water_waveSpeed.x == 0.0f) {
-				ShaderConst.Water_waterCoefficients.x = sws->IceinExtCoeff_R;
-				ShaderConst.Water_waterCoefficients.y = sws->IceinExtCoeff_G;
-				ShaderConst.Water_waterCoefficients.z = sws->IceinExtCoeff_B;
-				ShaderConst.Water_waveParams.x = sws->Icechoppiness;
-				ShaderConst.Water_waveParams.y = sws->IcewaveWidth;
-				ShaderConst.Water_waveParams.w = sws->Icereflectivity;
-				ShaderConst.Water_waterVolume.y = sws->IceshoreFactor;
-				ShaderConst.Water_waterVolume.z = sws->Iceturbidity;
 			}
 			ShaderConst.SnowAccumulation_Params.x = TheSettingManager->SettingsPrecipitations.SnowBlurNormDropThreshhold;
 			ShaderConst.SnowAccumulation_Params.y = TheSettingManager->SettingsPrecipitations.SnowBlurRadiusMultiplier;
 			ShaderConst.SnowAccumulation_Params.z = TheSettingManager->SettingsPrecipitations.SnowSunPower;
 		}
-		else
-			ShaderConst.Water_waveSpeed.x = sws->waveSpeed;
-
+			
 		if (TheSettingManager->SettingsMain.EnableWetWorld) {
 			if (currentWeather->precipType == 4) {
-				ShaderConst.WetWorld_RippleWeight = 1.0f;
-				if (ShaderConst.WetWorld_RainAmount < TheSettingManager->SettingsPrecipitations.RainAmount)
-					ShaderConst.WetWorld_RainAmount = ShaderConst.WetWorld_RainAmount + TheSettingManager->SettingsPrecipitations.RainIncrease;
+				ShaderConst.WetWorld_Data.y = 1.0f;
+				if (ShaderConst.WetWorld_Data.x < TheSettingManager->SettingsPrecipitations.RainAmount) ShaderConst.WetWorld_Data.x = ShaderConst.WetWorld_Data.x + TheSettingManager->SettingsPrecipitations.RainIncrease;
 			}
 			else {
-				ShaderConst.WetWorld_RippleWeight = 0.3f - weatherPercent;
-				if (ShaderConst.WetWorld_RippleWeight <= 0.0f)
-					ShaderConst.WetWorld_RippleWeight = 0.05f;
-				if (ShaderConst.WetWorld_RainAmount > 0.0f)
-					ShaderConst.WetWorld_RainAmount = ShaderConst.WetWorld_RainAmount - TheSettingManager->SettingsPrecipitations.RainDecrease;
-				if (ShaderConst.WetWorld_RainAmount < 0.0f)
-					ShaderConst.WetWorld_RainAmount = 0.0f;
+				ShaderConst.WetWorld_Data.y = 0.3f - weatherPercent;
+				if (ShaderConst.WetWorld_Data.y <= 0.0f) ShaderConst.WetWorld_Data.y = 0.05f;
+				if (ShaderConst.WetWorld_Data.x > 0.0f)
+					ShaderConst.WetWorld_Data.x = ShaderConst.WetWorld_Data.x - TheSettingManager->SettingsPrecipitations.RainDecrease;
+				else if (ShaderConst.WetWorld_Data.x < 0.0f)
+					ShaderConst.WetWorld_Data.x = 0.0f;
 			}
 			ShaderConst.WetWorld_Coeffs.x = TheSettingManager->SettingsPrecipitations.PuddleCoeff_R;
 			ShaderConst.WetWorld_Coeffs.y = TheSettingManager->SettingsPrecipitations.PuddleCoeff_G;
@@ -965,18 +952,17 @@ void ShaderManager::UpdateFrameConstants() {
 		if (TheSettingManager->SettingsMain.EnableWaterLens) {
 			ShaderConst.WaterLens_Time.x = sws->LensTimeMultA;
 			ShaderConst.WaterLens_Time.y = sws->LensTimeMultB;
-			ShaderConst.WaterLens_Time.z = sws->LensTime;
+			ShaderConst.WaterLens_Time.z = sws->LensViscosity;
 			if (ShaderConst.WaterLens_Percent == -1.0f) {
-				ShaderConst.WaterLens_Time.w = 0.0f;
-				ShaderConst.WaterLens_Amount = sws->LensAmount;
+				ShaderConst.WaterLens_TimeAmount = 0.0f;
+				ShaderConst.WaterLens_Time.w = sws->LensAmount;
 			}
 			else if (ShaderConst.WaterLens_Percent > 0.0f) {
-				ShaderConst.WaterLens_Time.w += 1.0f;
-				ShaderConst.WaterLens_Percent = 1.0f - ShaderConst.WaterLens_Time.w / ShaderConst.WaterLens_Time.z;
+				ShaderConst.WaterLens_TimeAmount += 1.0f;
+				ShaderConst.WaterLens_Percent = 1.0f - ShaderConst.WaterLens_TimeAmount / sws->LensTime;
 				if (ShaderConst.WaterLens_Percent < 0.0f) ShaderConst.WaterLens_Percent = 0.0f;
-				ShaderConst.WaterLens_Amount = sws->LensAmount * ShaderConst.WaterLens_Percent;
+				ShaderConst.WaterLens_Time.w = sws->LensAmount * ShaderConst.WaterLens_Percent;
 			}
-			ShaderConst.WaterLens_Viscosity = sws->LensViscosity;
 		}
 
 		if (TheSettingManager->SettingsMain.EnableGrass) {
@@ -1086,9 +1072,9 @@ void ShaderManager::UpdateFrameConstants() {
 			ShaderConst.Skin_SkinData.y = TheSettingManager->SettingsSkin.SpecularPower;
 			ShaderConst.Skin_SkinData.z = TheSettingManager->SettingsSkin.MaterialThickness;
 			ShaderConst.Skin_SkinData.w = TheSettingManager->SettingsSkin.RimScalar;
-			ShaderConst.Skin_SkinColor.x = TheSettingManager->SettingsSkin.ExtCoeffRed;
-			ShaderConst.Skin_SkinColor.y = TheSettingManager->SettingsSkin.ExtCoeffGreen;
-			ShaderConst.Skin_SkinColor.z = TheSettingManager->SettingsSkin.ExtCoeffBlue;
+			ShaderConst.Skin_SkinColor.x = TheSettingManager->SettingsSkin.CoeffRed;
+			ShaderConst.Skin_SkinColor.y = TheSettingManager->SettingsSkin.CoeffGreen;
+			ShaderConst.Skin_SkinColor.z = TheSettingManager->SettingsSkin.CoeffBlue;
 		}
 		
 		if (TheSettingManager->SettingsMain.EnableShadows) {
@@ -1103,7 +1089,6 @@ void ShaderManager::UpdateFrameConstants() {
 		}
 
 		if (TheSettingManager->SettingsMain.EnableGodRays) {
-			ShaderConst.GodRays_LightShaftPasses = TheSettingManager->SettingsGodRays.LightShaftPasses;
 			ShaderConst.GodRays_Ray.x = TheSettingManager->SettingsGodRays.RayIntensity;
 			ShaderConst.GodRays_Ray.y = TheSettingManager->SettingsGodRays.RayLength;
 			if (TheSettingManager->SettingsGodRays.SunGlareEnabled) {
@@ -1118,8 +1103,9 @@ void ShaderManager::UpdateFrameConstants() {
 			ShaderConst.GodRays_RayColor.y = TheSettingManager->SettingsGodRays.RayG;
 			ShaderConst.GodRays_RayColor.z = TheSettingManager->SettingsGodRays.RayB;
 			ShaderConst.GodRays_RayColor.w = TheSettingManager->SettingsGodRays.Saturate;
-			ShaderConst.GodRays_Luminance = TheSettingManager->SettingsGodRays.Luminance;
-			ShaderConst.GodRays_GlobalMultiplier = TheSettingManager->SettingsGodRays.GlobalMultiplier;
+			ShaderConst.GodRays_Data.x = TheSettingManager->SettingsGodRays.LightShaftPasses;
+			ShaderConst.GodRays_Data.y = TheSettingManager->SettingsGodRays.Luminance;
+			ShaderConst.GodRays_Data.z = TheSettingManager->SettingsGodRays.GlobalMultiplier;
 		}
 
 		if (TheSettingManager->SettingsMain.EnableAmbientOcclusion) {
@@ -1132,14 +1118,14 @@ void ShaderManager::UpdateFrameConstants() {
 
 			ShaderConst.AmbientOcclusion_Enabled = sas->Enabled;
 			if (ShaderConst.AmbientOcclusion_Enabled) {
-				ShaderConst.AmbientOcclusion_RadiusMultiplier = sas->RadiusMultiplier;
-				ShaderConst.AmbientOcclusion_StrengthMultiplier = sas->StrengthMultiplier;
-				ShaderConst.AmbientOcclusion_ClampStrength = sas->ClampStrength;
-				ShaderConst.AmbientOcclusion_AngleBias = sas->AngleBias;
-				ShaderConst.AmbientOcclusion_Range = sas->Range;
-				ShaderConst.AmbientOcclusion_LumThreshold = sas->LumThreshold * ShaderConst.SunAmount.y;
-				ShaderConst.AmbientOcclusion_BlurDropThreshold = sas->BlurDropThreshold;
-				ShaderConst.AmbientOcclusion_BlurRadiusMultiplier = sas->BlurRadiusMultiplier;
+				ShaderConst.AmbientOcclusion_AOData.x = sas->RadiusMultiplier;
+				ShaderConst.AmbientOcclusion_AOData.y = sas->StrengthMultiplier;
+				ShaderConst.AmbientOcclusion_AOData.z = sas->ClampStrength;
+				ShaderConst.AmbientOcclusion_AOData.w = sas->Range;
+				ShaderConst.AmbientOcclusion_Data.x = sas->AngleBias;
+				ShaderConst.AmbientOcclusion_Data.y = sas->LumThreshold * ShaderConst.SunAmount.y;
+				ShaderConst.AmbientOcclusion_Data.z = sas->BlurDropThreshold;
+				ShaderConst.AmbientOcclusion_Data.w = sas->BlurRadiusMultiplier;
 			}
 		}
 
@@ -1152,13 +1138,13 @@ void ShaderManager::UpdateFrameConstants() {
 			if (sbs == NULL)
 				sbs = TheSettingManager->GetSettingsBloom("Default");
 
+			ShaderConst.Bloom_BloomData.x = sbs->Luminance;
+			ShaderConst.Bloom_BloomData.y = sbs->MiddleGray;
+			ShaderConst.Bloom_BloomData.z = sbs->WhiteCutOff;
 			ShaderConst.Bloom_BloomValues.x = sbs->BloomIntensity;
 			ShaderConst.Bloom_BloomValues.y = sbs->OriginalIntensity;
 			ShaderConst.Bloom_BloomValues.z = sbs->BloomSaturation;
 			ShaderConst.Bloom_BloomValues.w = sbs->OriginalSaturation;
-			ShaderConst.Bloom_Luminance = sbs->Luminance;
-			ShaderConst.Bloom_MiddleGray = sbs->MiddleGray;
-			ShaderConst.Bloom_WhiteCutOff = sbs->WhiteCutOff;
 		}
 
 		if (TheSettingManager->SettingsMain.EnableColoring) {
@@ -1170,14 +1156,14 @@ void ShaderManager::UpdateFrameConstants() {
 			if (scs == NULL)
 				scs = TheSettingManager->GetSettingsColoring("Default");
 
-			ShaderConst.Coloring_Strength = scs->Strength;
-			ShaderConst.Coloring_BaseGamma = scs->BaseGamma;
-			ShaderConst.Coloring_Fade = scs->Fade;
-			ShaderConst.Coloring_Contrast = scs->Contrast;
-			ShaderConst.Coloring_Saturation = scs->Saturation;
-			ShaderConst.Coloring_Bleach = scs->Bleach;
-			ShaderConst.Coloring_BleachLuma = scs->BleachLuma;
-			ShaderConst.Coloring_Linearization = scs->Linearization;
+			ShaderConst.Coloring_Data.x = scs->Strength;
+			ShaderConst.Coloring_Data.y = scs->BaseGamma;
+			ShaderConst.Coloring_Data.z = scs->Fade;
+			ShaderConst.Coloring_Data.w = scs->Contrast;
+			ShaderConst.Coloring_Values.x = scs->Saturation;
+			ShaderConst.Coloring_Values.y = scs->Bleach;
+			ShaderConst.Coloring_Values.z = scs->BleachLuma;
+			ShaderConst.Coloring_Values.w = scs->Linearization;
 			ShaderConst.Coloring_ColorCurve.x = scs->ColorCurve;
 			ShaderConst.Coloring_ColorCurve.y = scs->ColorCurveR;
 			ShaderConst.Coloring_ColorCurve.z = scs->ColorCurveG;
@@ -1210,24 +1196,21 @@ void ShaderManager::UpdateFrameConstants() {
 			}
 		}
 
+		ShaderConst.LowHF_Data.x = 0.0f;
 		if (TheSettingManager->SettingsMain.EnableLowHF) {
 			float PlayerHealthPercent = GetPlayerHealthPercent;
 			float PlayerFatiguePercent = GetPlayerFatiguePercent;
 
-			ShaderConst.LowHF_Params.x = 0;
-			ShaderConst.LowHF_Params.y = 0;
-			ShaderConst.LowHF_Params.z = 0;
-			ShaderConst.LowHF_Params.w = 0;
 			if (PlayerHealthPercent < TheSettingManager->SettingsLowHF.HealthLimit) {
-				ShaderConst.LowHF_HealthCoeff = 1 - PlayerHealthPercent / TheSettingManager->SettingsLowHF.HealthLimit;
-				ShaderConst.LowHF_Params.x = ShaderConst.LowHF_HealthCoeff * TheSettingManager->SettingsLowHF.LumaMultiplier;
-				ShaderConst.LowHF_Params.y = ShaderConst.LowHF_HealthCoeff * 0.01f * TheSettingManager->SettingsLowHF.BlurMultiplier;
-				ShaderConst.LowHF_Params.z = ShaderConst.LowHF_HealthCoeff * 20.0f * TheSettingManager->SettingsLowHF.VignetteMultiplier;
-				ShaderConst.LowHF_Params.w = (1.0f - ShaderConst.LowHF_HealthCoeff) * TheSettingManager->SettingsLowHF.DarknessMultiplier;
+				ShaderConst.LowHF_HealthCoeff = 1.0f - PlayerHealthPercent / TheSettingManager->SettingsLowHF.HealthLimit;
+				ShaderConst.LowHF_Data.x = ShaderConst.LowHF_HealthCoeff * TheSettingManager->SettingsLowHF.LumaMultiplier;
+				ShaderConst.LowHF_Data.y = ShaderConst.LowHF_HealthCoeff * 0.01f * TheSettingManager->SettingsLowHF.BlurMultiplier;
+				ShaderConst.LowHF_Data.z = ShaderConst.LowHF_HealthCoeff * 20.0f * TheSettingManager->SettingsLowHF.VignetteMultiplier;
+				ShaderConst.LowHF_Data.w = (1.0f - ShaderConst.LowHF_HealthCoeff) * TheSettingManager->SettingsLowHF.DarknessMultiplier;
 			}
-			if (!ShaderConst.LowHF_Params.x && PlayerFatiguePercent < TheSettingManager->SettingsLowHF.FatigueLimit) {
+			if (!ShaderConst.LowHF_Data.x && PlayerFatiguePercent < TheSettingManager->SettingsLowHF.FatigueLimit) {
 				ShaderConst.LowHF_FatigueCoeff = 1.0f - PlayerFatiguePercent / TheSettingManager->SettingsLowHF.FatigueLimit;
-				ShaderConst.LowHF_Params.x = ShaderConst.LowHF_FatigueCoeff * TheSettingManager->SettingsLowHF.LumaMultiplier;
+				ShaderConst.LowHF_Data.x = ShaderConst.LowHF_FatigueCoeff * TheSettingManager->SettingsLowHF.LumaMultiplier;
 			}
 		}
 
@@ -1243,31 +1226,30 @@ void ShaderManager::UpdateFrameConstants() {
 
 			ShaderConst.DepthOfField_Enabled = sds->Enabled;
 			if (ShaderConst.DepthOfField_Enabled) {
-				ShaderConst.DepthOfField_DistantBlur = sds->DistantBlur;
-				ShaderConst.DepthOfField_DistantBlurStartRange = sds->DistantBlurStartRange;
-				ShaderConst.DepthOfField_DistantBlurEndRange = sds->DistantBlurEndRange;
-				ShaderConst.DepthOfField_BaseBlurRadius = sds->BaseBlurRadius;
-				ShaderConst.DepthOfField_BlurFallOff = sds->BlurFallOff;
-				ShaderConst.DepthOfField_Radius = sds->Radius;
-				ShaderConst.DepthOfField_DiameterRange = sds->DiameterRange;
-				ShaderConst.DepthOfField_NearBlurCutOff = sds->NearBlurCutOff;
+				ShaderConst.DepthOfField_Blur.x = sds->DistantBlur;
+				ShaderConst.DepthOfField_Blur.y = sds->DistantBlurStartRange;
+				ShaderConst.DepthOfField_Blur.z = sds->DistantBlurEndRange;
+				ShaderConst.DepthOfField_Blur.w = sds->BaseBlurRadius;
+				ShaderConst.DepthOfField_Data.x = sds->BlurFallOff;
+				ShaderConst.DepthOfField_Data.y = sds->Radius;
+				ShaderConst.DepthOfField_Data.z = sds->DiameterRange;
+				ShaderConst.DepthOfField_Data.w = sds->NearBlurCutOff;
 				if (sds->DialogMode) {
-					if (!TheUtilityManager->IsMenuMode(1009) && !TheUtilityManager->IsMenuMode(1034))
-						ShaderConst.DepthOfField_Enabled = 0;
+					if (!TheUtilityManager->IsMenu(1009) && !TheUtilityManager->IsMenu(1034)) ShaderConst.DepthOfField_Enabled = 0;
 				}
 			}
 		}
 
 		if (TheSettingManager->SettingsMain.EnableCinema) {
-			ShaderConst.Cinema_AspectRatio = TheSettingManager->SettingsCinema.AspectRatio;
-			ShaderConst.Cinema_VignetteRadius = TheSettingManager->SettingsCinema.VignetteRadius;
-			if (ShaderConst.Cinema_AspectRatio != 0.0f && TheSettingManager->SettingsCinema.DialogMode) {
-				if (!TheUtilityManager->IsMenuMode(1009) && !TheUtilityManager->IsMenuMode(1034)) {
-					ShaderConst.Cinema_AspectRatio = 0.0f;
-					ShaderConst.Cinema_VignetteRadius = 0.0f;
+			ShaderConst.Cinema_Data.x = TheSettingManager->SettingsCinema.AspectRatio;
+			ShaderConst.Cinema_Data.y = TheSettingManager->SettingsCinema.VignetteRadius;
+			if (ShaderConst.Cinema_Data.x != 0.0f && TheSettingManager->SettingsCinema.DialogMode) {
+				if (!TheUtilityManager->IsMenu(1009) && !TheUtilityManager->IsMenu(1034)) {
+					ShaderConst.Cinema_Data.x = 0.0f;
+					ShaderConst.Cinema_Data.y = 0.0f;
 				}
 			}
-			ShaderConst.Cinema_VignetteDarkness = TheSettingManager->SettingsCinema.VignetteDarkness;
+			ShaderConst.Cinema_Data.z = TheSettingManager->SettingsCinema.VignetteDarkness;
 		}
 
 		if (TheSettingManager->SettingsMain.EnableMotionBlur) {
@@ -1296,12 +1278,12 @@ void ShaderManager::UpdateFrameConstants() {
 			}
 
 			if (sms->Enabled) {
-				ShaderConst.MotionBlur_AmountX = (ShaderConst.MotionBlur_oldoldAmountX + ShaderConst.MotionBlur_oldAmountX + fMotionBlurAmtX) / 3.0f;
-				ShaderConst.MotionBlur_AmountY = (ShaderConst.MotionBlur_oldoldAmountY + ShaderConst.MotionBlur_oldAmountY + fMotionBlurAmtY) / 3.0f;
+				ShaderConst.MotionBlur_Data.x = (ShaderConst.MotionBlur_oldoldAmountX + ShaderConst.MotionBlur_oldAmountX + fMotionBlurAmtX) / 3.0f;
+				ShaderConst.MotionBlur_Data.y = (ShaderConst.MotionBlur_oldoldAmountY + ShaderConst.MotionBlur_oldAmountY + fMotionBlurAmtY) / 3.0f;
 			}
 			else {
-				ShaderConst.MotionBlur_AmountX = 0.0f;
-				ShaderConst.MotionBlur_AmountY = 0.0f;
+				ShaderConst.MotionBlur_Data.x = 0.0f;
+				ShaderConst.MotionBlur_Data.y = 0.0f;
 			}
 			ShaderConst.MotionBlur_oldAngleZ = AngleZ;
 			ShaderConst.MotionBlur_oldAngleX = AngleX;
@@ -1314,100 +1296,26 @@ void ShaderManager::UpdateFrameConstants() {
 			ShaderConst.MotionBlur_BlurParams.z = sms->BlurOffsetMax;
 		}
 
-		if (TheSettingManager->SettingsMain.FrameRate) {
-			int FrameRate = 1.0f / (ShaderConst.TikTiming.x - ShaderConst.FrameTime);
-			TheFrameRateManager->SetFrame(FrameRate);
-			ShaderConst.FrameTime = ShaderConst.TikTiming.x;
+		if (TheSettingManager->SettingsMain.EnableSharpening) {
+			ShaderConst.Sharpening_Data.x = TheSettingManager->SettingsSharpening.Strength;
+			ShaderConst.Sharpening_Data.y = TheSettingManager->SettingsSharpening.Clamp;
+			ShaderConst.Sharpening_Data.z = TheSettingManager->SettingsSharpening.Offset;
 		}
+
+		if (TheSettingManager->SettingsMain.FrameRate) TheFrameRateManager->Set();
 	}
 }
 
-float ShaderManager::GetShaderConst(const char* Name, const char* Const) {
-	// To finish
-	float Value = -999999;
+void ShaderManager::BeginScene() {
 
-	if (!strcmp(Name, "AmbientOcclusion")) {
-
-	}
-	else if (!strcmp(Name, "BloodLens")) {
-		if (!strcmp(Const, "BloodLens_Percent"))
-			Value = ShaderConst.BloodLens_Percent;
-	}
-	else if (!strcmp(Name, "Bloom")) {
-
-	}
-	else if (!strcmp(Name, "Cinema")) {
-
-	}
-	else if (!strcmp(Name, "Coloring")) {
-
-	}
-	else if (!strcmp(Name, "DepthOfField")) {
-
-	}
-	else if (!strcmp(Name, "GodRays")) {
-
-	}
-	else if (!strcmp(Name, "Grass")) {
-
-	}
-	else if (!strcmp(Name, "HDR")) {
-
-	}
-	else if (!strcmp(Name, "LowHF")) {
-		if (!strcmp(Const, "LowHF_HealthCoeff"))
-			Value = ShaderConst.LowHF_HealthCoeff;
-		else if (!strcmp(Const, "LowHF_FatigueCoeff"))
-			Value = ShaderConst.LowHF_FatigueCoeff;
-		else if (!strcmp(Const, "LowHF_Params.x"))
-			Value = ShaderConst.LowHF_Params.x;
-		else if (!strcmp(Const, "LowHF_Params.y"))
-			Value = ShaderConst.LowHF_Params.y;
-		else if (!strcmp(Const, "LowHF_Params.z"))
-			Value = ShaderConst.LowHF_Params.z;
-		else if (!strcmp(Const, "LowHF_Params.w"))
-			Value = ShaderConst.LowHF_Params.w;
-	}
-	else if (!strcmp(Name, "MotionBlur")) {
-
-	}
-	else if (!strcmp(Name, "POM")) {
-
-	}
-	else if (!strcmp(Name, "Precipitations")) {
-
-	}
-	else if (!strcmp(Name, "Skin")) {
-
-	}
-	else if (!strcmp(Name, "SnowAccumulation")) {
-
-	}
-	else if (!strcmp(Name, "Terrain")) {
-
-	}
-	else if (!strcmp(Name, "Underwater")) {
-
-	}
-	else if (!strcmp(Name, "Water")) {
-		if (!strcmp(Const, "Water_waveSpeed.x"))
-			Value = ShaderConst.Water_waveSpeed.x;
-		else if (!strcmp(Const, "WaterHeight"))
-			Value = ShaderConst.WaterHeight;
-	}
-	else if (!strcmp(Name, "WaterLens")) {
-
-	}
-	else if (!strcmp(Name, "WetWorld")) {
-
-	}
-	return Value;
+	RenderedBufferFilled = false;
+	DepthBufferFilled = false;
 
 }
 
-RuntimeShaderRecord* ShaderManager::LoadShader(const char* Name) {
+ShaderRecord* ShaderManager::LoadShader(const char* Name) {
 
-	RuntimeShaderRecord *NewShader = new RuntimeShaderRecord();
+	ShaderRecord *NewShader = new ShaderRecord();
 
 	if (!NewShader->LoadShader(Name)) {
 		delete NewShader;
@@ -1417,9 +1325,382 @@ RuntimeShaderRecord* ShaderManager::LoadShader(const char* Name) {
 
 }
 
-void ShaderManager::BeginScene() {
+void ShaderManager::CreateEffect(EffectRecordType EffectType) {
 
-	RenderSurfaceFilled = false;
-	DepthBufferFilled = false;
+	char Filename[MAX_PATH];
+
+	strcpy(Filename, EffectsPath);
+	switch (EffectType) {
+	case EffectRecordType_Underwater:
+		strcat(Filename, "Water\\Underwater.fx");
+		UnderwaterEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableUnderwater = LoadEffect(UnderwaterEffect, Filename, NULL);
+		break;
+	case EffectRecordType_WaterLens:
+		strcat(Filename, "Water\\WaterLens.fx");
+		WaterLensEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableWaterLens = LoadEffect(WaterLensEffect, Filename, NULL);
+		break;
+	case EffectRecordType_GodRays:
+		strcat(Filename, "GodRays\\GodRays.fx");
+		GodRaysEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableGodRays = LoadEffect(GodRaysEffect, Filename, NULL);
+		break;
+	case EffectRecordType_DepthOfField:
+		strcat(Filename, "DepthOfField\\DepthOfField.fx");
+		DepthOfFieldEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableDepthOfField = LoadEffect(DepthOfFieldEffect, Filename, NULL);
+		break;
+	case EffectRecordType_AmbientOcclusion:
+		strcat(Filename, "AmbientOcclusion\\AmbientOcclusion.fx");
+		AmbientOcclusionEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableAmbientOcclusion = LoadEffect(AmbientOcclusionEffect, Filename, NULL);
+		break;
+	case EffectRecordType_Coloring:
+		strcat(Filename, "Coloring\\Coloring.fx");
+		ColoringEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableColoring = LoadEffect(ColoringEffect, Filename, NULL);
+		break;
+	case EffectRecordType_Cinema:
+		strcat(Filename, "Cinema\\Cinema.fx");
+		CinemaEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableCinema = LoadEffect(CinemaEffect, Filename, NULL);
+		break;
+	case EffectRecordType_Bloom:
+		strcat(Filename, "Bloom\\Bloom.fx");
+		BloomEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableBloom = LoadEffect(BloomEffect, Filename, NULL);
+		break;
+	case EffectRecordType_SnowAccumulation:
+		strcat(Filename, "Precipitations\\SnowAccumulation.fx");
+		SnowAccumulationEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableSnowAccumulation = LoadEffect(SnowAccumulationEffect, Filename, NULL);
+		break;
+	case EffectRecordType_BloodLens:
+		strcat(Filename, "Blood\\BloodLens.fx");
+		BloodLensEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableBloodLens = LoadEffect(BloodLensEffect, Filename, NULL);
+		break;
+	case EffectRecordType_SMAA:
+		strcat(Filename, "SMAA\\SMAA.fx");
+		SMAAEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableSMAA = LoadEffect(SMAAEffect, Filename, NULL);
+		break;
+	case EffectRecordType_MotionBlur:
+		strcat(Filename, "MotionBlur\\MotionBlur.fx");
+		MotionBlurEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableMotionBlur = LoadEffect(MotionBlurEffect, Filename, NULL);
+		break;
+	case EffectRecordType_LowHF:
+		strcat(Filename, "LowHF\\LowHF.fx");
+		LowHFEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableLowHF = LoadEffect(LowHFEffect, Filename, NULL);
+		break;
+	case EffectRecordType_WetWorld:
+		strcat(Filename, "Precipitations\\WetWorld.fx");
+		WetWorldEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableWetWorld = LoadEffect(WetWorldEffect, Filename, NULL);
+		break;
+	case EffectRecordType_Sharpening:
+		strcat(Filename, "Sharpening\\Sharpening.fx");
+		SharpeningEffect = new EffectRecord();
+		TheSettingManager->SettingsMain.EnableSharpening = LoadEffect(SharpeningEffect, Filename, NULL);
+		break;
+	case EffectRecordType_Custom:
+		WIN32_FIND_DATA File;
+		HANDLE H;
+
+		if (TheSettingManager->SettingsMain.DevelopCompileEffects)
+			strcat(Filename, "Custom\\*.hlsl");
+		else
+			strcat(Filename, "Custom\\*.fx");
+		H = FindFirstFileA(Filename, &File);
+		if (H != INVALID_HANDLE_VALUE) {
+			if (TheSettingManager->SettingsMain.DevelopCompileEffects) File.cFileName[strlen(File.cFileName) - 5] = NULL;
+			strcpy(Filename, EffectsPath);
+			strcat(Filename, "Custom\\");
+			strcat(Filename, File.cFileName);
+			CustomEffect = new EffectRecord();
+			LoadEffect(CustomEffect, Filename, File.cFileName);
+			while (FindNextFileA(H, &File)) {
+				if (TheSettingManager->SettingsMain.DevelopCompileEffects) File.cFileName[strlen(File.cFileName) - 5] = NULL;
+				strcpy(Filename, EffectsPath);
+				strcat(Filename, "Custom\\");
+				strcat(Filename, File.cFileName);
+				CustomEffect = new EffectRecord();
+				LoadEffect(CustomEffect, Filename, File.cFileName);
+			}
+			FindClose(H);
+		}
+		break;
+	}
+
+}
+
+bool ShaderManager::LoadEffect(EffectRecord* TheEffect, char* Filename, char* CustomEffectName) {
+
+	bool IsLoaded = TheEffect->LoadEffect(Filename);
+
+	if (IsLoaded) {
+		if (CustomEffectName) CustomEffectRecords[std::string(CustomEffectName).substr(0, strlen(CustomEffectName) - 3)] = TheEffect;
+	}
+	else
+		DisposeEffect(TheEffect);
+	return IsLoaded;
+
+}
+
+void ShaderManager::DisposeEffect(EffectRecord* TheEffect)
+{
+
+	if (TheEffect == AmbientOcclusionEffect) AmbientOcclusionEffect = NULL;
+	else if (TheEffect == BloodLensEffect) BloodLensEffect = NULL;
+	else if (TheEffect == BloomEffect) BloomEffect = NULL;
+	else if (TheEffect == CinemaEffect) CinemaEffect = NULL;
+	else if (TheEffect == ColoringEffect) ColoringEffect = NULL;
+	else if (TheEffect == DepthOfFieldEffect) DepthOfFieldEffect = NULL;
+	else if (TheEffect == GodRaysEffect) GodRaysEffect = NULL;
+	else if (TheEffect == LowHFEffect) LowHFEffect = NULL;
+	else if (TheEffect == MotionBlurEffect) MotionBlurEffect = NULL;
+	else if (TheEffect == SMAAEffect) SMAAEffect = NULL;
+	else if (TheEffect == SnowAccumulationEffect) SnowAccumulationEffect = NULL;
+	else if (TheEffect == UnderwaterEffect) UnderwaterEffect = NULL;
+	else if (TheEffect == WaterLensEffect) WaterLensEffect = NULL;
+	else if (TheEffect == WetWorldEffect) WetWorldEffect = NULL;
+	else if (TheEffect == SharpeningEffect) SharpeningEffect = NULL;
+
+	if (TheEffect) delete TheEffect;
+
+}
+
+void ShaderManager::RenderEffects() {
+
+	IDirect3DDevice9 *D3DDevice = TheRenderManager->device;
+	IDirect3DSurface9* RenderTarget = TheRenderManager->RenderTarget;
+
+	TheRenderManager->SetCameraData();
+	D3DDevice->SetStreamSource(0, EffectVertex, 0, sizeof(EffectQuad));
+	SetCurrentVertexStream;
+	D3DDevice->StretchRect(RenderTarget, NULL, RenderedSurface, NULL, D3DTEXF_NONE);
+
+	if (TheSettingManager->SettingsMain.EnableWetWorld && TheShaderManager->ShaderConst.currentWorldSpace && TheShaderManager->ShaderConst.WetWorld_Data.x > 0) {
+		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		WetWorldEffect->SetCT();
+		WetWorldEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+	else if (TheSettingManager->SettingsMain.EnableSnowAccumulation && TheShaderManager->ShaderConst.currentWorldSpace && TheShaderManager->ShaderConst.SnowAccumulation_Params.w > 0) {
+		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		SnowAccumulationEffect->SetCT();
+		SnowAccumulationEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableColoring) {
+		ColoringEffect->SetCT();
+		ColoringEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableBloom) {
+		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		BloomEffect->SetCT();
+		BloomEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableUnderwater && TheShaderManager->ShaderConst.HasWater && TheRenderManager->CameraPosition.z < TheShaderManager->ShaderConst.Water_waterSettings.x + 20) {
+		if (TheRenderManager->CameraPosition.z < TheShaderManager->ShaderConst.Water_waterSettings.x) {
+			if (TheShaderManager->ShaderConst.BloodLens_Percent) TheShaderManager->ShaderConst.BloodLens_Percent = 0.0f;
+			TheShaderManager->ShaderConst.WaterLens_Percent = -1.0f;
+		}
+		UnderwaterEffect->SetCT();
+		UnderwaterEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+	else {
+		if (TheShaderManager->ShaderConst.WaterLens_Percent == -1.0f) TheShaderManager->ShaderConst.WaterLens_Percent = 1.0f;
+
+		if (TheSettingManager->SettingsMain.EnableAmbientOcclusion && TheShaderManager->ShaderConst.AmbientOcclusion_Enabled) {
+			D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+			AmbientOcclusionEffect->SetCT();
+			AmbientOcclusionEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		}
+
+		if (TheSettingManager->SettingsMain.EnableGodRays && TheShaderManager->ShaderConst.currentWorldSpace) {
+			D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+			GodRaysEffect->SetCT();
+			GodRaysEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		}
+	}
+
+	if (TheSettingManager->SettingsMain.EnableDepthOfField && TheShaderManager->ShaderConst.DepthOfField_Enabled) {
+		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		DepthOfFieldEffect->SetCT();
+		DepthOfFieldEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableBloodLens && TheShaderManager->ShaderConst.BloodLens_Percent > 0.0f) {
+		BloodLensEffect->SetCT();
+		BloodLensEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableWaterLens && TheShaderManager->ShaderConst.WaterLens_Percent > 0.0f) {
+		WaterLensEffect->SetCT();
+		WaterLensEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableMotionBlur && (TheShaderManager->ShaderConst.MotionBlur_Data.x || TheShaderManager->ShaderConst.MotionBlur_Data.y)) {
+		MotionBlurEffect->SetCT();
+		MotionBlurEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableLowHF && TheShaderManager->ShaderConst.LowHF_Data.x) {
+		LowHFEffect->SetCT();
+		LowHFEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableSharpening) {
+		SharpeningEffect->SetCT();
+		SharpeningEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.EnableCinema && (TheShaderManager->ShaderConst.Cinema_Data.x != 0.0f || TheShaderManager->ShaderConst.Cinema_Data.y != 0.0f)) {
+		CinemaEffect->SetCT();
+		CinemaEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+	}
+
+	if (TheSettingManager->SettingsMain.CustomEffects) {
+		for (CustomEffectRecordList::iterator iter = CustomEffectRecords.begin(); iter != CustomEffectRecords.end(); ++iter) {
+			if (iter->second->Enabled) {
+				D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+				iter->second->SetCT();
+				iter->second->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+			}
+		}
+	}
+
+	if (TheSettingManager->SettingsMain.EnableSMAA) {
+		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		D3DDevice->SetRenderTarget(0, RenderSurfaceSMAA);
+		SMAAEffect->SetCT();
+		SMAAEffect->Render(D3DDevice, RenderSurfaceSMAA, RenderedSurface, true);
+		D3DDevice->StretchRect(RenderSurfaceSMAA, NULL, RenderTarget, NULL, D3DTEXF_NONE);
+		D3DDevice->SetRenderTarget(0, RenderTarget);
+	}
+
+	if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.ScreenshotKey)) {
+		char Filename[MAX_PATH];
+		char Name[80];
+
+		strcpy(Filename, TheSettingManager->SettingsMain.ScreenshotPath);
+		strcat(Filename, ScreenshotFilenamePrefix);
+		strftime(Name, 80, "%Y%m%d %H.%M.%S", localtime(&TheFrameRateManager->CurrentTime));
+		strcat(Filename, Name);
+		if (TheSettingManager->SettingsMain.ScreenshotType == 0)
+			strcat(Filename, ".bmp");
+		else
+			strcat(Filename, ".jpg");
+		if (GetFileAttributesA(TheSettingManager->SettingsMain.ScreenshotPath) == INVALID_FILE_ATTRIBUTES) CreateDirectoryA(TheSettingManager->SettingsMain.ScreenshotPath, NULL);
+		D3DXSaveSurfaceToFileA(Filename, (D3DXIMAGE_FILEFORMAT)TheSettingManager->SettingsMain.ScreenshotType, RenderTarget, NULL, NULL);
+		TheUtilityManager->ShowMessage("Screenshot taken!");
+	}
+
+}
+
+void ShaderManager::EnableEffect(const char* Name, bool Value)
+{
+
+	if (!memcmp(Name, "AmbientOcclusion", 16)) {
+		TheSettingManager->SettingsMain.EnableAmbientOcclusion = Value;
+		DisposeEffect(AmbientOcclusionEffect);
+		if (Value) CreateEffect(EffectRecordType_AmbientOcclusion);
+	}
+	else if (!memcmp(Name, "BloodLens", 9)) {
+		TheSettingManager->SettingsMain.EnableBloodLens = Value;
+		DisposeEffect(BloodLensEffect);
+		if (Value) CreateEffect(EffectRecordType_BloodLens);
+	}
+	else if (!memcmp(Name, "Bloom", 5)) {
+		TheSettingManager->SettingsMain.EnableBloom = Value;
+		DisposeEffect(BloomEffect);
+		if (Value) CreateEffect(EffectRecordType_Bloom);
+	}
+	else if (!memcmp(Name, "Cinema", 6)) {
+		TheSettingManager->SettingsMain.EnableCinema = Value;
+		DisposeEffect(CinemaEffect);
+		if (Value) CreateEffect(EffectRecordType_Cinema);
+	}
+	else if (!memcmp(Name, "Coloring", 8)) {
+		TheSettingManager->SettingsMain.EnableColoring = Value;
+		DisposeEffect(ColoringEffect);
+		if (Value) CreateEffect(EffectRecordType_Coloring);
+	}
+	else if (!memcmp(Name, "DepthOfField", 12)) {
+		TheSettingManager->SettingsMain.EnableDepthOfField = Value;
+		DisposeEffect(DepthOfFieldEffect);
+		if (Value) CreateEffect(EffectRecordType_DepthOfField);
+	}
+	else if (!memcmp(Name, "GodRays", 7)) {
+		TheSettingManager->SettingsMain.EnableGodRays = Value;
+		DisposeEffect(GodRaysEffect);
+		if (Value) CreateEffect(EffectRecordType_GodRays);
+	}
+	else if (!memcmp(Name, "LowHF", 5)) {
+		TheSettingManager->SettingsMain.EnableLowHF = Value;
+		DisposeEffect(LowHFEffect);
+		if (Value) CreateEffect(EffectRecordType_LowHF);
+	}
+	else if (!memcmp(Name, "MotionBlur", 10)) {
+		TheSettingManager->SettingsMain.EnableMotionBlur = Value;
+		DisposeEffect(MotionBlurEffect);
+		if (Value) CreateEffect(EffectRecordType_MotionBlur);
+	}
+	else if (!memcmp(Name, "SMAA", 4)) {
+		TheSettingManager->SettingsMain.EnableSMAA = Value;
+		DisposeEffect(SMAAEffect);
+		if (Value) CreateEffect(EffectRecordType_SMAA);
+	}
+	else if (!memcmp(Name, "SnowAccumulation", 16)) {
+		TheSettingManager->SettingsMain.EnableSnowAccumulation = Value;
+		DisposeEffect(SnowAccumulationEffect);
+		if (Value) CreateEffect(EffectRecordType_SnowAccumulation);
+	}
+	else if (!memcmp(Name, "Underwater", 10)) {
+		TheSettingManager->SettingsMain.EnableUnderwater = Value;
+		DisposeEffect(UnderwaterEffect);
+		if (Value) CreateEffect(EffectRecordType_Underwater);
+	}
+	else if (!memcmp(Name, "WaterLens", 9)) {
+		TheSettingManager->SettingsMain.EnableWaterLens = Value;
+		DisposeEffect(WaterLensEffect);
+		if (Value) CreateEffect(EffectRecordType_WaterLens);
+	}
+	else if (!memcmp(Name, "WetWorld", 8)) {
+		TheSettingManager->SettingsMain.EnableWetWorld = Value;
+		DisposeEffect(WetWorldEffect);
+		if (Value) CreateEffect(EffectRecordType_WetWorld);
+	}
+	else if (!memcmp(Name, "Sharpening", 10)) {
+		TheSettingManager->SettingsMain.EnableSharpening = Value;
+		DisposeEffect(SharpeningEffect);
+		if (Value) CreateEffect(EffectRecordType_Sharpening);
+	}
+
+}
+
+void ShaderManager::SetShaderValue(const char* Name, const char* ConstantName, D3DXVECTOR4 Value)
+{
+	
+	CustomConstants::iterator v = CustomConst.find(std::string(Name));
+	if (v != CustomConst.end()) v->second = Value;
+
+}
+
+void ShaderManager::SetCustomShaderValue(const char* Name, const char* ConstantName, D3DXVECTOR4 Value)
+{
+
+	CustomEffectRecordList::iterator v = CustomEffectRecords.find(std::string(Name));
+	if (v != CustomEffectRecords.end()) {
+		if (!memcmp(ConstantName, "Enabled", 7))
+			v->second->Enabled = Value;
+		else
+			v->second->pEffect->SetVector(ConstantName, &Value);
+	}
 
 }

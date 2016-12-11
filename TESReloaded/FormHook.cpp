@@ -6,6 +6,7 @@
 #define kLoadForm 0x0043B4A0
 #define typeID formType
 #define m_data data
+#define kFormType_REFR kFormType_Reference
 #endif
 
 bool (__cdecl * LoadForm)(TESForm*, UInt32) = (bool (__cdecl *)(TESForm*, UInt32))kLoadForm;
@@ -14,25 +15,55 @@ bool __cdecl TrackLoadForm(TESForm* Form, UInt32 Arg2) {
 	bool r = LoadForm(Form, Arg2);
 	switch (Form->typeID)
 	{
+		case FormType::kFormType_Sound:
+			{
+				#if defined(OBLIVION)
+					TESSound* Sound = (TESSound*)Form;
+					const char* Name = Sound->soundFile.editorID.m_data;
+					if (Name) {
+						if (!strcmp(Name, "ORBreathingF"))
+							TheScriptManager->LowFSound->BreathingF = Sound;
+						else if (!strcmp(Name, "ORBreathingM"))
+							TheScriptManager->LowFSound->BreathingM = Sound;
+						else if (!strcmp(Name, "ORHeartSlow"))
+							TheScriptManager->LowHSound->HeartSlow = Sound;
+					}
+				#endif
+			}
+			break;
 		case FormType::kFormType_Armor:
+			#if defined(OBLIVION)
 			if (TheSettingManager->SettingsMain.EquipmentMode) {
 				TESObjectARMO* Armor = (TESObjectARMO*)Form;
-				const char* Name = Armor->fullName.name.m_data; 
-				if (Name && !memcmp(Name, "ORLeftWeapon", 12)) TheEquipmentManager->LeftWeaponTemplate = Armor;
+				const char* Name = Armor->fullName.name.m_data;
+				//if (Name && !strcmp(Name, "ORLeftWeapon")) TheEquipmentManager->LeftWeapon = Armor;
 			}
+			#endif
+			break;
+		case FormType::kFormType_REFR:
+			#if defined(OBLIVION)
+			if (TheSettingManager->SettingsMain.EquipmentMode) {
+				TESObjectREFR* Container = (TESObjectREFR*)Form;
+				TESFullName* FullName = Container->GetFullName();
+				if (FullName) {
+					const char* Name = Container->GetFullName()->name.m_data;
+					//if (Name && !strcmp(Name, "ORContainer")) TheEquipmentManager->Container = Container;
+				}
+			}
+			#endif
 			break;
 		case FormType::kFormType_Idle:
 			if (TheSettingManager->SettingsMain.EquipmentMode) {
-#if defined(OBLIVION) // TO DO for Skyrim: find animModel
-				TESIdleForm* Idle = (TESIdleForm*)Form;
-				if (!memcmp(Idle->animModel.nifPath.m_data, ShieldAnimFile, 39)) TheEquipmentManager->ShieldAnim = Idle;
-#endif
+			#if defined(OBLIVION)
+				TESIdleForm* Anim = (TESIdleForm*)Form;
+				//if (!strcmp(Anim->animModel.nifPath.m_data, "Characters\\_Male\\IdleAnims\\oronbackanim.kf")) TheEquipmentManager->OnBackAnim = Anim;
+			#endif
 			}
 			break;
 		case FormType::kFormType_Water:
 			if (TheSettingManager->SettingsMain.WaterManagement) {
 				TESWaterForm* Water = (TESWaterForm*)Form;
-#if defined(OBLIVION)
+				#if defined(OBLIVION)
 				enum WaterType
 				{
 					WaterType_Blood,
@@ -60,11 +91,11 @@ bool __cdecl TrackLoadForm(TESForm* Form, UInt32 Arg2) {
 				}
 				Water->waterSimVals[TESWaterForm::kWaterVal_FogDistNear] = 163830.0f;
 				Water->waterSimVals[TESWaterForm::kWaterVal_FogDistFar] = 163835.0f;
-#elif defined(SKYRIM)
+				#elif defined(SKYRIM)
 				Water->properties.fogAmountUW = 0.0f;
 				Water->properties.fogNearUW = 9995.0f;
 				Water->properties.fogFarUW = 10000.0f;
-#endif
+				#endif
 			}
 			break;
 		default:

@@ -90,15 +90,14 @@ NiPoint3* __fastcall TrackSetCameraPosition(PlayerCharacter* Player, int Arg2, N
 void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalTranslate)
 {
 
-	SettingsCameraStruct* SettingsCamera = &TheSettingManager->SettingsCamera;
 	NiPoint3* CameraPosition = &CameraNode->m_localTransform.pos;
 
-	if ((TheUtilityManager->IsMenuMode(1009) || TheUtilityManager->IsMenuMode(1034)) && ((FirstPersonView && TheSettingManager->SettingsMain.CameraModeDialogFirst == 2) || (!FirstPersonView && TheSettingManager->SettingsMain.CameraModeDialogThird == 2))) {
+	if ((TheUtilityManager->IsMenu(1009) || TheUtilityManager->IsMenu(1034)) && ((FirstPersonView && TheSettingManager->SettingsMain.CameraModeDialogFirst == 2) || (!FirstPersonView && TheSettingManager->SettingsMain.CameraModeDialogThird == 2))) {
 		NiPoint3 v;
 		NiMatrix33 mw, ml;
 		float x, y, z, r;
-		float ax, ay, az;
-		NiPoint3 Pos = {0.0f, 0.0f, 0.0f};
+		NiPoint3 Pos = { 0.0f, 0.0f, 0.0f };
+		NiPoint3 Rot = { 0.0f, 0.0f, 0.0f };
 		NiNode* ActorNode = (*g_thePlayer)->niNode;
 		NiPoint3* HeadPosition = &ActorNode->GetObjectByName("Bip01 Head")->m_worldTransform.pos;
 		TheUtilityManager->MatrixVectorMultiply(&v, &ActorNode->m_worldTransform.rot, &TheSettingManager->SettingsMain.CameraModeDialogOffset);
@@ -111,11 +110,10 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalTranslate)
 		y = CameraPosition->y - (HeadPosition->y + v.y);
 		z = CameraPosition->z - (HeadPosition->z + v.z);
 		r = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
-		ax = (acos(z / r) * 180 / M_PI) - 90;
-		ay = 0;
-		az = (atan2(y, x) * 180 / M_PI) + 90;
-		TheUtilityManager->GenerateRotationMatrixZXY(&mw, 0, 0, 0, 1);
-		TheUtilityManager->GenerateRotationMatrixZXY(&ml, az, ax, ay, 1);
+		Rot.x = (acos(z / r) * 180 / M_PI) - 90;
+		Rot.z = (atan2(y, x) * 180 / M_PI) + 90;
+		TheUtilityManager->GenerateRotationMatrixZXY(&mw, &Rot, 1);
+		TheUtilityManager->GenerateRotationMatrixZXY(&ml, &Rot, 1);
 		CameraNode->m_worldTransform.rot = mw;
 		CameraNode->m_localTransform.rot = ml;
 	}
@@ -132,72 +130,9 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalTranslate)
 				CameraPosition->z = HeadPosition->z + v.z;
 			}
 		}
-		else if (SettingsCamera->Move || SettingsCamera->Rotate || SettingsCamera->Look || SettingsCamera->MoveTo || SettingsCamera->RotateTo || SettingsCamera->LookTo) {
-			NiNode* RefNode = NULL;
-			NiMatrix33* CameraRotation = &CameraNode->m_localTransform.rot;
-			if (SettingsCamera->Ref) RefNode = SettingsCamera->Ref->niNode;
-			if (SettingsCamera->Move) {
-				NiPoint3* HeadPosition = &RefNode->GetObjectByName("Bip01 Head")->m_worldTransform.pos;
-				NiPoint3 v;
-				TheUtilityManager->MatrixVectorMultiply(&v, &RefNode->m_worldTransform.rot, &SettingsCamera->Pos);
-				CameraPosition->x = HeadPosition->x + v.x;
-				CameraPosition->y = HeadPosition->y + v.y;
-				CameraPosition->z = HeadPosition->z + v.z;
-			}
-			if (SettingsCamera->Rotate) {
-				NiMatrix33 m;
-				TheUtilityManager->GenerateRotationMatrixZXY(&m, SettingsCamera->AngZ, SettingsCamera->AngX, SettingsCamera->AngY, 1);
-				TheUtilityManager->MatrixMultiply(CameraRotation, &RefNode->m_worldTransform.rot, &m);
-			}
-			if (SettingsCamera->MoveTo) {
-				CameraPosition->x = SettingsCamera->Pos.x;
-				CameraPosition->y = SettingsCamera->Pos.y;
-				CameraPosition->z = SettingsCamera->Pos.z;
-				if (!SettingsCamera->RotateTo && !SettingsCamera->Look && !SettingsCamera->LookTo) {
-					NiMatrix33 m;
-					TheUtilityManager->GenerateRotationMatrixZXY(&m, 0, 0, 0, 1);
-					CameraNode->m_worldTransform.rot = m;
-					CameraNode->m_localTransform.rot = m;
-				}
-			}
-			if (SettingsCamera->RotateTo) {
-				NiMatrix33 mw, ml;
-				TheUtilityManager->GenerateRotationMatrixZXY(&mw, 0, 0, 0, 1);
-				TheUtilityManager->GenerateRotationMatrixZXY(&ml, SettingsCamera->AngZ, SettingsCamera->AngX, SettingsCamera->AngY, 1);
-				CameraNode->m_worldTransform.rot = mw;
-				CameraNode->m_localTransform.rot = ml;
-			}
-			if (SettingsCamera->Look || SettingsCamera->LookTo) {
-				NiMatrix33 mw, ml;
-				float x, y, z, r;
-				float ax, ay, az;
-				x = SettingsCamera->LookPos.x;
-				y = SettingsCamera->LookPos.y;
-				z = SettingsCamera->LookPos.z;
-				if (SettingsCamera->Look) {
-					NiPoint3* HeadPosition = &RefNode->GetObjectByName("Bip01 Head")->m_worldTransform.pos;
-					NiPoint3 v;
-					TheUtilityManager->MatrixVectorMultiply(&v, &RefNode->m_worldTransform.rot, &SettingsCamera->Pos);
-					x = HeadPosition->x + v.x;
-					y = HeadPosition->y + v.y;
-					z = HeadPosition->z + v.z;
-				}
-				x = CameraPosition->x - x;
-				y = CameraPosition->y - y;
-				z = CameraPosition->z - z;
-				r = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
-				ax = (acos(z / r) * 180 / M_PI) - 90;
-				ay = 0;
-				az = (atan2(y, x) * 180 / M_PI) + 90;
-				TheUtilityManager->GenerateRotationMatrixZXY(&mw, 0, 0, 0, 1);
-				TheUtilityManager->GenerateRotationMatrixZXY(&ml, az, ax, ay, 1);
-				CameraNode->m_worldTransform.rot = mw;
-				CameraNode->m_localTransform.rot = ml;
-			}
-		}
-		LocalTranslate->x = SettingsCamera->CameraPos.x = CameraNode->m_localTransform.pos.x;
-		LocalTranslate->y = SettingsCamera->CameraPos.y = CameraNode->m_localTransform.pos.y;
-		LocalTranslate->z = SettingsCamera->CameraPos.z = CameraNode->m_localTransform.pos.z;
+		LocalTranslate->x = CameraNode->m_localTransform.pos.x;
+		LocalTranslate->y = CameraNode->m_localTransform.pos.y;
+		LocalTranslate->z = CameraNode->m_localTransform.pos.z;
 	}
 
 }
@@ -367,25 +302,27 @@ int CameraMode::TrackSetCameraState(TESCameraState* CameraState) {
 	
 	PlayerCamera* Camera = (PlayerCamera*)this;
 	bool IsWeaponOut = false;
-	
-	if (CameraState->stateId == PlayerCamera::kCameraState_FirstPerson) {
-		if (TheRenderManager->FirstPersonView && TogglePOV) {
-			CameraState = Camera->thirdPersonState2;
-			TheRenderManager->FirstPersonView = false;
+
+	if (Camera->cameraNode->m_name && CameraState->camera->thirdPersonState2 != NULL) {
+		if (CameraState->stateId == PlayerCamera::kCameraState_FirstPerson) {
+			if (TheRenderManager->FirstPersonView && TogglePOV) {
+				CameraState = Camera->thirdPersonState2;
+				TheRenderManager->FirstPersonView = false;
+			}
+			else {
+				CameraState = Camera->thirdPersonState2;
+				TheRenderManager->FirstPersonView = true;
+			}
 		}
-		else {
-			CameraState = Camera->thirdPersonState2;
-			TheRenderManager->FirstPersonView = true;
+		else if (CameraState->stateId == PlayerCamera::kCameraState_ThirdPerson2) TheRenderManager->FirstPersonView = false;
+		if (TheRenderManager->FirstPersonView && CameraState->stateId != PlayerCamera::kCameraState_ThirdPerson2) TheRenderManager->FirstPersonView = false;
+		if (!TheRenderManager->FirstPersonView && CameraState->stateId == PlayerCamera::kCameraState_ThirdPerson2) {
+			IsWeaponOut = (*g_thePlayer)->actorState.IsWeaponDrawn();
+			Camera->AllowVanityMode = !IsWeaponOut;
+			TheUtilityManager->ThisStdCall(0x0083C7E0, this, IsWeaponOut);
 		}
+		TogglePOV = false;
 	}
-	else if (CameraState->stateId == PlayerCamera::kCameraState_ThirdPerson2) TheRenderManager->FirstPersonView = false;
-	if (TheRenderManager->FirstPersonView && CameraState->stateId != PlayerCamera::kCameraState_ThirdPerson2) TheRenderManager->FirstPersonView = false;
-	if (!TheRenderManager->FirstPersonView) {
-		IsWeaponOut = (*g_thePlayer)->actorState.IsWeaponDrawn();
-		Camera->AllowVanityMode = !IsWeaponOut;
-		TheUtilityManager->ThisStdCall(0x0083C7E0, this, IsWeaponOut);
-	}
-	TogglePOV = false;
 	return (this->*SetCameraState)(CameraState);
 
 }
@@ -398,8 +335,11 @@ void CameraMode::TrackManageButtonEvent(ButtonEvent* Event, int Arg2) {
 	
 	(this->*ManageButtonEvent)(Event, Arg2);
 	if (State->stateId == PlayerCamera::kCameraState_ThirdPerson2) {
-		if (State->TogglePOV) TogglePOV = true;
-		if (TheRenderManager->FirstPersonView && *Event->GetControlID() == InputStringHolder::GetSingleton()->zoomOut) TheUtilityManager->ThisStdCall(0x006533D0, State->camera, State->camera->thirdPersonState2);
+		PlayerControls* Controls = PlayerControls::GetSingleton();
+		if ((UInt8)TheUtilityManager->ThisStdCall(0x00772A20, Controls)) {
+			if (State->TogglePOV) TogglePOV = true;
+			if (TheRenderManager->FirstPersonView && *Event->GetControlID() == InputStringHolder::GetSingleton()->zoomOut) TheUtilityManager->ThisStdCall(0x006533D0, State->camera, State->camera->thirdPersonState2);
+		}
 	}
 
 }
@@ -409,7 +349,7 @@ void (__thiscall CameraMode::* TrackSetCameraPosition)();
 void CameraMode::TrackSetCameraPosition() {
 
 	ThirdPersonState* State = (ThirdPersonState*)(this);
-
+	
 	if (TheRenderManager->FirstPersonView) {
 		BSFixedString Head; TheUtilityManager->ThisStdCall(0x00A511C0, &Head, "NPC Head [Head]");
 		NiNode* ActorNode = (*g_thePlayer)->GetNiRootNode(0);
@@ -421,6 +361,7 @@ void CameraMode::TrackSetCameraPosition() {
 		State->CameraPosition.z = HeadPosition->z + v.z;
 		State->OverShoulderPosX = State->OverShoulderPosY = State->OverShoulderPosZ = 0.0f;
 		State->camera->AllowVanityMode = 0;
+		TheUtilityManager->ThisStdCall(0x00A511B0, &Head);
 	}
 	(this->*SetCameraPosition)();
 	

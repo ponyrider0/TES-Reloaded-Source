@@ -139,71 +139,6 @@ struct ModEntry
 
 STATIC_ASSERT(sizeof(ModEntry::Data) == 0x41C);
 
-#if OBLIVION_VERSION == OBLIVION_VERSION_1_1
-
-// ### duplication of this class definition is ugly but several offsets changed between 1.1 and 1.2
-
-// CDC
-class DataHandler
-{
-public:
-	DataHandler();
-	~DataHandler();
-
-	template <tData> struct Node
-	{
-		tData		* data;
-		Node<tData>	* next;
-	};
-
-	BoundObjectListHead		* boundObjects;					// 000
-	Node<TESPackage>		packages;						// 004
-	Node<TESWorldSpace>		worldSpaces;					// 00C
-	Node<TESClimate>		climates;						// 014
-	Node<TESWeather>		weathers;						// 01C
-	Node<EnchantmentItem>	enchantmentItems;				// 024
-	Node<SpellItem>			spellitems;						// 02C
-	Node<TESHair>			hairs;							// 034
-	Node<TESEyes>			eyes;							// 03C
-	Node<TESRace>			races;							// 044
-	Node<TESLandTexture>	landTextures;					// 04C
-	Node<TESClass>			classes;						// 054
-	Node<TESFaction>		factions;						// 05C
-	Node<Script>			scripts;						// 064
-	Node<TESSound>			sounds;							// 06C
-	Node<TESGlobal>			globals;						// 074
-	Node<TESTopic>			topics;							// 07C
-	Node<TESQuest>			quests;							// 084
-	Node<Birthsign>			birthsigns;						// 08C
-	Node<TESCombatStyle>	combatStyles;					// 094
-	Node<TESLoadScreen>		loadScreens;					// 09C
-	Node<TESWaterForm>		waterForms;						// 0A4
-	Node<TESEffectShader>	effectShaders;					// 0AC
-	Node<TESObjectANIO>		objectAnios;					// 0B4
-	TESRegionList			* regionList;					// 0BC
-	NiTArray <TESObjectCELL *>	cellArray;					// 0C0
-	TESSkill				skills[0x15];					// 0D0
-	UInt32					unk8B0[(0x8C0 - 0x8B0) >> 2];	// 8B0
-	ModEntry				modList;						// 8C0
-	UInt32					numLoadedMods;					// 8C8
-	ModEntry::Data			* modsByID[0xFF];				// 8CC
-	UInt32					unkCC8[(0xCD4 - 0xCC8) >> 2];	// CC8
-	TESRegionDataManager	* regionDataManager;			// CD4
-	UInt32					unkCD8;							// CD8
-
-	const ModEntry * LookupModByName(const char * modName);
-	const ModEntry ** GetActiveModList();		// returns array of modEntry* corresponding to loaded mods sorted by mod index
-	UInt8 GetModIndex(const char* modName);
-	UInt8 GetActiveModCount();
-	const char* GetNthModName(UInt32 modIndex);
-	TESGlobal* GetGlobalVarByName(const char* varName, UInt32 nameLen = -1);
-	TESQuest* GetQuestByEditorName(const char* questName, UInt32 nameLen = -1);
-};
-
-STATIC_ASSERT(sizeof(DataHandler) == 0xCDC);
-
-#else
-
 // CE0 / 1220 (editor, due entirely to difference in size of TESSkill)
 class DataHandler
 {
@@ -269,8 +204,6 @@ public:
 STATIC_ASSERT(sizeof(DataHandler) == 0xCE0);
 #else
 STATIC_ASSERT(sizeof(DataHandler) == 0x1220);
-#endif
-
 #endif
 
 typedef Visitor<ModEntry, ModEntry::Data> ModEntryVisitor;
@@ -410,6 +343,40 @@ public:
 
 };
 
+// 30
+struct	WaterSurfaceManager
+{
+	/*00*/ UInt32				unk00;
+	/*04*/ UInt32				unk04;
+	/*08*/ UInt32				unk08;
+	/*0C*/ UInt32				unk0C;
+	/*10*/ UInt32				unk10;
+	/*14*/ UInt32				unk14;
+	/*18*/ UInt32				unk18;
+	/*1C*/ UInt32				unk1C;
+	/*20*/ UInt32				unk20;
+	/*24*/ UInt32				unk24;
+	/*28*/ UInt8				unk28;
+	/*29*/ UInt8				unk29;
+	/*2A*/ UInt16				pad2A;
+	/*2C*/ float				unk2C;
+};
+
+// 20
+struct WaterPlaneData
+{
+	/*00*/ UInt8				culled;
+	/*01*/ UInt8				pad01[3];
+	/*04*/ NiNode*				waterNode;
+	/*08*/ NiTriShape**			waterPlaneArray;
+	/*0C*/ void*				unk0C;
+	/*10*/ NiSourceTexture*		unk10;
+	/*14*/ TESObjectCELL*		parent;
+	/*18*/ UInt32				unk18;
+	/*1C*/ UInt8				flags;
+	/*1D*/ UInt8				pad1D[3];
+};
+
 // 028
 class GridCellArray : public GridArray
 {
@@ -420,23 +387,23 @@ public:
 	// size?
 	struct CellInfo
 	{
-		UInt32		unk00;
-		NiNode		* niNode;
+		WaterPlaneData*	waterData;
+		NiNode*			niNode;
 		// ...
 	};
 
 	// 04
 	struct GridEntry
 	{
-		TESObjectCELL	* cell;
-		CellInfo		* info;
+		TESObjectCELL*	cell;
+		CellInfo*		info;
 	};
 
 	// void **		vtbl
 	UInt32			worldX;		// 04 worldspace x coordinate of cell at center of grid (player's cell)
 	UInt32			worldY;		// 08 worldspace y
 	UInt32			size;		// 0C grid is size^2, size = uGridsToLoad
-	GridEntry		* grid;		// 10 dynamically alloc'ed array of GridEntry[size^2]
+	GridEntry*		grid;		// 10 dynamically alloc'ed array of GridEntry[size^2]
 	float			posX;		// 14 4096*worldX (exterior cells are 4096 square units)
 	float			posY;		// 18 4096*worldY
 	float			unk1C;		// 1C
@@ -466,46 +433,45 @@ public:
 		UInt32	unk4;	// size?
 	};
 
-	// void		** vtbl >> oddly, vtbl pointer is NULL in global TES object though c'tor initializes it...
-	GridDistantArray	* gridDistantArray;		// 04
-	GridCellArray		* gridCellArray;		// 08
-	NiNode				* ObjectLODRoot;		// 0C
-	NiNode				* LODRoot;				// 10
-	BSTempNodeManager	* tempNodeManager;		// 14
-	NiDirectionalLight	* niDirectionalLight;	// 18
-	BSFogProperty		* fogProperty;			// 1C
-	UInt32				unk20;					// 20 cell grid x coordinate within current worldspace
-	UInt32				unk24;					// 24 grid y
-	UInt32				unk28;					// 28 same as unk20?
-	UInt32				unk2C;					// 2C same as unk24?
-	TESObjectCELL		* currentExteriorCell;	// 30
-	TESObjectCELL		* currentInteriorCell;	// 34
-	void				* unk38;				// 38
-	TESObjectCELL		** cellArray;			// 3C ?
-	UInt32				unk40;					// 40
-	UInt32				unk44;					// 44
-	UInt32				unk48;					// 48 seen 0x7FFFFFFF; seen caching unk20 in editor
-	UInt32				unk4C;					// 4C seen 0x7FFFFFFF; seen caching unk24 in editor
-	UInt8				unk50;					// 50
-	UInt8				unk51;					// 51
-	UInt8				unk52;					// 52
-	UInt8				unk53;					// 53
-	void				* unk54;				// 54 some struct; seen { 0, 0, BSRenderedTexture*, ... }
-	void				* unk58;				// 58
-	Sky					* sky;					// 5C
-	UInt32				unk60;					// 60
-	UInt32				unk64;					// 64
-	UInt32				unk68;					// 68
-	float				unk6C;					// 6C
-	float				unk70;					// 70
-	TESWorldSpace		* currentWorldSpace;	// 74
-	UInt32				unk78[5];				// 78
-	tList<Unk8C>		list8C;					// 8C
-	NiSourceTexture		* bloodDecals[3];		// 94 blood.dds, lichblood.dds, whillothewispblood.dds
-	tList<void*>		listA0;					// A0 data is some struct containing NiNode*
-	UInt8				unkA8;					// A8
-	UInt8				unkA9;					// A9
-	UInt8				padA8[2];
+	GridDistantArray*		gridDistantArray;		// 04
+	GridCellArray*			gridCellArray;			// 08
+	NiNode*					ObjectLODRoot;			// 0C
+	NiNode*					LODRoot;				// 10
+	BSTempNodeManager*		tempNodeManager;		// 14
+	NiDirectionalLight*		niDirectionalLight;		// 18
+	BSFogProperty*			fogProperty;			// 1C
+	int						extXCoord;				// 20
+	int						extYCoord;				// 24
+	int						unk28;					// 28
+	int						unk2C;					// 2C
+	TESObjectCELL*			currentExteriorCell;	// 30
+	TESObjectCELL*			currentInteriorCell;	// 34
+	TESObjectCELL**			interiorCellBufferArray;// 38
+	TESObjectCELL**			exteriorCellBufferArray;// 3C
+	UInt32					unk40;					// 40
+	UInt32					unk44;					// 44
+	UInt32					unk48;					// 48 seen 0x7FFFFFFF; seen caching unk20 in editor
+	UInt32					unk4C;					// 4C seen 0x7FFFFFFF; seen caching unk24 in editor
+	UInt8					unk50;					// 50
+	UInt8					unk51;					// 51
+	UInt8					unk52;					// 52
+	UInt8					CellBorders;			// 53
+	WaterSurfaceManager*	waterSurfaceManager;	// 54
+	WaterPlaneData*			waterNodeData;			// 58
+	Sky*					sky;					// 5C
+	UInt32					unk60;					// 60
+	UInt32					unk64;					// 64
+	UInt32					unk68;					// 68
+	float					unk6C;					// 6C
+	float					unk70;					// 70
+	TESWorldSpace*			currentWorldSpace;		// 74
+	UInt32					unk78[5];				// 78
+	tList<Unk8C>			list8C;					// 8C
+	NiSourceTexture*		bloodDecals[3];			// 94 blood.dds, lichblood.dds, whillothewispblood.dds
+	tList<void*>			listA0;					// A0 data is some struct containing NiNode*
+	UInt8					unkA8;					// A8
+	UInt8					unkA9;					// A9
+	UInt8					padA8[2];
 
 	bool GetTerrainHeight(float* posVec3, float* outHeight);
 };

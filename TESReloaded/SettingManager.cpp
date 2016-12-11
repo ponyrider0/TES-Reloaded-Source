@@ -2,6 +2,14 @@
 #include <sstream>
 #include <fstream>
 #include "Hooking\detours\detours.h"
+#include "WindowedMode.h"
+#if defined(OBLIVION)
+#define kReadSetting 0x004A8800
+#define kLoadGame 0x00465860
+#elif defined(SKYRIM)
+#define kReadSetting 0x00AFED60
+#define kLoadGame 0x0067B720
+#endif
 
 template <typename T> std::string ToString(const T& Value) {
 
@@ -19,16 +27,17 @@ SettingManager::SettingManager() {
 	char* pNextValue = NULL;
 
 	_MESSAGE("Starting the settings manager...");
+	TheSettingManager = this;
 
-	GetCurrentDirectoryA(MAX_PATH,CurrentPath);
+	GetCurrentDirectoryA(MAX_PATH, CurrentPath);
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, MainSettingsFile);
 
-	SettingsMain.WindowedMode = GetPrivateProfileIntA("Main", "WindowedMode", 1, Filename);
 	GetPrivateProfileStringA("Main", "FoV", "90.0", value, 255, Filename);
 	SettingsMain.FoV = atof(value);
 	SettingsMain.WaterReflectionMapSize = GetPrivateProfileIntA("Main", "WaterReflectionMapSize", 512, Filename);
 	SettingsMain.WaterManagement = GetPrivateProfileIntA("Main", "WaterManagement", 1, Filename);
+	SettingsMain.AnisotropicFilter = GetPrivateProfileIntA("Main", "AnisotropicFilter", 0, Filename);
 	GetPrivateProfileStringA("Main", "FarPlaneDistance", "0.0", value, 255, Filename);
 	SettingsMain.FarPlaneDistance = atof(value);
 	GetPrivateProfileStringA("Main", "ScreenshotPath", CurrentPath, value, 255, Filename);
@@ -42,6 +51,8 @@ SettingManager::SettingManager() {
 		strcat(SettingsMain.ScreenshotPath, "\\");
 	SettingsMain.ScreenshotType = GetPrivateProfileIntA("Main", "ScreenshotType", 1, Filename);
 	SettingsMain.ScreenshotKey = GetPrivateProfileIntA("Main", "ScreenshotKey", 87, Filename);
+	SettingsMain.FPSOverlay = GetPrivateProfileIntA("Main", "FPSOverlay", 0, Filename);
+	SettingsMain.ShaderProfile = GetPrivateProfileIntA("Main", "ShaderProfile", 7, Filename);
 	SettingsMain.CustomEffects = GetPrivateProfileIntA("Main", "CustomEffects", 0, Filename);
 	SettingsMain.FrameRate = GetPrivateProfileIntA("Main", "FrameRate", 0, Filename);
 	SettingsMain.SaveSettings = GetPrivateProfileIntA("Main", "SaveSettings", 1, Filename);
@@ -50,6 +61,7 @@ SettingManager::SettingManager() {
 	SettingsMain.EquipmentMode = GetPrivateProfileIntA("Main", "EquipmentMode", 0, Filename);
 	SettingsMain.SleepingMode = GetPrivateProfileIntA("Main", "SleepingMode", 0, Filename);
 	SettingsMain.GrassMode = GetPrivateProfileIntA("Main", "GrassMode", 0, Filename);
+	SettingsMain.ShadowMode = GetPrivateProfileIntA("Main", "ShadowMode", 0, Filename);
 
 	SettingsMain.FrameRateAverage = GetPrivateProfileIntA("FrameRate", "Average", 30, Filename);
 	SettingsMain.FrameRateGap = GetPrivateProfileIntA("FrameRate", "Gap", 3, Filename);
@@ -60,6 +72,31 @@ SettingManager::SettingManager() {
 	SettingsMain.FrameRateFadeMinActors = GetPrivateProfileIntA("FrameRate", "FadeMinActors", 15, Filename);
 	SettingsMain.FrameRateGridStep = GetPrivateProfileIntA("FrameRate", "GridStep", 2, Filename);
 	SettingsMain.FrameRateGridMin = GetPrivateProfileIntA("FrameRate", "GridMin", 5, Filename);
+
+	GetPrivateProfileStringA("EquipmentMode", "ShieldOnBackPosX", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeShieldOnBackPos.x = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "ShieldOnBackPosY", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeShieldOnBackPos.y = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "ShieldOnBackPosZ", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeShieldOnBackPos.z = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "ShieldOnBackRotX", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeShieldOnBackRot.x = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "ShieldOnBackRotY", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeShieldOnBackRot.y = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "ShieldOnBackRotZ", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeShieldOnBackRot.z = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "WeaponOnBackPosX", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeWeaponOnBackPos.x = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "WeaponOnBackPosY", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeWeaponOnBackPos.y = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "WeaponOnBackPosZ", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeWeaponOnBackPos.z = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "WeaponOnBackRotX", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeWeaponOnBackRot.x = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "WeaponOnBackRotY", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeWeaponOnBackRot.y = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "WeaponOnBackRotZ", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeWeaponOnBackRot.z = atof(value);
 
 	SettingsMain.CameraModeHUDReticle = GetPrivateProfileIntA("CameraMode", "HUDReticle", 2, Filename);
 	SettingsMain.CameraModeChasingFirst = GetPrivateProfileIntA("CameraMode", "ChasingFirst", 0, Filename);
@@ -86,6 +123,9 @@ SettingManager::SettingManager() {
 	SettingsMain.SleepingModeRest = GetPrivateProfileIntA("SleepingMode", "Rest", 1, Filename);
 	GetPrivateProfileStringA("SleepingMode", "RestMessage", "You must be in a bed to rest.", SettingsMain.SleepingModeRestMessage, 80, Filename);
 
+	GetPrivateProfileStringA("ShadowMode", "NearQuality", "3.0", value, 255, Filename);
+	SettingsMain.ShadowModeNearQuality = atof(value);
+
 	SettingsMain.EnableWater = GetPrivateProfileIntA("Shaders", "EnableWater", 0, Filename);
 	SettingsMain.EnableGrass = GetPrivateProfileIntA("Shaders", "EnableGrass", 0, Filename);
 	SettingsMain.EnablePrecipitations = GetPrivateProfileIntA("Shaders", "EnablePrecipitations", 0, Filename);
@@ -95,6 +135,7 @@ SettingManager::SettingManager() {
 	SettingsMain.EnableTerrain = GetPrivateProfileIntA("Shaders", "EnableTerrain", 0, Filename);
 	SettingsMain.EnableBlood = GetPrivateProfileIntA("Shaders", "EnableBlood", 0, Filename);
 	SettingsMain.EnableShadows = GetPrivateProfileIntA("Shaders", "EnableShadows", 0, Filename);
+	SettingsMain.EnableNightEye = GetPrivateProfileIntA("Shaders", "EnableNightEye", 0, Filename);
 
 	SettingsMain.EnableUnderwater = GetPrivateProfileIntA("Effects", "EnableUnderwater", 0, Filename);
 	SettingsMain.EnableWaterLens = GetPrivateProfileIntA("Effects", "EnableWaterLens", 0, Filename);
@@ -177,11 +218,22 @@ SettingManager::SettingManager() {
 	strcat(SettingsMain.MenuValueFormat, value);
 	strcat(SettingsMain.MenuValueFormat, "f");
 
+	SettingsMain.LowHFSoundEnableHealth = GetPrivateProfileIntA("LowHF", "EnableHealth", 0, Filename);
+	SettingsMain.LowHFSoundEnableFatigue = GetPrivateProfileIntA("LowHF", "EnableFatigue", 0, Filename);
+	GetPrivateProfileStringA("LowHF", "HealthCoeff", "0.5", value, 255, Filename);
+	SettingsMain.LowHFSoundHealthCoeff = atof(value);
+	GetPrivateProfileStringA("LowHF", "FatigueCoeff", "0.5", value, 255, Filename);
+	SettingsMain.LowHFSoundFatigueCoeff = atof(value);
+
+	SettingsMain.PurgerEnabled = GetPrivateProfileIntA("Purger", "Enabled", 0, Filename);
+	SettingsMain.PurgerTime = GetPrivateProfileIntA("Purger", "Time", 300, Filename);
+	SettingsMain.PurgerPurgeTexture = GetPrivateProfileIntA("Purger", "PurgeTexture", 1, Filename);
+	SettingsMain.PurgerPurgeCells = GetPrivateProfileIntA("Purger", "PurgeCells", 1, Filename);
+	SettingsMain.PurgerKey = GetPrivateProfileIntA("Purger", "Key", 88, Filename);
+
 	SettingsMain.DevelopCompileShaders = GetPrivateProfileIntA("Develop", "CompileShaders", 0, Filename);
 	SettingsMain.DevelopCompileEffects = GetPrivateProfileIntA("Develop", "CompileEffects", 0, Filename);
 	SettingsMain.DevelopTraceShaders = GetPrivateProfileIntA("Develop", "TraceShaders", 0, Filename);
-
-	InitCamera();
 
 	GameLoading = false;
 
@@ -210,13 +262,11 @@ void SettingManager::LoadSettings() {
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
 	strcat(Filename, "Water\\Water.ini");
-	GetPrivateProfileStringA("Default", "IceEnabled", "0", Water_IceEnabled, 255, Filename);
-	SW.IceEnabled = atof(Water_IceEnabled);
 	GetPrivateProfileStringA("Default", "choppiness", "0.8", Water_choppiness, 255, Filename);
 	SW.choppiness = atof(Water_choppiness);
 	GetPrivateProfileStringA("Default", "waveWidth", "1.8", Water_waveWidth, 255, Filename);
 	SW.waveWidth = atof(Water_waveWidth);
-	GetPrivateProfileStringA("Default", "waveSpeed", "0.6", Water_waveSpeed, 255, Filename);
+	GetPrivateProfileStringA("Default", "waveSpeed", "0.5", Water_waveSpeed, 255, Filename);
 	SW.waveSpeed = atof(Water_waveSpeed);
 	GetPrivateProfileStringA("Default", "reflectivity", "0.8", Water_reflectivity, 255, Filename);
 	SW.reflectivity = atof(Water_reflectivity);
@@ -236,22 +286,6 @@ void SettingManager::LoadSettings() {
 	SW.inExtCoeff_G = atof(Water_inExtCoeff_G);
 	GetPrivateProfileStringA("Default", "inExtCoeff_B", "0.30", Water_inExtCoeff_B, 255, Filename);
 	SW.inExtCoeff_B = atof(Water_inExtCoeff_B);
-	GetPrivateProfileStringA("Default", "IceinExtCoeff_R", "0.22", Water_IceinExtCoeff_R, 255, Filename);
-	SW.IceinExtCoeff_R = atof(Water_IceinExtCoeff_R);
-	GetPrivateProfileStringA("Default", "IceinExtCoeff_G", "0.18", Water_IceinExtCoeff_G, 255, Filename);
-	SW.IceinExtCoeff_G = atof(Water_IceinExtCoeff_G);
-	GetPrivateProfileStringA("Default", "IceinExtCoeff_B", "0.18", Water_IceinExtCoeff_B, 255, Filename);
-	SW.IceinExtCoeff_B = atof(Water_IceinExtCoeff_B);
-	GetPrivateProfileStringA("Default", "Icechoppiness", "0.2", Water_Icechoppiness, 255, Filename);
-	SW.Icechoppiness = atof(Water_Icechoppiness);
-	GetPrivateProfileStringA("Default", "IcewaveWidth", "3.6", Water_IcewaveWidth, 255, Filename);
-	SW.IcewaveWidth = atof(Water_IcewaveWidth);
-	GetPrivateProfileStringA("Default", "Icereflectivity", "1.6", Water_Icereflectivity, 255, Filename);
-	SW.Icereflectivity = atof(Water_Icereflectivity);
-	GetPrivateProfileStringA("Default", "IceshoreFactor", "0.4", Water_IceshoreFactor, 255, Filename);
-	SW.IceshoreFactor = atof(Water_IceshoreFactor);
-	GetPrivateProfileStringA("Default", "Iceturbidity", "1.4", Water_Iceturbidity, 255, Filename);
-	SW.Iceturbidity = atof(Water_Iceturbidity);
 	GetPrivateProfileStringA("Default", "depthDarkness", "0.1", Water_depthDarkness, 255, Filename);
 	SW.depthDarkness = atof(Water_depthDarkness);
 	GetPrivateProfileStringA("Default", "LODdistance", "1.0", Water_LODdistance, 255, Filename);
@@ -275,8 +309,6 @@ void SettingManager::LoadSettings() {
 	while (*pNextSection != NULL)
 	{
 		if (strcmp(pNextSection, "Default") != 0) {
-			GetPrivateProfileStringA(pNextSection, "IceEnabled", Water_IceEnabled, value, 255, Filename);
-			SW.IceEnabled = atof(value);
 			GetPrivateProfileStringA(pNextSection, "choppiness", Water_choppiness, value, 255, Filename);
 			SW.choppiness = atof(value);
 			GetPrivateProfileStringA(pNextSection, "waveWidth", Water_waveWidth, value, 255, Filename);
@@ -301,22 +333,6 @@ void SettingManager::LoadSettings() {
 			SW.inExtCoeff_G = atof(value);
 			GetPrivateProfileStringA(pNextSection, "inExtCoeff_B", Water_inExtCoeff_B, value, 255, Filename);
 			SW.inExtCoeff_B = atof(value);
-			GetPrivateProfileStringA(pNextSection, "IceinExtCoeff_R", Water_IceinExtCoeff_R, value, 255, Filename);
-			SW.IceinExtCoeff_R = atof(value);
-			GetPrivateProfileStringA(pNextSection, "IceinExtCoeff_G", Water_IceinExtCoeff_G, value, 255, Filename);
-			SW.IceinExtCoeff_G = atof(value);
-			GetPrivateProfileStringA(pNextSection, "IceinExtCoeff_B", Water_IceinExtCoeff_B, value, 255, Filename);
-			SW.IceinExtCoeff_B = atof(value);
-			GetPrivateProfileStringA(pNextSection, "Icechoppiness", Water_Icechoppiness, value, 255, Filename);
-			SW.Icechoppiness = atof(value);
-			GetPrivateProfileStringA(pNextSection, "IcewaveWidth", Water_IcewaveWidth, value, 255, Filename);
-			SW.IcewaveWidth = atof(value);
-			GetPrivateProfileStringA(pNextSection, "Icereflectivity", Water_Icereflectivity, value, 255, Filename);
-			SW.Icereflectivity = atof(value);
-			GetPrivateProfileStringA(pNextSection, "IceshoreFactor", Water_IceshoreFactor, value, 255, Filename);
-			SW.IceshoreFactor = atof(value);
-			GetPrivateProfileStringA(pNextSection, "Iceturbidity", Water_Iceturbidity, value, 255, Filename);
-			SW.Iceturbidity = atof(value);
 			GetPrivateProfileStringA(pNextSection, "depthDarkness", Water_depthDarkness, value, 255, Filename);
 			SW.depthDarkness = atof(value);
 			GetPrivateProfileStringA(pNextSection, "LODdistance", Water_LODdistance, value, 255, Filename);
@@ -405,12 +421,12 @@ void SettingManager::LoadSettings() {
 	SettingsSkin.MaterialThickness = atof(value);
 	GetPrivateProfileStringA("Default", "RimScalar", "1.0", value, 255, Filename);
 	SettingsSkin.RimScalar = atof(value);
-	GetPrivateProfileStringA("Default", "ExtCoeffRed", "0.70", value, 255, Filename);
-	SettingsSkin.ExtCoeffRed = atof(value);
-	GetPrivateProfileStringA("Default", "ExtCoeffGreen", "0.62", value, 255, Filename);
-	SettingsSkin.ExtCoeffGreen = atof(value);
-	GetPrivateProfileStringA("Default", "ExtCoeffBlue", "0.50", value, 255, Filename);
-	SettingsSkin.ExtCoeffBlue = atof(value);
+	GetPrivateProfileStringA("Default", "CoeffRed", "0.70", value, 255, Filename);
+	SettingsSkin.CoeffRed = atof(value);
+	GetPrivateProfileStringA("Default", "CoeffGreen", "0.62", value, 255, Filename);
+	SettingsSkin.CoeffGreen = atof(value);
+	GetPrivateProfileStringA("Default", "CoeffBlue", "0.50", value, 255, Filename);
+	SettingsSkin.CoeffBlue = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
@@ -748,11 +764,15 @@ void SettingManager::SaveSettings(const char* Name) {
 	if (!strcmp(Name, " Main")) {
 		WritePrivateProfileStringA("Main", "FoV", ToString(SettingsMain.FoV).c_str(), SettingsMain.MainSettingsFullFile);
 		WritePrivateProfileStringA("Main", "ScreenshotKey", ToString(SettingsMain.ScreenshotKey).c_str(), SettingsMain.MainSettingsFullFile);
+		WritePrivateProfileStringA("Main", "FPSOverlay", ToString(SettingsMain.FPSOverlay).c_str(), SettingsMain.MainSettingsFullFile);
 		WritePrivateProfileStringA("CameraMode", "NearDistanceFirst", ToString(SettingsMain.CameraModeNearDistanceFirst).c_str(), SettingsMain.MainSettingsFullFile);
 		WritePrivateProfileStringA("CameraMode", "NearDistanceThird", ToString(SettingsMain.CameraModeNearDistanceThird).c_str(), SettingsMain.MainSettingsFullFile);
 		WritePrivateProfileStringA("CameraMode", "OffsetX", ToString(SettingsMain.CameraModeOffset.x).c_str(), SettingsMain.MainSettingsFullFile);
 		WritePrivateProfileStringA("CameraMode", "OffsetY", ToString(SettingsMain.CameraModeOffset.y).c_str(), SettingsMain.MainSettingsFullFile);
 		WritePrivateProfileStringA("CameraMode", "OffsetZ", ToString(SettingsMain.CameraModeOffset.z).c_str(), SettingsMain.MainSettingsFullFile);
+#if defined(SKYRIM)
+		WritePrivateProfileStringA("ShadowMode", "NearQuality", ToString(SettingsMain.ShadowModeNearQuality).c_str(), SettingsMain.MainSettingsFullFile);
+#endif
 		WritePrivateProfileStringA("SleepingMode", "Rest", ToString(SettingsMain.SleepingModeRest).c_str(), SettingsMain.MainSettingsFullFile);
 		WritePrivateProfileStringA("Menu", "StepValue", ToString(SettingsMain.MenuStepValue).c_str(), SettingsMain.MainSettingsFullFile);
 	}
@@ -773,17 +793,15 @@ void SettingManager::SaveSettings(const char* Name) {
 			v++;
 		}
 	}
-	else if (!strcmp(Name, "Blood")) {
-		strcat(Filename,"Blood\\Blood.ini");
+	else if (!strcmp(Name, "BloodLens")) {
+		WritePrivateProfileStringA("Effects", "EnableBloodLens", ToString(SettingsMain.EnableBloodLens).c_str(), SettingsMain.MainSettingsFullFile);
+		strcat(Filename, "Blood\\Blood.ini");
 		WritePrivateProfileStringA("Default", "LensChance", ToString(SettingsBlood.LensChance).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "LensColorB", ToString(SettingsBlood.LensColorB).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "LensColorG", ToString(SettingsBlood.LensColorG).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "LensColorR", ToString(SettingsBlood.LensColorR).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "LensIntensity", ToString(SettingsBlood.LensIntensity).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "LensTime", ToString(SettingsBlood.LensTime).c_str(), Filename);
-	}
-	else if (!strcmp(Name, "BloodLens")) {
-		WritePrivateProfileStringA("Effects", "EnableBloodLens", ToString(SettingsMain.EnableBloodLens).c_str(), SettingsMain.MainSettingsFullFile);
 	}
 	else if (!strcmp(Name, "Bloom")) {
 		WritePrivateProfileStringA("Effects", "EnableBloom", ToString(SettingsMain.EnableBloom).c_str(), SettingsMain.MainSettingsFullFile);
@@ -919,19 +937,6 @@ void SettingManager::SaveSettings(const char* Name) {
 		WritePrivateProfileStringA("Default", "Intensity", ToString(SettingsPrecipitations.Intensity).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "Velocity", ToString(SettingsPrecipitations.Velocity).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "Size", ToString(SettingsPrecipitations.Size).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "SnowIncrease", ToString(SettingsPrecipitations.SnowIncrease).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "SnowDecrease", ToString(SettingsPrecipitations.SnowDecrease).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "SnowSunPower", ToString(SettingsPrecipitations.SnowSunPower).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "SnowAmount", ToString(SettingsPrecipitations.SnowAmount).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "SnowBlurNormDropThreshhold", ToString(SettingsPrecipitations.SnowBlurNormDropThreshhold).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "SnowBlurRadiusMultiplier", ToString(SettingsPrecipitations.SnowBlurRadiusMultiplier).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "RainIncrease", ToString(SettingsPrecipitations.RainIncrease).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "RainDecrease", ToString(SettingsPrecipitations.RainDecrease).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "RainAmount", ToString(SettingsPrecipitations.RainAmount).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "PuddleCoeff_B", ToString(SettingsPrecipitations.PuddleCoeff_B).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "PuddleCoeff_G", ToString(SettingsPrecipitations.PuddleCoeff_G).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "PuddleCoeff_R", ToString(SettingsPrecipitations.PuddleCoeff_R).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "PuddleSpecularMultiplier", ToString(SettingsPrecipitations.PuddleSpecularMultiplier).c_str(), Filename);
 	}
 	else if (!strcmp(Name, "Shadows")) {
 		strcat(Filename,"Shadows\\Shadows.ini");
@@ -941,9 +946,9 @@ void SettingManager::SaveSettings(const char* Name) {
 	else if (!strcmp(Name, "Skin")) {
 		strcat(Filename,"Skin\\Skin.ini");
 		WritePrivateProfileStringA("Default", "Attenuation", ToString(SettingsSkin.Attenuation).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "ExtCoeffBlue", ToString(SettingsSkin.ExtCoeffBlue).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "ExtCoeffGreen", ToString(SettingsSkin.ExtCoeffGreen).c_str(), Filename);
-		WritePrivateProfileStringA("Default", "ExtCoeffRed", ToString(SettingsSkin.ExtCoeffRed).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "CoeffBlue", ToString(SettingsSkin.CoeffBlue).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "CoeffGreen", ToString(SettingsSkin.CoeffGreen).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "CoeffRed", ToString(SettingsSkin.CoeffRed).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "MaterialThickness", ToString(SettingsSkin.MaterialThickness).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "RimScalar", ToString(SettingsSkin.RimScalar).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "SpecularPower", ToString(SettingsSkin.SpecularPower).c_str(), Filename);
@@ -960,6 +965,13 @@ void SettingManager::SaveSettings(const char* Name) {
 	}
 	else if (!strcmp(Name, "SnowAccumulation")) {
 		WritePrivateProfileStringA("Effects", "EnableSnowAccumulation", ToString(SettingsMain.EnableSnowAccumulation).c_str(), SettingsMain.MainSettingsFullFile);
+		strcat(Filename, "Precipitations\\Precipitations.ini");
+		WritePrivateProfileStringA("Default", "SnowIncrease", ToString(SettingsPrecipitations.SnowIncrease).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "SnowDecrease", ToString(SettingsPrecipitations.SnowDecrease).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "SnowSunPower", ToString(SettingsPrecipitations.SnowSunPower).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "SnowAmount", ToString(SettingsPrecipitations.SnowAmount).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "SnowBlurNormDropThreshhold", ToString(SettingsPrecipitations.SnowBlurNormDropThreshhold).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "SnowBlurRadiusMultiplier", ToString(SettingsPrecipitations.SnowBlurRadiusMultiplier).c_str(), Filename);
 	}
 	else if (!strcmp(Name, "Terrain")) {
 		strcat(Filename,"Terrain\\Terrain.ini");
@@ -971,7 +983,7 @@ void SettingManager::SaveSettings(const char* Name) {
 	else if (!strcmp(Name, "Underwater")) {
 		WritePrivateProfileStringA("Effects", "EnableUnderwater", ToString(SettingsMain.EnableUnderwater).c_str(), SettingsMain.MainSettingsFullFile);
 	}
-	else if (!strcmp(Name, "Water")) {
+	else if (!strcmp(Name, "Water") || !strcmp(Name, "Underwater")) {
 		strcat(Filename,"Water\\Water.ini");
 		SettingsWaterList::iterator v = SettingsWater.begin();
 		while (v != SettingsWater.end()) {
@@ -986,21 +998,7 @@ void SettingManager::SaveSettings(const char* Name) {
 			WritePrivateProfileStringA(v->first.c_str(), "inExtCoeff_G", ToString(v->second.inExtCoeff_G).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "inExtCoeff_R", ToString(v->second.inExtCoeff_R).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "inScattCoeff", ToString(v->second.inScattCoeff).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "LensAmount", ToString(v->second.LensAmount).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "LensTime", ToString(v->second.LensTime).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "LensTimeMultA", ToString(v->second.LensTimeMultA).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "LensTimeMultB", ToString(v->second.LensTimeMultB).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "LensViscosity", ToString(v->second.LensViscosity).c_str(), Filename);
 #if defined(OBLIVION)
-			WritePrivateProfileStringA(v->first.c_str(), "Icechoppiness", ToString(v->second.Icechoppiness).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceEnabled", ToString(v->second.IceEnabled).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_B", ToString(v->second.IceinExtCoeff_B).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_G", ToString(v->second.IceinExtCoeff_G).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceinExtCoeff_R", ToString(v->second.IceinExtCoeff_R).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "Icereflectivity", ToString(v->second.Icereflectivity).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IceshoreFactor", ToString(v->second.IceshoreFactor).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "Iceturbidity", ToString(v->second.Iceturbidity).c_str(), Filename);
-			WritePrivateProfileStringA(v->first.c_str(), "IcewaveWidth", ToString(v->second.IcewaveWidth).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "LODdistance", ToString(v->second.LODdistance).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "MinLOD", ToString(v->second.MinLOD).c_str(), Filename);
 			WritePrivateProfileStringA(v->first.c_str(), "waveSpeed", ToString(v->second.waveSpeed).c_str(), Filename);
@@ -1011,9 +1009,27 @@ void SettingManager::SaveSettings(const char* Name) {
 	}
 	else if (!strcmp(Name, "WaterLens")) {
 		WritePrivateProfileStringA("Effects", "EnableWaterLens", ToString(SettingsMain.EnableWaterLens).c_str(), SettingsMain.MainSettingsFullFile);
+		strcat(Filename, "Water\\Water.ini");
+		SettingsWaterList::iterator v = SettingsWater.begin();
+		while (v != SettingsWater.end()) {
+			WritePrivateProfileStringA(v->first.c_str(), "LensAmount", ToString(v->second.LensAmount).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "LensTime", ToString(v->second.LensTime).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "LensTimeMultA", ToString(v->second.LensTimeMultA).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "LensTimeMultB", ToString(v->second.LensTimeMultB).c_str(), Filename);
+			WritePrivateProfileStringA(v->first.c_str(), "LensViscosity", ToString(v->second.LensViscosity).c_str(), Filename);
+			v++;
+		}
 	}
 	else if (!strcmp(Name, "WetWorld")) {
 		WritePrivateProfileStringA("Effects", "EnableWetWorld", ToString(SettingsMain.EnableWetWorld).c_str(), SettingsMain.MainSettingsFullFile);
+		strcat(Filename, "Precipitations\\Precipitations.ini");
+		WritePrivateProfileStringA("Default", "RainIncrease", ToString(SettingsPrecipitations.RainIncrease).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "RainDecrease", ToString(SettingsPrecipitations.RainDecrease).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "RainAmount", ToString(SettingsPrecipitations.RainAmount).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "PuddleCoeff_B", ToString(SettingsPrecipitations.PuddleCoeff_B).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "PuddleCoeff_G", ToString(SettingsPrecipitations.PuddleCoeff_G).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "PuddleCoeff_R", ToString(SettingsPrecipitations.PuddleCoeff_R).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "PuddleSpecularMultiplier", ToString(SettingsPrecipitations.PuddleSpecularMultiplier).c_str(), Filename);
 	}
 }
 
@@ -1025,8 +1041,8 @@ ShadersList SettingManager::GetShaders() {
 	Shaders["AmbientOcclusion"] = "Ambient Occlusion";
 #if defined(OBLIVION)
 	Shaders["Blood"] = "Blood";
-	Shaders["BloodLens"] = "Blood Lens";
 #endif
+	Shaders["BloodLens"] = "Blood on Lens";
 	Shaders["Bloom"] = "Bloom";
 	Shaders["Cinema"] = "Cinema";
 	Shaders["Coloring"] = "Coloring";
@@ -1052,7 +1068,7 @@ ShadersList SettingManager::GetShaders() {
 #endif
 	Shaders["Underwater"] = "Underwater";
 	Shaders["Water"] = "Water";
-	Shaders["WaterLens"] = "Water Lens";
+	Shaders["WaterLens"] = "Water on Lens";
 #if defined(OBLIVION)
 	Shaders["WetWorld"] = "Wet World";
 #endif
@@ -1068,6 +1084,9 @@ SectionsList SettingManager::GetSections(const char* Name) {
 		Sections.push_back("Main");
 		Sections.push_back("CameraMode");
 		Sections.push_back("SleepingMode");
+#if defined(SKYRIM)
+		Sections.push_back("ShadowMode");
+#endif
 		Sections.push_back("Menu");
 	}
 	else if (!strcmp(Name, "AmbientOcclusion")) {
@@ -1112,14 +1131,10 @@ SectionsList SettingManager::GetSections(const char* Name) {
 			v++;
 		}
 	}
-	else if (!strcmp(Name, "BloodLens"))
-		Sections.push_back("Use the Blood menu");
-	else if (!strcmp(Name, "SnowAccumulation") || !strcmp(Name, "WetWorld"))
-		Sections.push_back("Use the Precipitations menu");
+	else if (!strcmp(Name, "Blood"))
+		Sections.push_back("No settings to configure");
 	else if (!strcmp(Name, "SMAA"))
 		Sections.push_back("No settings to configure");
-	else if (!strcmp(Name, "Underwater") || !strcmp(Name, "WaterLens"))
-		Sections.push_back("Use the Water menu");
 	else
 		Sections.push_back("Default");
 
@@ -1132,8 +1147,9 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 
 	if (!strcmp(Name, " Main")) {
 		if (!strcmp(Section, "Main")) {
-			SettingsShader["FoV"] = SettingsMain.FoV;
+			if (TheSettingManager->SettingsMain.FoV) SettingsShader["FoV"] = SettingsMain.FoV;
 			SettingsShader["ScreenshotKey"] = SettingsMain.ScreenshotKey;
+			SettingsShader["FPSOverlay"] = SettingsMain.FPSOverlay;
 		}
 		else if (!strcmp(Section, "CameraMode")) {
 			SettingsShader["NearDistanceFirst"] = SettingsMain.CameraModeNearDistanceFirst;
@@ -1144,6 +1160,8 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		}
 		else if (!strcmp(Section, "SleepingMode"))
 			SettingsShader["Rest"] = SettingsMain.SleepingModeRest;
+		else if (!strcmp(Section, "ShadowMode"))
+			SettingsShader["NearQuality"] = SettingsMain.ShadowModeNearQuality;
 		else if (!strcmp(Section, "Menu"))
 			SettingsShader["StepValue"] = SettingsMain.MenuStepValue;
 	}
@@ -1159,7 +1177,7 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["Range"] = sas->Range;
 		SettingsShader["StrengthMultiplier"] = sas->StrengthMultiplier;
 	}
-	else if (!strcmp(Name, "Blood")) {
+	else if (!strcmp(Name, "BloodLens")) {
 		SettingsShader["LensChance"] = SettingsBlood.LensChance;
 		SettingsShader["LensColorR"] = SettingsBlood.LensColorR;
 		SettingsShader["LensColorG"] = SettingsBlood.LensColorG;
@@ -1189,14 +1207,14 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["Bleach"] = scs->Bleach;
 		SettingsShader["BleachLuma"] = scs->BleachLuma;
 		SettingsShader["ColorCurve"] = scs->ColorCurve;
-		SettingsShader["ColorCurveB"] = scs->ColorCurveB;
-		SettingsShader["ColorCurveG"] = scs->ColorCurveG;
 		SettingsShader["ColorCurveR"] = scs->ColorCurveR;
+		SettingsShader["ColorCurveG"] = scs->ColorCurveG;
+		SettingsShader["ColorCurveB"] = scs->ColorCurveB;
 		SettingsShader["Contrast"] = scs->Contrast;
 		SettingsShader["EffectGamma"] = scs->EffectGamma;
-		SettingsShader["EffectGammaB"] = scs->EffectGammaB;
-		SettingsShader["EffectGammaG"] = scs->EffectGammaG;
 		SettingsShader["EffectGammaR"] = scs->EffectGammaR;
+		SettingsShader["EffectGammaG"] = scs->EffectGammaG;
+		SettingsShader["EffectGammaB"] = scs->EffectGammaB;
 		SettingsShader["Fade"] = scs->Fade;
 		SettingsShader["Linearization"] = scs->Linearization;
 		SettingsShader["Saturation"] = scs->Saturation;
@@ -1271,19 +1289,6 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["Intensity"] = SettingsPrecipitations.Intensity;
 		SettingsShader["Size"] = SettingsPrecipitations.Size;
 		SettingsShader["Velocity"] = SettingsPrecipitations.Velocity;
-		SettingsShader["PuddleCoeff_B"] = SettingsPrecipitations.PuddleCoeff_B;
-		SettingsShader["PuddleCoeff_G"] = SettingsPrecipitations.PuddleCoeff_G;
-		SettingsShader["PuddleCoeff_R"] = SettingsPrecipitations.PuddleCoeff_R;
-		SettingsShader["PuddleSpecularMultiplier"] = SettingsPrecipitations.PuddleSpecularMultiplier;
-		SettingsShader["RainAmount"] = SettingsPrecipitations.RainAmount;
-		SettingsShader["RainDecrease"] = SettingsPrecipitations.RainDecrease;
-		SettingsShader["RainIncrease"] = SettingsPrecipitations.RainIncrease;
-		SettingsShader["SnowAmount"] = SettingsPrecipitations.SnowAmount;
-		SettingsShader["SnowBlurNormDropThreshhold"] = SettingsPrecipitations.SnowBlurNormDropThreshhold;
-		SettingsShader["SnowBlurRadiusMultiplier"] = SettingsPrecipitations.SnowBlurRadiusMultiplier;
-		SettingsShader["SnowDecrease"] = SettingsPrecipitations.SnowDecrease;
-		SettingsShader["SnowIncrease"] = SettingsPrecipitations.SnowIncrease;
-		SettingsShader["SnowSunPower"] = SettingsPrecipitations.SnowSunPower;
 	}
 	else if (!strcmp(Name, "Shadows")) {
 		SettingsShader["SelfShadowIntensity"] = SettingsShadows.SelfShadowIntensity;
@@ -1296,12 +1301,20 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 	}
 	else if (!strcmp(Name, "Skin")) {
 		SettingsShader["Attenuation"] = SettingsSkin.Attenuation;
-		SettingsShader["ExtCoeffBlue"] = SettingsSkin.ExtCoeffBlue;
-		SettingsShader["ExtCoeffGreen"] = SettingsSkin.ExtCoeffGreen;
-		SettingsShader["ExtCoeffRed"] = SettingsSkin.ExtCoeffRed;
+		SettingsShader["CoeffRed"] = SettingsSkin.CoeffRed;
+		SettingsShader["CoeffGreen"] = SettingsSkin.CoeffGreen;
+		SettingsShader["CoeffBlue"] = SettingsSkin.CoeffBlue;
 		SettingsShader["MaterialThickness"] = SettingsSkin.MaterialThickness;
 		SettingsShader["RimScalar"] = SettingsSkin.RimScalar;
 		SettingsShader["SpecularPower"] = SettingsSkin.SpecularPower;
+	}
+	else if (!strcmp(Name, "SnowAccumulation")) {
+		SettingsShader["SnowAmount"] = SettingsPrecipitations.SnowAmount;
+		SettingsShader["SnowBlurNormDropThreshhold"] = SettingsPrecipitations.SnowBlurNormDropThreshhold;
+		SettingsShader["SnowBlurRadiusMultiplier"] = SettingsPrecipitations.SnowBlurRadiusMultiplier;
+		SettingsShader["SnowDecrease"] = SettingsPrecipitations.SnowDecrease;
+		SettingsShader["SnowIncrease"] = SettingsPrecipitations.SnowIncrease;
+		SettingsShader["SnowSunPower"] = SettingsPrecipitations.SnowSunPower;
 	}
 	else if (!strcmp(Name, "Terrain")) {
 		SettingsShader["DistantNoise"] = SettingsTerrain.DistantNoise;
@@ -1309,7 +1322,7 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["MiddleSpecular"] = SettingsTerrain.MiddleSpecular;
 		SettingsShader["NearSpecular"] = SettingsTerrain.NearSpecular;
 	}
-	else if (!strcmp(Name, "Water")) {
+	else if (!strcmp(Name, "Water") || !strcmp(Name, "Underwater")) {
 		SettingsWaterStruct *sws = GetSettingsWater(Section);
 		SettingsShader["causticsStrength"] = sws->causticsStrength;
 		SettingsShader["causticsStrengthS"] = sws->causticsStrengthS;
@@ -1318,30 +1331,33 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["reflectivity"] = sws->reflectivity;
 		SettingsShader["shoreFactor"] = sws->shoreFactor;
 		SettingsShader["turbidity"] = sws->turbidity;
-		SettingsShader["inExtCoeff_B"] = sws->inExtCoeff_B;
-		SettingsShader["inExtCoeff_G"] = sws->inExtCoeff_G;
 		SettingsShader["inExtCoeff_R"] = sws->inExtCoeff_R;
+		SettingsShader["inExtCoeff_G"] = sws->inExtCoeff_G;
+		SettingsShader["inExtCoeff_B"] = sws->inExtCoeff_B;
 		SettingsShader["inScattCoeff"] = sws->inScattCoeff;
-		SettingsShader["LensAmount"] = sws->LensAmount;
-		SettingsShader["LensTime"] = sws->LensTime;
-		SettingsShader["LensTimeMultA"] = sws->LensTimeMultA;
-		SettingsShader["LensTimeMultB"] = sws->LensTimeMultB;
-		SettingsShader["LensViscosity"] = sws->LensViscosity;
 #if defined(OBLIVION)
-		SettingsShader["Icechoppiness"] = sws->Icechoppiness;
-		SettingsShader["IceEnabled"] = sws->IceEnabled;
-		SettingsShader["IceinExtCoeff_B"] = sws->IceinExtCoeff_B;
-		SettingsShader["IceinExtCoeff_G"] = sws->IceinExtCoeff_G;
-		SettingsShader["IceinExtCoeff_R"] = sws->IceinExtCoeff_R;
-		SettingsShader["Icereflectivity"] = sws->Icereflectivity;
-		SettingsShader["IceshoreFactor"] = sws->IceshoreFactor;
-		SettingsShader["Iceturbidity"] = sws->Iceturbidity;
-		SettingsShader["IcewaveWidth"] = sws->IcewaveWidth;
 		SettingsShader["LODdistance"] = sws->LODdistance;
 		SettingsShader["MinLOD"] = sws->MinLOD;
 		SettingsShader["waveSpeed"] = sws->waveSpeed;
 		SettingsShader["waveWidth"] = sws->waveWidth;
 #endif
+	}
+	else if (!strcmp(Name, "WaterLens")) {
+		SettingsWaterStruct *sws = GetSettingsWater(Section);
+		SettingsShader["LensAmount"] = sws->LensAmount;
+		SettingsShader["LensTime"] = sws->LensTime;
+		SettingsShader["LensTimeMultA"] = sws->LensTimeMultA;
+		SettingsShader["LensTimeMultB"] = sws->LensTimeMultB;
+		SettingsShader["LensViscosity"] = sws->LensViscosity;
+	}
+	else if (!strcmp(Name, "WetWorld")) {
+		SettingsShader["PuddleCoeff_B"] = SettingsPrecipitations.PuddleCoeff_B;
+		SettingsShader["PuddleCoeff_G"] = SettingsPrecipitations.PuddleCoeff_G;
+		SettingsShader["PuddleCoeff_R"] = SettingsPrecipitations.PuddleCoeff_R;
+		SettingsShader["PuddleSpecularMultiplier"] = SettingsPrecipitations.PuddleSpecularMultiplier;
+		SettingsShader["RainAmount"] = SettingsPrecipitations.RainAmount;
+		SettingsShader["RainDecrease"] = SettingsPrecipitations.RainDecrease;
+		SettingsShader["RainIncrease"] = SettingsPrecipitations.RainIncrease;
 	}
 	return SettingsShader;
 
@@ -1355,6 +1371,8 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 				SettingsMain.FoV = Value;
 			else if (!strcmp(Setting, "ScreenshotKey"))
 				SettingsMain.ScreenshotKey = Value;
+			else if (!strcmp(Setting, "FPSOverlay"))
+				SettingsMain.FPSOverlay = Value;
 		}
 		else if (!strcmp(Section, "CameraMode")) {
 			if (!strcmp(Setting, "NearDistanceFirst"))
@@ -1368,6 +1386,8 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 			else if (!strcmp(Setting, "OffsetZ"))
 				SettingsMain.CameraModeOffset.z = Value;
 		}
+		else if (!strcmp(Section, "ShadowMode"))
+			SettingsMain.ShadowModeNearQuality = Value;
 		else if (!strcmp(Section, "SleepingMode"))
 			SettingsMain.SleepingModeRest = Value;
 		else if (!strcmp(Section, "Menu"))
@@ -1394,7 +1414,7 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 		else if (!strcmp(Setting, "StrengthMultiplier"))
 			sas->StrengthMultiplier = Value;	
 	}
-	else if (!strcmp(Name, "Blood")) {
+	else if (!strcmp(Name, "BloodLens")) {
 		if (!strcmp(Setting, "LensChance"))
 			SettingsBlood.LensChance = Value;
 		else if (!strcmp(Setting, "LensColorR"))
@@ -1591,32 +1611,6 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 			SettingsPrecipitations.Size = Value;
 		else if (!strcmp(Setting, "Velocity"))
 			SettingsPrecipitations.Velocity = Value;
-		else if (!strcmp(Setting, "SnowIncrease"))
-			SettingsPrecipitations.SnowIncrease = Value;
-		else if (!strcmp(Setting, "SnowDecrease"))
-			SettingsPrecipitations.SnowDecrease = Value;
-		else if (!strcmp(Setting, "SnowSunPower"))
-			SettingsPrecipitations.SnowSunPower = Value;
-		else if (!strcmp(Setting, "SnowAmount"))
-			SettingsPrecipitations.SnowAmount = Value;
-		else if (!strcmp(Setting, "SnowBlurNormDropThreshhold"))
-			SettingsPrecipitations.SnowBlurNormDropThreshhold = Value;
-		else if (!strcmp(Setting, "SnowBlurRadiusMultiplier"))
-			SettingsPrecipitations.SnowBlurRadiusMultiplier = Value;
-		else if (!strcmp(Setting, "RainIncrease"))
-			SettingsPrecipitations.RainIncrease = Value;
-		else if (!strcmp(Setting, "RainDecrease"))
-			SettingsPrecipitations.RainDecrease = Value;
-		else if (!strcmp(Setting, "RainAmount"))
-			SettingsPrecipitations.RainAmount = Value;
-		else if (!strcmp(Setting, "PuddleCoeff_B"))
-			SettingsPrecipitations.PuddleCoeff_B = Value;
-		else if (!strcmp(Setting, "PuddleCoeff_G"))
-			SettingsPrecipitations.PuddleCoeff_G = Value;
-		else if (!strcmp(Setting, "PuddleCoeff_R"))
-			SettingsPrecipitations.PuddleCoeff_R = Value;
-		else if (!strcmp(Setting, "PuddleSpecularMultiplier"))
-			SettingsPrecipitations.PuddleSpecularMultiplier = Value;
 	}
 	else if (!strcmp(Name, "Shadows")) {
 		if (!strcmp(Setting, "SelfShadowIntensity"))
@@ -1635,18 +1629,32 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 	else if (!strcmp(Name, "Skin")) {
 		if (!strcmp(Setting, "Attenuation"))
 			SettingsSkin.Attenuation = Value;
-		else if (!strcmp(Setting, "ExtCoeffBlue"))
-			SettingsSkin.ExtCoeffBlue = Value;
-		else if (!strcmp(Setting, "ExtCoeffGreen"))
-			SettingsSkin.ExtCoeffGreen = Value;
-		else if (!strcmp(Setting, "ExtCoeffRed"))
-			SettingsSkin.ExtCoeffRed = Value;
+		else if (!strcmp(Setting, "CoeffBlue"))
+			SettingsSkin.CoeffBlue = Value;
+		else if (!strcmp(Setting, "CoeffGreen"))
+			SettingsSkin.CoeffGreen = Value;
+		else if (!strcmp(Setting, "CoeffRed"))
+			SettingsSkin.CoeffRed = Value;
 		else if (!strcmp(Setting, "MaterialThickness"))
 			SettingsSkin.MaterialThickness = Value;
 		else if (!strcmp(Setting, "RimScalar"))
 			SettingsSkin.RimScalar = Value;
 		else if (!strcmp(Setting, "SpecularPower"))
 			SettingsSkin.SpecularPower = Value;
+	}
+	else if (!strcmp(Name, "SnowAccumulation")) {
+		if (!strcmp(Setting, "SnowIncrease"))
+			SettingsPrecipitations.SnowIncrease = Value;
+		else if (!strcmp(Setting, "SnowDecrease"))
+			SettingsPrecipitations.SnowDecrease = Value;
+		else if (!strcmp(Setting, "SnowSunPower"))
+			SettingsPrecipitations.SnowSunPower = Value;
+		else if (!strcmp(Setting, "SnowAmount"))
+			SettingsPrecipitations.SnowAmount = Value;
+		else if (!strcmp(Setting, "SnowBlurNormDropThreshhold"))
+			SettingsPrecipitations.SnowBlurNormDropThreshhold = Value;
+		else if (!strcmp(Setting, "SnowBlurRadiusMultiplier"))
+			SettingsPrecipitations.SnowBlurRadiusMultiplier = Value;
 	}
 	else if (!strcmp(Name, "Terrain")) {
 		if (!strcmp(Setting, "DistantNoise"))
@@ -1658,7 +1666,7 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 		else if (!strcmp(Setting, "NearSpecular"))
 			SettingsTerrain.NearSpecular = Value;
 	}
-	else if (!strcmp(Name, "Water")) {
+	else if (!strcmp(Name, "Water") || !strcmp(Name, "Underwater")) {
 		SettingsWaterStruct *sws = GetSettingsWater(Section);
 		if (!strcmp(Setting, "causticsStrength"))
 			sws->causticsStrength = Value;
@@ -1668,24 +1676,6 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 			sws->choppiness = Value;
 		else if (!strcmp(Setting, "depthDarkness"))
 			sws->depthDarkness = Value;
-		else if (!strcmp(Setting, "Icechoppiness"))
-			sws->Icechoppiness = Value;
-		else if (!strcmp(Setting, "IceEnabled"))
-			sws->IceEnabled = Value;
-		else if (!strcmp(Setting, "IceinExtCoeff_B"))
-			sws->IceinExtCoeff_B = Value;
-		else if (!strcmp(Setting, "IceinExtCoeff_G"))
-			sws->IceinExtCoeff_G = Value;
-		else if (!strcmp(Setting, "IceinExtCoeff_R"))
-			sws->IceinExtCoeff_R = Value;
-		else if (!strcmp(Setting, "Icereflectivity"))
-			sws->Icereflectivity = Value;
-		else if (!strcmp(Setting, "IceshoreFactor"))
-			sws->IceshoreFactor = Value;
-		else if (!strcmp(Setting, "Iceturbidity"))
-			sws->Iceturbidity = Value;
-		else if (!strcmp(Setting, "IcewaveWidth"))
-			sws->IcewaveWidth = Value;
 		else if (!strcmp(Setting, "inExtCoeff_B"))
 			sws->inExtCoeff_B = Value;
 		else if (!strcmp(Setting, "inExtCoeff_G"))
@@ -1694,16 +1684,6 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 			sws->inExtCoeff_R = Value;
 		else if (!strcmp(Setting, "inScattCoeff"))
 			sws->inScattCoeff = Value;
-		else if (!strcmp(Setting, "LensAmount"))
-			sws->LensAmount = Value;
-		else if (!strcmp(Setting, "LensTime"))
-			sws->LensTime = Value;
-		else if (!strcmp(Setting, "LensTimeMultA"))
-			sws->LensTimeMultA = Value;
-		else if (!strcmp(Setting, "LensTimeMultB"))
-			sws->LensTimeMultB = Value;
-		else if (!strcmp(Setting, "LensViscosity"))
-			sws->LensViscosity = Value;
 		else if (!strcmp(Setting, "LODdistance"))
 			sws->LODdistance = Value;
 		else if (!strcmp(Setting, "MinLOD"))
@@ -1718,6 +1698,35 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 			sws->waveSpeed = Value;
 		else if (!strcmp(Setting, "waveWidth"))
 			sws->waveWidth = Value;	
+	}
+	else if (!strcmp(Name, "WaterLens")) {
+		SettingsWaterStruct *sws = GetSettingsWater(Section);
+		if (!strcmp(Setting, "LensAmount"))
+			sws->LensAmount = Value;
+		else if (!strcmp(Setting, "LensTime"))
+			sws->LensTime = Value;
+		else if (!strcmp(Setting, "LensTimeMultA"))
+			sws->LensTimeMultA = Value;
+		else if (!strcmp(Setting, "LensTimeMultB"))
+			sws->LensTimeMultB = Value;
+		else if (!strcmp(Setting, "LensViscosity"))
+			sws->LensViscosity = Value;
+	}
+	else if (!strcmp(Name, "WetWorld")) {
+		if (!strcmp(Setting, "RainIncrease"))
+			SettingsPrecipitations.RainIncrease = Value;
+		else if (!strcmp(Setting, "RainDecrease"))
+			SettingsPrecipitations.RainDecrease = Value;
+		else if (!strcmp(Setting, "RainAmount"))
+			SettingsPrecipitations.RainAmount = Value;
+		else if (!strcmp(Setting, "PuddleCoeff_B"))
+			SettingsPrecipitations.PuddleCoeff_B = Value;
+		else if (!strcmp(Setting, "PuddleCoeff_G"))
+			SettingsPrecipitations.PuddleCoeff_G = Value;
+		else if (!strcmp(Setting, "PuddleCoeff_R"))
+			SettingsPrecipitations.PuddleCoeff_R = Value;
+		else if (!strcmp(Setting, "PuddleSpecularMultiplier"))
+			SettingsPrecipitations.PuddleSpecularMultiplier = Value;
 	}
 }
 
@@ -1837,35 +1846,45 @@ SettingsMotionBlurStruct* SettingManager::GetSettingsMotionBlur(const char* Sect
 
 }
 
-void SettingManager::InitCamera()
+struct SettingT
 {
+#if defined(SKYRIM)
+	UInt32	pvtbl;
+#endif
+	union {
+	int		iValue;
+	float	fValue;
+	};
+	char*	Name;
+};
 
-	SettingsCamera.Move = false;
-	SettingsCamera.Rotate = false;
-	SettingsCamera.Look = false;
-	SettingsCamera.MoveTo = false;
-	SettingsCamera.RotateTo = false;
-	SettingsCamera.LookTo = false;
-	SettingsCamera.Ref = NULL;
+class Settings {
+	
+public:
+	bool TrackReadSetting(SettingT* Setting);
+#if defined(OBLIVION)
+	bool TrackSaveSettings();
+	bool TrackLoadGame(BSFile* GameFile, char* FileName, UInt8 Arg3);
+#elif defined(SKYRIM)
+	bool TrackLoadGame(char* FileName, UInt8 Arg2);
+#endif
+};
+
+bool (__thiscall Settings::* ReadSetting)(SettingT*);
+bool (__thiscall Settings::* TrackReadSetting)(SettingT*);
+bool Settings::TrackReadSetting(SettingT* Setting) {
+
+	bool r = (this->*ReadSetting)(Setting);
+	if (!memcmp(Setting->Name, "bFull Screen:Display", 20) && Setting->iValue == 0) CreateWindowedModeHook();
+	return r;
 
 }
 
 #if defined(OBLIVION)
-class Settings {
+bool(__thiscall Settings::* SaveSettings)();
+bool(__thiscall Settings::* TrackSaveSettings)();
+bool Settings::TrackSaveSettings() {
 
-public:
-	bool TrackSaveSettings();
-	bool TrackLoadGame(BSFile* GameFile, char* FileName, UInt8 Arg3);
-	bool TrackSaveGame(BSFile* GameFile, char* FileName, UInt8 Arg3);
-	void TrackDeleteGame(BSFile* GameFile, char* FileName);
-	BSFile* TrackCreateGameFile(BSFile* GameFile, char* FileName, UInt8 Arg3);
-
-};
-
-bool (__thiscall Settings::* SaveSettings)();
-bool (__thiscall Settings::* TrackSaveSettings)();
-bool Settings::TrackSaveSettings() { // ecx is INISettingCollection*
-	
 	bool r = false;
 
 	if (TheSettingManager->SettingsMain.SaveSettings) r = (this->*SaveSettings)();
@@ -1875,164 +1894,18 @@ bool Settings::TrackSaveSettings() { // ecx is INISettingCollection*
 
 bool (__thiscall Settings::* LoadGame)(BSFile*, char*, UInt8);
 bool (__thiscall Settings::* TrackLoadGame)(BSFile*, char*, UInt8);
-bool Settings::TrackLoadGame(BSFile* GameFile, char* FileName, UInt8 Arg3) { // ecx is TESSaveLoadGame*
+bool Settings::TrackLoadGame(BSFile* GameFile, char* FileName, UInt8 Arg3) {
 
 	bool r;
-	char ORRecordType[1];
-	char ORRecord[12];
 	
 	TheSettingManager->GameLoading = true;
 	r = (this->*LoadGame)(GameFile, FileName, Arg3);
 	TheSettingManager->GameLoading = false;
-	if (r) {
-		TheEquipmentManager->LeftWeapons.clear();
-		std::ifstream ORSaveGame(TheSettingManager->GameFilePath, std::ios::in | std::ios::binary);
-		if (ORSaveGame.is_open()) {
-			ORSaveGame.read(ORRecord, 10);
-			if (!memcmp(ORRecord, "ORSAVEGAME", 10)) {
-				while (!ORSaveGame.eof()) {
-					ORSaveGame.read(ORRecordType, 1);
-					switch (ORRecordType[0]) {
-					case '0':
-					{
-						ORSaveGame.read(ORRecord, 8);
-						char* pORRecord = ORRecord;
-						UInt32 LeftWeaponID = *(UInt32*)pORRecord;
-						UInt32 Count = *(UInt32*)(pORRecord += 4);
-						TESForm* Form = LookupFormByID(LeftWeaponID);
-						if (Form) {
-							TESObjectARMO* LeftWeapon = (TESObjectARMO*)Oblivion_DynamicCast(Form, 0, RTTI_TESForm, RTTI_TESObjectARMO, 0);
-							if (LeftWeapon) {
-								char* ModelPath = LeftWeapon->bipedModel.bipedModel[0].nifPath.m_data;
-								LeftWeaponData LeftWeaponD;
-								LeftWeaponD.LeftWeapon = LeftWeapon;
-								LeftWeaponD.Count = 1;
-								TheEquipmentManager->LeftWeapons[std::string(ModelPath)] = LeftWeaponD;
-							}
-						}
-					}
-					break;
-					case '1':
-						ORSaveGame.read(ORRecord, 12);
-						break;
-					}
-				}
-			}
-			ORSaveGame.close();
-		}
-		TheShaderManager->InitializeConstants();
-	}
+	if (r) TheShaderManager->InitializeConstants();
 	return r;
-
-}
-
-bool (__thiscall Settings::* SaveGame)(BSFile*, char*, UInt8);
-bool (__thiscall Settings::* TrackSaveGame)(BSFile*, char*, UInt8);
-bool Settings::TrackSaveGame(BSFile* GameFile, char* FileName, UInt8 Arg3) {
-	
-	TESSaveLoadGame* SaveGameList = (TESSaveLoadGame*)this;
-	Actor* Act = (*g_thePlayer);
-	bool r;
-
-	LeftWeaponList::iterator vw = TheEquipmentManager->LeftWeapons.begin();
-	while (vw != TheEquipmentManager->LeftWeapons.end()) {
-		LeftWeaponData* LeftWeapon = &vw->second;
-		if (LeftWeapon->Count > 0) // Adds only the used left weapons to the Oblivion's savegame to avoid to bloat the savegame
-			AddFormToCreatedBaseObjectsList(SaveGameList, LeftWeapon->LeftWeapon);
-		vw++;
-	}	
-	r = (this->*SaveGame)(GameFile, FileName, Arg3);
-	std::ofstream ORSaveGame(TheSettingManager->GameFilePath,std::ios::out|std::ios::binary);
-	ORSaveGame.write("ORSAVEGAME", 10);
-	vw = TheEquipmentManager->LeftWeapons.begin();
-	while (vw != TheEquipmentManager->LeftWeapons.end()) {
-		LeftWeaponData* LeftWeapon = &vw->second;
-		if (LeftWeapon->Count > 0) {
-			ORSaveGame.write("0", 1); // Record type
-			ORSaveGame.write((char*)&LeftWeapon->LeftWeapon->refID, 4);
-			ORSaveGame.write((char*)&LeftWeapon->Count, 4);
-		}
-		vw++;
-	}
-	NiORExtraData* ORData = TheEquipmentManager->GetORData(Act->niNode);
-	if (ORData->LeftWeapon) {
-		ORSaveGame.write("1", 1); // Record type
-		ORSaveGame.write((char*)&Act->refID, 4);
-		ORSaveGame.write((char*)&ORData->LeftWeapon->refID, 4);
-		ORSaveGame.write((char*)&ORData->OriginalWeapon->refID, 4);
-	}
-	tList<Actor>* HighActorlist = &g_actorProcessManager->highActors;
-	for (tList<Actor>::Iterator iter = HighActorlist->Begin(); !iter.End(); ++iter) {
-		Act = iter.Get();
-		if (Act && Act->niNode) {
-			NiORExtraData* ORData = TheEquipmentManager->GetORData(Act->niNode);
-			if (ORData->LeftWeapon) {
-				ORSaveGame.write("1", 1); // Record type
-				ORSaveGame.write((char*)&Act->refID, 4);
-				ORSaveGame.write((char*)&ORData->LeftWeapon->refID, 4);
-				ORSaveGame.write((char*)&ORData->OriginalWeapon->refID, 4);
-			}
-		}
-	}
-	ORSaveGame.close();
-	return r;
-
-}
-
-void (__thiscall Settings::* DeleteGame)(BSFile*, char*);
-void (__thiscall Settings::* TrackDeleteGame)(BSFile*, char*);
-void Settings::TrackDeleteGame(BSFile* GameFile, char* FileName) { // ecx is TESSaveLoadGame*
-
-	(this->*DeleteGame)(GameFile, FileName);
-	DeleteFileA(TheSettingManager->GameFilePath);
-
-}
-
-BSFile* (__thiscall Settings::* CreateGameFile)(BSFile*, char*, UInt8);
-BSFile* (__thiscall Settings::* TrackCreateGameFile)(BSFile*, char*, UInt8);
-BSFile* Settings::TrackCreateGameFile(BSFile* GameFile, char* FileName, UInt8 Arg3) { // ecx is TESSaveLoadGame*
-
-	BSFile* NewGameFile = (this->*CreateGameFile)(GameFile, FileName, Arg3);
-	strcpy(TheSettingManager->GameFilePath, NewGameFile->m_path);
-	char* ORFileName = TheSettingManager->GameFilePath;
-	int i = (int)strstr(ORFileName, ".ess") - int(ORFileName);
-	ORFileName[i] = '\0';
-	strcat(ORFileName, ".or");
-	return NewGameFile;
-
-}
-
-void CreateSettingsHook() {
-
-	*((int *)&SaveSettings)		= 0x004A8560;
-	TrackSaveSettings			= &Settings::TrackSaveSettings;
-	*((int *)&LoadGame)			= 0x00465860;
-	TrackLoadGame				= &Settings::TrackLoadGame;
-	*((int *)&SaveGame)			= 0x00465130;
-	TrackSaveGame				= &Settings::TrackSaveGame;
-	*((int *)&DeleteGame)		= 0x00453480;
-	TrackDeleteGame				= &Settings::TrackDeleteGame;
-	*((int *)&CreateGameFile)	= 0x0045F2E0;
-	TrackCreateGameFile			= &Settings::TrackCreateGameFile;
-
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(PVOID&)SaveSettings,		*((PVOID *)&TrackSaveSettings));
-	DetourAttach(&(PVOID&)LoadGame,			*((PVOID *)&TrackLoadGame));
-	DetourAttach(&(PVOID&)SaveGame,			*((PVOID *)&TrackSaveGame));
-	DetourAttach(&(PVOID&)DeleteGame,		*((PVOID *)&TrackDeleteGame));
-	DetourAttach(&(PVOID&)CreateGameFile,	*((PVOID *)&TrackCreateGameFile));
-	DetourTransactionCommit();
 
 }
 #elif defined(SKYRIM)
-class Settings {
-
-public:
-	bool TrackLoadGame(char* FileName, UInt8 Arg2);
-
-};
-
 bool (__thiscall Settings::* LoadGame)(char*, UInt8);
 bool (__thiscall Settings::* TrackLoadGame)(char*, UInt8);
 bool Settings::TrackLoadGame(char* FileName, UInt8 Arg2) {
@@ -2046,16 +1919,26 @@ bool Settings::TrackLoadGame(char* FileName, UInt8 Arg2) {
 	return r;
 
 }
+#endif
 
 void CreateSettingsHook() {
 
-	*((int *)&LoadGame)			= 0x0067B720;
+	*((int *)&ReadSetting)		= kReadSetting;
+	TrackReadSetting			= &Settings::TrackReadSetting;
+	*((int *)&LoadGame)			= kLoadGame;
 	TrackLoadGame				= &Settings::TrackLoadGame;
+#if defined(OBLIVION)
+	*((int *)&SaveSettings)		= 0x004A8560;
+	TrackSaveSettings			= &Settings::TrackSaveSettings;
+#endif
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(PVOID&)LoadGame,		*((PVOID *)&TrackLoadGame));
+	DetourAttach(&(PVOID&)ReadSetting,		*((PVOID *)&TrackReadSetting));
+	DetourAttach(&(PVOID&)LoadGame,			*((PVOID *)&TrackLoadGame));
+#if defined(OBLIVION)
+	DetourAttach(&(PVOID&)SaveSettings, *((PVOID *)&TrackSaveSettings));
+#endif
 	DetourTransactionCommit();
 
 }
-#endif

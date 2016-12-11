@@ -325,7 +325,7 @@ public:
 	float			* m_pfSizes;			// 4C
 	NiQuaternion	* m_pkRotations;		// 50
 	float			* m_pfRotationAngles;	// 54
-	NiVector3		* m_pkRotationAxes;		// 58
+	NiPoint3		* m_pkRotationAxes;		// 58
 };
 
 // 68

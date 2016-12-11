@@ -3,6 +3,7 @@
 #include "obse/NiTypes.h"
 #include "obse/GameTypes.h"
 #include "Utilities.h"
+#include <d3d9.h>
 
 /*** class hierarchy
  *	
@@ -449,6 +450,9 @@ class TESObjectCELL;
 class TESObjectREFR;
 class TESEffectShader;
 class NiRenderTargetGroup;
+class Ni2DBuffer;
+class NiDX9Renderer;
+class NiTexture;
 
 // member fn addresses
 #if OBLIVION
@@ -539,78 +543,77 @@ public:
 };
 
 // 44
-struct TextureFormat // NiPixelFormat?
+struct NiPixelFormat
 {
 	enum Format
 	{
-		FORMAT_RGB = 0,
-		FORMAT_RGBA,
-		FORMAT_PAL,
-		FORMAT_PALALPHA,
-		FORMAT_DXT1,
-		FORMAT_DXT3,
-		FORMAT_DXT5,
-		FORMAT_RGB24NONINTERLEAVED,
-		FORMAT_BUMP,
-		FORMAT_BUMPLUMA,
-		FORMAT_RENDERERSPECIFIC,
-		FORMAT_ONE_CHANNEL,
-		FORMAT_TWO_CHANNEL,
-		FORMAT_THREE_CHANNEL,
-		FORMAT_FOUR_CHANNEL,
-		FORMAT_DEPTH_STENCIL,
-		FORMAT_UNKNOWN,
-		FORMAT_MAX
+		kFormat_RGB = 0,
+		kFormat_RGBA,
+		kFormat_PAL,
+		kFormat_PALALPHA,
+		kFormat_DXT1,
+		kFormat_DXT3,
+		kFormat_DXT5,
+		kFormat_RGB24NONINTERLEAVED,
+		kFormat_BUMP,
+		kFormat_BUMPLUMA,
+		kFormat_RENDERERSPECIFIC,
+		kFormat_ONE_CHANNEL,
+		kFormat_TWO_CHANNEL,
+		kFormat_THREE_CHANNEL,
+		kFormat_FOUR_CHANNEL,
+		kFormat_DEPTH_STENCIL,
+		kFormat_UNKNOWN,
+		kFormat_MAX
 	};
 
 	enum Component
 	{
-		COMP_RED = 0,
-		COMP_GREEN,
-		COMP_BLUE,
-		COMP_ALPHA,
-		COMP_COMPRESSED,
-		COMP_OFFSET_U,
-		COMP_OFFSET_V,
-		COMP_OFFSET_W,
-		COMP_OFFSET_Q,
-		COMP_LUMA,
-		COMP_HEIGHT,
-		COMP_VECTOR_X,
-		COMP_VECTOR_Y,
-		COMP_VECTOR_Z,
-		COMP_PADDING,
-		COMP_INTENSITY,
-		COMP_INDEX,
-		COMP_DEPTH,
-		COMP_STENCIL,
-		COMP_EMPTY,
-		COMP_MAX,
-		NUM_COMPS = 4
+		kComp_RED = 0,
+		kComp_GREEN,
+		kComp_BLUE,
+		kComp_ALPHA,
+		kComp_COMPRESSED,
+		kComp_OFFSET_U,
+		kComp_OFFSET_V,
+		kComp_OFFSET_W,
+		kComp_OFFSET_Q,
+		kComp_LUMA,
+		kComp_HEIGHT,
+		kComp_VECTOR_X,
+		kComp_VECTOR_Y,
+		kComp_VECTOR_Z,
+		kComp_PADDING,
+		kComp_INTENSITY,
+		kComp_INDEX,
+		kComp_DEPTH,
+		kComp_STENCIL,
+		kComp_EMPTY,
+		kComp_MAX
 	};
 
 	enum Representation
 	{
-		REP_NORM_INT = 0,
-		REP_HALF,
-		REP_FLOAT,
-		REP_INDEX,
-		REP_COMPRESSED,
-		REP_UNKNOWN,
-		REP_INT,
-		REP_MAX
+		kRep_NORM_INT = 0,
+		kRep_HALF,
+		kRep_FLOAT,
+		kRep_INDEX,
+		kRep_COMPRESSED,
+		kRep_UNKNOWN,
+		kRep_INT,
+		kRep_MAX
 	};
 
 	enum Tiling
 	{
-		TILE_NONE = 0,
-		TILE_XENON,
-		TILE_MAX
+		kTile_NONE = 0,
+		kTile_XENON,
+		kTile_MAX
 	};
 
 	UInt8	BitsPerPixel;	// 00
 	UInt8	SRGBSpace;		// 01
-	UInt8	pad02[2];		// 02
+	UInt8	pad02[2];
 	Format	eFormat;		// 04
 	Tiling	eTiling;		// 08
 	UInt32	RendererHint;	// 0C
@@ -625,9 +628,33 @@ struct TextureFormat // NiPixelFormat?
 		UInt8			padA[2];			// A
 	};
 
-	NiComponentSpec	Components[NUM_COMPS];	// 14
+	NiComponentSpec	Components[4];	// 14
 
 	void InitFromD3DFMT(UInt32 fmt);
+};
+
+class NiTextureData
+{
+public:
+	NiTextureData();
+	virtual ~NiTextureData();
+
+	NiTexture*		pTexture;		// 04
+	NiDX9Renderer*	pRenderer;		// 08
+	NiPixelFormat	PixelFormat;	// 0C
+};
+
+class NiDX9RenderedTextureData : public NiTextureData
+{
+public:
+	NiDX9RenderedTextureData();
+	~NiDX9RenderedTextureData();
+
+	IDirect3DBaseTexture9*	dTexture;		// 50
+	UInt32					Width;			// 54
+	UInt32					Height;			// 58
+	UInt32					Levels;			// 5C
+	UInt32					unk60;			// 60
 };
 
 // 030
@@ -639,21 +666,6 @@ public:
 
 	virtual UInt32	GetWidth();
 	virtual UInt32	GetHeight();
-
-	// 8
-	struct Str028
-	{
-		UInt32	unk0;
-		UInt32	unk4;
-	};
-
-	class RendererData
-	{
-	public:
-		RendererData(NiTexture* Texture);
-		virtual ~RendererData();
-
-	};
 
 	enum
 	{
@@ -684,12 +696,10 @@ public:
 	UInt32			pixelLayout;	// 018
 	UInt32			alphaFormat;	// 01C
 	UInt32			mipmapFormat;	// 020
-	RendererData	* rendererData;	// 024
-	NiTexture		* nextTex;		// 028 - linked list updated in ctor/dtor
-	NiTexture		* prevTex;		// 02C
+	NiTextureData*	rendererData;	// 024
+	NiTexture*		nextTex;		// 028 - linked list updated in ctor/dtor
+	NiTexture*		prevTex;		// 02C
 };
-
-// NiDX9Direct3DTexture - not referenced
 
 // 048
 class NiSourceTexture : public NiTexture
@@ -730,20 +740,12 @@ public:
 	NiRenderedTexture();
 	~NiRenderedTexture();
 
-	struct Str030
-	{
-		UInt32	pad00;
-		UInt32	pad04;
-		UInt32	width;
-		UInt32	height;
-	};
+	virtual void*	Unk_15(void);
 
-	virtual Str030 *	Unk_15(void);
-
-	Str030	* unk030;	// 030
-	UInt32	pad034;		// 034
-	UInt32	pad038;		// 038
-	UInt32	pad03C;		// 03C
+	Ni2DBuffer* buffer;	// 030
+	UInt32		pad034;	// 034
+	D3DFORMAT	format;	// 038
+	UInt32		pad03C;	// 03C
 };
 
 // 05C
@@ -763,8 +765,8 @@ public:
 	BSRenderedTexture();
 	~BSRenderedTexture();
 	
-	NiRenderTargetGroup*	RenderTargets;		// 008
-	UInt32		unk008[5];						// 00C
+	NiRenderTargetGroup*	RenderTargetGroup;	// 008
+	UInt32					unk008[5];			// 00C
 	NiRenderedTexture*		RenderedTexture;	// 020
 };
 
@@ -786,7 +788,7 @@ public:
 	// face size = unk05C[mipmapLevels]
 	// total size = face size * numFaces
 
-	TextureFormat	format;		// 008
+	NiPixelFormat	format;		// 008
 	NiRefObject		* unk04C;	// 04C
 	UInt32	unk050;			// 050
 	UInt32	* width;		// 054 - array for mipmaps?
@@ -1047,17 +1049,16 @@ public:
 	UInt32	unk01C;		// 01C
 };
 
-// name is a guess
-class NiCulledGeoList
+class NiVisibleArray
 {
 public:
-	NiCulledGeoList();
-	~NiCulledGeoList();
+	NiVisibleArray();
+	~NiVisibleArray();
 
-	NiGeometry	** m_geo;		// 00
-	UInt32		m_numItems;		// 04
-	UInt32		m_bufLen;		// 08
-	UInt32		m_bufGrowSize;	// 0C
+	NiGeometry**	geo;			// 00
+	UInt32			numItems;		// 04
+	UInt32			bufLen;			// 08
+	UInt32			bufGrowSize;	// 0C
 };
 
 // 90
@@ -1068,17 +1069,16 @@ public:
 	~NiCullingProcess();
 
 	virtual void	Destructor(bool freeMemory);
-	virtual void	Unk_01(void * arg);
-	virtual void	Cull(NiCamera * camera, NiAVObject * scene, NiCulledGeoList * culledGeo);
-	virtual void	AddGeo(NiGeometry * arg);
+	virtual void	Unk_01();
+	virtual void	Process(NiCamera* camera, NiAVObject* scene, NiVisibleArray* visibleGeo);
+	virtual void	AppendVirtual(NiGeometry* arg);
 
-//	void			** m_vtbl;		// 00
-	UInt8			m_useAddGeoFn;	// 04 - call AddGeo when true, else just add to the list
-	UInt8			pad05[3];		// 05
-	NiCulledGeoList	* m_culledGeo;	// 08
-	NiCamera*		Camera;			// 0C
-	NiFrustum		CameraFrustum;	// 10
-	NiFrustumPlanes	Planes;			// 2C
+	UInt8			UseAppendVirtual;	// 04 - always false
+	UInt8			pad05[3];			// 05
+	NiVisibleArray*	VisibleGeo;			// 08
+	NiCamera*		Camera;				// 0C
+	NiFrustum		CameraFrustum;		// 10
+	NiFrustumPlanes	Planes;				// 2C
 };
 
 STATIC_ASSERT(sizeof(NiCullingProcess) == 0x90);

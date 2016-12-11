@@ -71,46 +71,30 @@ public:
 		UInt8	unk04[0x2C - 4];
 	};
 
-	// 28
-	struct Unk1B20
-	{
-		UInt32	unk00;
-		UInt32	unk04;
-		UInt32	unk08;
-		UInt32	unk0C;
-		UInt32	unk10;
-		UInt32	unk14;
-		UInt32	unk18;
-		UInt32	unk1C;
-		UInt32	unk20;
-		UInt32	unk24;
-	};
+	UInt32					flags;										// 0000
+	IDirectInput8*			dinputInterface;							// 0004
+	IDirectInputDevice8*	joystickInterfaces[kMaxDevices];			// 0008 - format is c_dfDIJoystick
+	IDirectInputDevice8*	keyboardInterface;							// 0028 - format is c_dfDIKeyboard
+	IDirectInputDevice8*	mouseInterface;								// 002C - format is c_dfDIMouse2
 
-	UInt32		flags;										// 0000
-	IDirectInput8		* dinputInterface;					// 0004
-	IDirectInputDevice8	* joystickInterfaces[kMaxDevices];	// 0008 - format is c_dfDIJoystick
-	IDirectInputDevice8	* keyboardInterface;				// 0028 - format is c_dfDIKeyboard
-	IDirectInputDevice8	* mouseInterface;					// 002C - format is c_dfDIMouse2
-
-	UInt32		unk0030[0x140];								// 0030
-	Joystick	devices[kMaxDevices];						// 0530
-	DIDEVCAPS	devCaps[kMaxDevices];						// 1750
-	JoystickObjectsInfo	devInfo[kMaxDevices];				// 18B0
-	UInt32		numJoysticks;								// 18F0
-	UInt32		unk18F4[0x80];								// 18F4
-	Unk1AF4		unk1AF4;									// 1AF4
-	Unk1B20		unk1B20;									// 1B20
-	UInt32		oldMouseButtonSwap;							// 1B48 - state of SwapMouseButton when program launched
-	UInt32		doubleClickTime;							// 1B4C - GetDoubleClickTime
-	UInt32		unk1B50[(0x1B7C - 0x1B50) >> 2];				// 1B50
-	UInt8		unk1B7C;									// 1B7C
-	UInt8		unk1B7D;									// 1B7D
-
-	// control bindings
-	UInt8		unk1B7E[0x1D];								// 1B7E - ini control >> 16
-	UInt8		unk1B9B[0x1D];								// 1B8B - ini control >> 8
-	UInt8		unk1BB8[0x1E];								// 1BB8 - ini control >> 0
-	// 1BD6
+	UInt32					unk0030[0x140];								// 0030
+	Joystick				devices[kMaxDevices];						// 0530
+	DIDEVCAPS				devCaps[kMaxDevices];						// 1750
+	JoystickObjectsInfo		devInfo[kMaxDevices];						// 18B0
+	UInt32					numJoysticks;								// 18F0
+	UInt8					CurrentKeyState[0x100];						// 18F4
+	UInt8					PreviousKeyState[0x100];					// 19F4
+	Unk1AF4					unk1AF4;									// 1AF4
+	DIMOUSESTATE2			CurrentMouseState;							// 1B20
+	DIMOUSESTATE2			PreviousMouseState;							// 1B34
+	UInt32					oldMouseButtonSwap;							// 1B48 - state of SwapMouseButton when program launched
+	UInt32					doubleClickTime;							// 1B4C - GetDoubleClickTime
+	UInt32					unk1B50[(0x1B7C - 0x1B50) >> 2];			// 1B50
+	UInt8					unk1B7C;									// 1B7C
+	UInt8					unk1B7D;									// 1B7D
+	UInt8					KeyboardInputControls[29];					// 1B7E
+	UInt8					MouseInputControls[29];						// 1B9B
+	UInt8					unk1BB8[0x1E];								// 1BB8
 };
 
 STATIC_ASSERT(sizeof(OSInputGlobals) == 0x1BD8);

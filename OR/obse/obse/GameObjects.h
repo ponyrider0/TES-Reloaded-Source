@@ -561,7 +561,7 @@ public:
 	virtual UInt8	GetSitSleepState(); // calls the Process::GetSitSleepState
 	virtual bool	IsActor();
 	virtual void	ChangeCell(TESObjectCELL * newCell) = 0;
-	virtual UInt8	GetDead();
+	virtual UInt8	GetDead(UInt8 Arg1);
 	virtual UInt8	GetKnockedState(); // calls the Process::GetKnockedState
 	virtual void	Unk_68(void) = 0;
 	virtual void	Unk_69(void) = 0;
@@ -876,7 +876,7 @@ public:
 	Character();
 	~Character();
 
-	SkinInfo*	aSkinInfo;									// 104
+	SkinInfo*	ActorSkinInfo;								// 104
 	UInt32		unk108;										// 108
 };
 #if OBLIVION

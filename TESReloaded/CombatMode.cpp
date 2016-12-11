@@ -173,7 +173,8 @@ void UpdateWeaponRotation(Actor* Act)
 			if (BackWeaponNode) {
 				NiMatrix33* m = &BackWeaponNode->m_localTransform.rot;
 				NiPoint3* v = &BackWeaponNode->m_localTransform.pos;
-				TheUtilityManager->GenerateRotationMatrixXYZ(m, 90, 30, 120, 1);
+				NiPoint3 Rotation = { 90.0f, 30.0f, 120.0f };
+				TheUtilityManager->GenerateRotationMatrixXYZ(m, &Rotation, 1);
 				v->y += 3;
 			}
 		}

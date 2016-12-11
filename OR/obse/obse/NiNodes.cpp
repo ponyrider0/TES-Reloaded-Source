@@ -1,8 +1,8 @@
 #include "NiNodes.h"
 
-void TextureFormat::InitFromD3DFMT(UInt32 fmt)
+void NiPixelFormat::InitFromD3DFMT(UInt32 fmt)
 {
-	typedef void (* _D3DFMTToTextureFormat)(UInt32 d3dfmt, TextureFormat * dst);
+	typedef void (* _D3DFMTToTextureFormat)(UInt32 d3dfmt, NiPixelFormat * dst);
 	_D3DFMTToTextureFormat D3DFMTToTextureFormat = (_D3DFMTToTextureFormat)0x0076C3B0;
 
 	D3DFMTToTextureFormat(fmt, this);

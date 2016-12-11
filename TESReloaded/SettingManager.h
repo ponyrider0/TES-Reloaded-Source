@@ -9,11 +9,8 @@
 #define MainSettingsFile "\\Data\\OBSE\\Plugins\\OblivionReloaded.ini"
 #define ShadersPath "Data\\Shaders\\OblivionReloaded\\"
 #define EffectsPath "Data\\Shaders\\OblivionReloaded\\"
-#define ShieldAnimFile "Characters\\_Male\\IdleAnims\\shieldout.kf"
-#define ShieldAnimFullFile "Meshes\\Characters\\_Male\\IdleAnims\\shieldout.kf"
 #define WaterDisplacementMapSize 256.0f
 #define WaterHeightMapSize 256.0f
-#define MultipleElement OBSEArrayElement
 #define kSettingFullScreen 0x00B06C74
 #define kSettingNearDistance 0x00B03134
 #define kSettingWorldFoV 0x00B0313C
@@ -23,8 +20,6 @@
 #define MainSettingsFile "\\Data\\SKSE\\Plugins\\SkyrimReloaded.ini"
 #define ShadersPath "Data\\Shadersfx\\SkyrimReloaded\\"
 #define EffectsPath "Data\\Shadersfx\\SkyrimReloaded\\"
-#define ShieldAnimFile "Characters\\_Male\\IdleAnims\\shieldout.kf"
-#define ShieldAnimFullFile "Meshes\\Characters\\_Male\\IdleAnims\\shieldout.kf"
 #define WaterDisplacementMapSize 256.0f
 #define WaterHeightMapSize 256.0f
 #define kSettingFullScreen 0x012CF5EC
@@ -36,7 +31,6 @@ static const UInt32*	SettingGridsToLoad				= (UInt32*)0x00B06A2C; // Only Oblivi
 static const UInt32*	SettingGridDistantCount			= (UInt32*)0x00B06A90; // Only Oblivion
 static float*			SettingWorldFoV					= (float*)kSettingWorldFoV;
 static float*			Setting1stPersonFoV				= (float*)0x012C8D84; // Only Skyrim
-static UInt8*			SettingFullScreen				= (UInt8*)kSettingFullScreen;
 static float*			SettingNearDistance				= (float*)kSettingNearDistance;
 static float*			SettingLODFadeOutMultActors		= (float*)0x00B0762C; // Only Oblivion
 static float*			SettingLODFadeOutMultItems		= (float*)0x00B07624; // Only Oblivion
@@ -57,8 +51,11 @@ struct SettingsMainStruct
 	char MainSettingsFullFile[MAX_PATH];
 	char MenuValueFormat[5];
 	UInt8 ScreenshotKey;
+	UInt8 ScreenshotType;
 	bool WaterManagement;
-	bool WindowedMode;
+	UInt8 AnisotropicFilter;
+	bool FPSOverlay;
+	UInt8 ShaderProfile;
 	bool CustomEffects;
 	bool FrameRate;
 	bool SaveSettings;
@@ -67,6 +64,7 @@ struct SettingsMainStruct
 	bool EquipmentMode;
 	bool SleepingMode;
 	bool GrassMode;
+	bool ShadowMode;
 	UInt8 CameraModeHUDReticle;
 	bool CameraModeChasingFirst;
 	bool CameraModeChasingThird;
@@ -82,6 +80,7 @@ struct SettingsMainStruct
 	bool EnableTerrain;
 	bool EnableBlood;
 	bool EnableShadows;
+	bool EnableNightEye;
 	bool EnableUnderwater;
 	bool EnableWaterLens;
 	bool EnableGodRays;
@@ -115,10 +114,15 @@ struct SettingsMainStruct
 	UInt8 MenuKeySubtract;
 	UInt8 MenuKeySave;
 	UInt8 MenuKeyEditing;
+	bool LowHFSoundEnableHealth;
+	bool LowHFSoundEnableFatigue;
+	bool PurgerEnabled;
+	bool PurgerPurgeTexture;
+	bool PurgerPurgeCells;
+	UInt8 PurgerKey;
 	bool DevelopCompileShaders;
 	bool DevelopCompileEffects;
 	bool DevelopTraceShaders;
-	UInt8 ScreenshotType;
 	int WaterReflectionMapSize;
 	int FrameRateAverage;
 	int FrameRateGap;
@@ -136,6 +140,7 @@ struct SettingsMainStruct
 	int MenuExtraRect;
 	int MenuRowSpace;
 	int MenuRowsPerPage;
+	int PurgerTime;
 	float FrameRateFadeStep;
 	float FarPlaneDistance;
 	float FoV;
@@ -143,12 +148,18 @@ struct SettingsMainStruct
 	float CameraModeNearDistanceFirst;
 	float CameraModeNearDistanceThird;
 	NiPoint3 CameraModeDialogOffset;
+	float ShadowModeNearQuality;
 	float MenuStepValue;
+	float LowHFSoundHealthCoeff;
+	float LowHFSoundFatigueCoeff;
+	NiPoint3 EquipmentModeShieldOnBackPos;
+	NiPoint3 EquipmentModeShieldOnBackRot;
+	NiPoint3 EquipmentModeWeaponOnBackPos;
+	NiPoint3 EquipmentModeWeaponOnBackRot;
 };
 
 struct SettingsWaterStruct
 {
-	bool IceEnabled;
 	float choppiness;
 	float waveWidth;
 	float waveSpeed;
@@ -162,14 +173,6 @@ struct SettingsWaterStruct
 	float inExtCoeff_G;
 	float inExtCoeff_B;
 	float depthDarkness;
-	float IceinExtCoeff_R;
-	float IceinExtCoeff_G;
-	float IceinExtCoeff_B;
-	float Icechoppiness;
-	float IcewaveWidth;
-	float Icereflectivity;
-	float IceshoreFactor;
-	float Iceturbidity;
 	float LODdistance;
 	float MinLOD;
 	float LensTimeMultA;
@@ -221,9 +224,9 @@ struct SettingsSkinStruct
 	float SpecularPower;
 	float MaterialThickness;
 	float RimScalar;
-	float ExtCoeffRed;
-	float ExtCoeffGreen;
-	float ExtCoeffBlue;
+	float CoeffRed;
+	float CoeffGreen;
+	float CoeffBlue;
 };
 
 struct SettingsGodRaysStruct
@@ -370,23 +373,6 @@ struct SettingsShadowsStruct
 	float SelfShadowIntensity;
 };
 
-struct SettingsCameraStruct
-{
-	bool Move;
-	bool Rotate;
-	bool Look;
-	bool MoveTo;
-	bool RotateTo;
-	bool LookTo;
-	NiPoint3 Pos;
-	NiPoint3 LookPos;
-	NiPoint3 CameraPos;
-	float AngX;
-	float AngY;
-	float AngZ;
-	TESObjectREFR* Ref;
-};
-
 typedef std::map<std::string, SettingsWaterStruct> SettingsWaterList;
 typedef std::map<std::string, SettingsDepthOfFieldStruct> SettingsDepthOfFieldList;
 typedef std::map<std::string, SettingsAmbientOcclusionStruct> SettingsAmbientOcclusionList;
@@ -416,7 +402,6 @@ public:
 	SettingsColoringStruct*			GetSettingsColoring(const char* PlayerLocation);
 	SettingsBloomStruct*			GetSettingsBloom(const char* PlayerLocation);
 	SettingsMotionBlurStruct*		GetSettingsMotionBlur(const char* Section);
-	void							InitCamera();
 	
 	char							CurrentPath[MAX_PATH];
 	char							GameFilePath[MAX_PATH];
@@ -434,7 +419,6 @@ public:
 	SettingsLowHFStruct				SettingsLowHF;
 	SettingsSharpeningStruct		SettingsSharpening;
 	SettingsShadowsStruct			SettingsShadows;
-	SettingsCameraStruct			SettingsCamera;
 
 private:
 	char Water_IceEnabled[80];

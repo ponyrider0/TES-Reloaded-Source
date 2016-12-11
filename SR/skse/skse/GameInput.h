@@ -3,6 +3,7 @@
 #include "GameTypes.h"
 #include "GameEvents.h"
 #include "InputMap.h"
+#include <dinput.h>
 
 // Note: These are different from those in Hooks_DI
 enum
@@ -37,15 +38,27 @@ public:
 	UInt32			unk020;							// 20
 	UInt32			unk024;							// 24
 	UInt32			unk028[(0x0F4 - 0x028) >> 2];	// 28 This (or part of this) is a class/struct
-	UInt8			PreviousState[0x100];			// F4
-	UInt8			CurrentState[0x100];			// 1F4
+	UInt8			PreviousKeyState[0x100];		// F4
+	UInt8			CurrentKeyState[0x100];			// 1F4
 };
 STATIC_ASSERT(sizeof(BSWin32KeyboardDevice) == 0x2F4);
 
 class BSWin32MouseDevice : public BSInputDevice
 {
-
+public:
+	UInt32			unk010;							// 10
+	UInt32			unk014;							// 14
+	UInt32			unk018;							// 18
+	UInt32			unk01C;							// 1C
+	UInt32			unk020;							// 20
+	UInt32			unk024;							// 24
+	UInt32			unk028;							// 28
+	UInt32			unk02C;							// 2C
+	DIMOUSESTATE2	PreviousMouseState;				// 30
+	DIMOUSESTATE2	CurrentMouseState;				// 44
+	UInt32			unk058;							// 58
 };
+STATIC_ASSERT(sizeof(BSWin32MouseDevice) == 0x5C);
 
 class BSWin32GamepadDevice : public BSInputDevice
 {

@@ -1,6 +1,5 @@
 #if defined(OBLIVION)
 #include "obse_common\SafeWrite.h"
-#define kInitializeRenderer 0x004052F0
 #define kGetShaderFunction 0x007DAC70
 #define kNewVertexShader 0x00780D80
 #define kNewPixelShader 0x00780B90
@@ -11,7 +10,6 @@
 #endif
 #include <string>
 #include "skse\SafeWrite.h"
-#define kInitializeRenderer 0x00691030
 static const UInt32 kVertexShaderFunctionHook = 0x00CCBBB1;
 static const UInt32 kVertexShaderFunctionReturn = 0x00CCBBC3;
 static const UInt32 kPixelShaderFunctionHook = 0x00CCC4BC;
@@ -26,14 +24,13 @@ class BSIStream;
 #include "ShaderIOHook.h"
 #include "Hooking\detours\detours.h"
 
-static RuntimeShaderRecord* ShaderRecord = NULL;
+static ShaderRecord* ShaderProg = NULL;
 static void* ShaderFunction = NULL;
 static char ShaderName[24] = "SHADER";
 
 class ShaderIOHook {
 
 public:
-	NiDX9Renderer* TrackInitializeRenderer();
 #if defined(OBLIVION)
 	void* TrackGetShaderFunction(char* ShaderName);
 	NiD3DVertexShader* TrackNewVertexShader(NiDX9Renderer* Renderer);
@@ -56,24 +53,6 @@ public:
 
 };
 
-NiDX9Renderer* (__thiscall ShaderIOHook::* InitializeRenderer)();
-NiDX9Renderer* (__thiscall ShaderIOHook::* TrackInitializeRenderer)();
-NiDX9Renderer* ShaderIOHook::TrackInitializeRenderer() {
-
-	NiDX9Renderer* Renderer = (this->*InitializeRenderer)();
-
-	TheRenderManager = (RenderManager*)Renderer;
-	TheRenderManager->Initialize();
-	TheShaderManager = new ShaderManager();
-	TheEffectManager = new EffectManager();
-	TheTextureManager = new TextureManager();
-	TheEquipmentManager = new EquipmentManager();
-	TheFrameRateManager = new FrameRateManager();
-	TheGameMenuManager = new GameMenuManager();
-	TheKeyboardManager = new KeyboardManager();
-	return Renderer;
-
-}
 #if defined(OBLIVION)
 void* (__thiscall ShaderIOHook::* GetShaderFunction)(char*);
 void* (__thiscall ShaderIOHook::* TrackGetShaderFunction)(char*);
@@ -81,7 +60,7 @@ void* ShaderIOHook::TrackGetShaderFunction(char* Name) {
 
 	ShaderFunction = (this->*GetShaderFunction)(Name);
 
-	if (ShaderRecord = TheShaderManager->LoadShader(Name)) ShaderFunction = (void*)((int)ShaderRecord->pFunction - 0x104);
+	if (ShaderProg = TheShaderManager->LoadShader(Name)) ShaderFunction = (void*)((int)ShaderProg->pFunction - 0x104);
 	strcpy(ShaderName, Name);
 	return ShaderFunction;
 
@@ -93,10 +72,10 @@ NiD3DVertexShader* ShaderIOHook::TrackNewVertexShader(NiDX9Renderer* Renderer) {
 
 	NiD3DVertexShaderEx* VertexShader = (NiD3DVertexShaderEx*)(this->*NewVertexShader)(Renderer);
 
-	VertexShader->ShaderRecord = ShaderRecord;
+	VertexShader->ShaderProg = ShaderProg;
 	VertexShader->ShaderName = NULL;
-	if (TheSettingManager->SettingsMain.DevelopTraceVanillaShaders) {
-		VertexShader->ShaderName = new char(strlen(ShaderName) + 1);
+	if (TheSettingManager->SettingsMain.DevelopTraceShaders) {
+		VertexShader->ShaderName = new char[24];
 		strcpy(VertexShader->ShaderName, ShaderName);
 	}
 	return (NiD3DVertexShader*)VertexShader;
@@ -109,15 +88,16 @@ NiD3DPixelShader* ShaderIOHook::TrackNewPixelShader(NiDX9Renderer* Renderer) {
 
 	NiD3DPixelShaderEx* PixelShader = (NiD3DPixelShaderEx*)(this->*NewPixelShader)(Renderer);
 	
-	PixelShader->ShaderRecord = ShaderRecord;
+	PixelShader->ShaderProg = ShaderProg;
 	PixelShader->ShaderName = NULL;
-	if (TheSettingManager->SettingsMain.DevelopTraceVanillaShaders) {
-		PixelShader->ShaderName = new char(strlen(ShaderName) + 1);
+	if (TheSettingManager->SettingsMain.DevelopTraceShaders) {
+		PixelShader->ShaderName = new char[24];
 		strcpy(PixelShader->ShaderName, ShaderName);
 	}
 	return (NiD3DPixelShader*)PixelShader;
 
 }
+
 #elif defined(SKYRIM)
 #if DumpShaders
 void DumpShader(void* Function, int Len) {
@@ -339,12 +319,12 @@ int ShaderIOHook::TrackNewVertexShader(BSIStream* ShaderPackage, int Arg2) {
 	Name += std::to_string(VertexShaderCounter);
 	Name += ".vso";
 	strcpy(ShaderName, Name.c_str());
-	if (ShaderRecord = TheShaderManager->LoadShader(ShaderName)) ShaderFunction = ShaderRecord->pFunction;
+	if (ShaderProg = TheShaderManager->LoadShader(ShaderName)) ShaderFunction = ShaderProg->pFunction;
 
 	int r = (this->*NewVertexShader)(ShaderPackage, Arg2);
 	NiD3DVertexShaderEx* VertexShader = (NiD3DVertexShaderEx*)this;
 	
-	VertexShader->ShaderRecord = ShaderRecord;
+	VertexShader->ShaderProg = ShaderProg;
 	VertexShader->ShaderName = NULL;
 	if (TheSettingManager->SettingsMain.DevelopTraceShaders) {
 		VertexShader->ShaderName = new char[24];
@@ -365,12 +345,12 @@ int ShaderIOHook::TrackNewPixelShader(BSIStream* ShaderPackage, int Arg2) {
 	Name += std::to_string(PixelShaderCounter);
 	Name += ".pso";
 	strcpy(ShaderName, Name.c_str());
-	if (ShaderRecord = TheShaderManager->LoadShader(ShaderName)) ShaderFunction = ShaderRecord->pFunction;
+	if (ShaderProg = TheShaderManager->LoadShader(ShaderName)) ShaderFunction = ShaderProg->pFunction;
 
 	int r = (this->*NewPixelShader)(ShaderPackage, Arg2);
 	NiD3DPixelShaderEx* PixelShader = (NiD3DPixelShaderEx*)this;
 	
-	PixelShader->ShaderRecord = ShaderRecord;
+	PixelShader->ShaderProg = ShaderProg;
 	PixelShader->ShaderName = NULL;
 	if (TheSettingManager->SettingsMain.DevelopTraceShaders) {
 		PixelShader->ShaderName = new char[24];
@@ -385,8 +365,6 @@ int ShaderIOHook::TrackNewPixelShader(BSIStream* ShaderPackage, int Arg2) {
 void CreateShaderIOHook()
 {
 
-	*((int *)&InitializeRenderer)		= kInitializeRenderer;
-	TrackInitializeRenderer				= &ShaderIOHook::TrackInitializeRenderer;
 #if defined(OBLIVION)
 	*((int *)&GetShaderFunction)		= kGetShaderFunction;
 	TrackGetShaderFunction				= &ShaderIOHook::TrackGetShaderFunction;
@@ -421,7 +399,6 @@ void CreateShaderIOHook()
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(PVOID&)InitializeRenderer,		*((PVOID *)&TrackInitializeRenderer));
 #if defined(OBLIVION)
 	DetourAttach(&(PVOID&)GetShaderFunction,		*((PVOID *)&TrackGetShaderFunction));
 #elif defined (SKYRIM)

@@ -7,24 +7,26 @@
 #endif
 #include "SettingManager.h"
 #include "CommandManager.h"
-#include "ShaderManager.h"
-#include "EffectManager.h"
 #include "TextureManager.h"
+#include "ShaderManager.h"
 #include "EquipmentManager.h"
 #include "FrameRateManager.h"
 #include "UtilityManager.h"
+#include "GameEventManager.h"
 #include "GameMenuManager.h"
 #include "KeyboardManager.h"
+#include "ScriptManager.h"
 #include "RenderManager.h"
 
 extern SettingManager*		TheSettingManager;
 extern RenderManager*		TheRenderManager;
 extern ShaderManager*		TheShaderManager;
-extern EffectManager*		TheEffectManager;
 extern TextureManager*		TheTextureManager;
 extern EquipmentManager*	TheEquipmentManager;
 extern FrameRateManager*	TheFrameRateManager;
 extern UtilityManager*		TheUtilityManager;
 extern CommandManager*		TheCommandManager;
+extern GameEventManager*	TheGameEventManager;
 extern GameMenuManager*		TheGameMenuManager;
 extern KeyboardManager*		TheKeyboardManager;
+extern ScriptManager*		TheScriptManager;

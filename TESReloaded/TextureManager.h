@@ -2,44 +2,44 @@
 #include <d3d9.h>
 #include <map>
 
-typedef enum {
-  TR_PLANAR = 0,
-  TR_CUBIC = 1,
-  TR_VOLUMETRIC = 2
-} TextureRecordType;
+static const int SamplerStatesMax = 12;
+static const char* WordSourceBuffer = "TESR_SourceBuffer";
+static const char* WordRenderedBuffer = "TESR_RenderedBuffer";
+static const char* WordDepthBuffer = "TESR_DepthBuffer";
+
+enum TextureRecordType {
+	
+	TextureRecordType_None,
+	TextureRecordType_PlanarBuffer,
+	TextureRecordType_VolumeBuffer,
+	TextureRecordType_CubeBuffer,
+	TextureRecordType_SourceBuffer,
+	TextureRecordType_RenderedBuffer,
+	TextureRecordType_DepthBuffer,
+
+};
 
 class TextureRecord
 {
 public:
 	TextureRecord();
-	~TextureRecord();
 
-	bool LoadTexture(TextureRecordType type, const char *fp);
-	const char *GetPath();
-	IDirect3DBaseTexture9* GetTexture();
+	bool					LoadTexture(TextureRecordType Type, const char* Filename);
+	void					SetSamplerState(D3DSAMPLERSTATETYPE SamplerType, DWORD Value);
 
-private:
-	char				Filepath[MAX_PATH];
-	TextureRecordType		type;
-	union {
-	  IDirect3DBaseTexture9*	texture;
-	  IDirect3DTexture9*		textureP;
-	  IDirect3DCubeTexture9*	textureC;
-	  IDirect3DVolumeTexture9*	textureV;
-	};
+	IDirect3DBaseTexture9*	Texture;
+	DWORD					SamplerStates[SamplerStatesMax];
+
 };
 
-typedef std::map<int, TextureRecord*> TextureList;
+typedef std::map<std::string, TextureRecord*> TextureList;
 
 class TextureManager // Never disposed
 {
 public:
 	TextureManager();
 
-	int								TextureIndex;
-	int								LoadTexture(const char *Filename, TextureRecordType type);
-	TextureRecord*					GetTexture(int TextureNum);
-	void							OnReleaseDevice();
-
-	TextureList						Textures;
+	TextureRecord*			LoadTexture(const char* ShaderSource, UInt32 RegisterIndex);
+	
+	TextureList				Textures;
 };

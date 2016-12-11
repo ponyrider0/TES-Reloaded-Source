@@ -16,10 +16,13 @@ static ParamInfo kParams_TwoString[2] =
 	{ "string",	kParamType_String, 0 },
 };
 
-static ParamInfo kParams_TwoString_OneFloat[3] =
+static ParamInfo kParams_TwoString_FourFloat[6] =
 {
 	{ "string",	kParamType_String, 0 },
 	{ "string",	kParamType_String, 0 },
+	{ "float",  kParamType_Float,  0 },
+	{ "float",  kParamType_Float,  0 },
+	{ "float",  kParamType_Float,  0 },
 	{ "float",  kParamType_Float,  0 },
 };
 

@@ -1,11 +1,10 @@
 #include <nvapi.h>
 #if defined(OBLIVION)
 #define kWorldSceneGraph 0x00B333CC
-#define kGetFarPlaneDistance 0x00410EE0
 #elif defined(SKYRIM)
 #include "skse\NiNodes.h"
+#include "RenderManager.h"
 #define kWorldSceneGraph 0x01B2E8BC
-#define kGetFarPlaneDistance 0x00B17D50
 #endif
 
 #define RESZ_CODE 0x7fa05000
@@ -75,31 +74,37 @@ void RenderManager::SetSceneGraph()
 	float FoV = TheSettingManager->SettingsMain.FoV;
 
 #if defined(OBLIVION)
-	if (!TheUtilityManager->IsMenuMode(1009) && !TheUtilityManager->IsMenuMode(1034)) {
-		if ((*g_thePlayer)->FoV != FoV) {
+	if (FoV) {
+		if ((*g_thePlayer)->FoV != FoV && !TheUtilityManager->IsMenu()) {
+			*SettingWorldFoV = FoV;
 			ThisStdCall(0x00664A40, (*g_thePlayer), FoV);
-			TheShaderManager->ShaderConst.FoV = FoV;
 		}
 	}
+	else
+		FoV = (*g_thePlayer)->FoV;
 #elif defined(SKYRIM)
-	PlayerCamera* Camera = PlayerCamera::GetSingleton();
-	if (Camera->worldFOV != FoV) {
-		void (__cdecl * C71820)(float) = (void(__cdecl *)(float))0x00C71820;
-		SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
+	if (FoV) {
+		PlayerCamera* Camera = PlayerCamera::GetSingleton();
+		if (Camera->worldFOV != FoV) {
+			void (__cdecl * C71820)(float) = (void(__cdecl *)(float))0x00C71820;
+			SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
 		
-		TheUtilityManager->ThisStdCall(0x00B17960, WorldSceneGraph, FoV, 0, NULL, 0);	
-		C71820(FoV);
-		Camera->worldFOV = FoV;
-		Camera->firstPersonFOV = FoV;
-		*SettingWorldFoV = FoV;
-		*Setting1stPersonFoV = FoV;
-		TheShaderManager->ShaderConst.FoV = FoV;
+			TheUtilityManager->ThisStdCall(0x00B17960, WorldSceneGraph, FoV, 0, NULL, 0);	
+			C71820(FoV);
+			Camera->worldFOV = FoV;
+			Camera->firstPersonFOV = FoV;
+			*SettingWorldFoV = FoV;
+			*Setting1stPersonFoV = FoV;
+		}
 	}
+	else
+		FoV = PlayerCamera::GetSingleton()->worldFOV;
 #endif
+	TheShaderManager->ShaderConst.ReciprocalResolution.w = FoV;
 
 	if (TheSettingManager->SettingsMain.CameraMode) {
 		SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
-		float FarPlaneDistance = TheUtilityManager->ThisStdCallF(kGetFarPlaneDistance, WorldSceneGraph);
+		float FarPlaneDistance = TheUtilityManager->GetFarPlaneDistance(WorldSceneGraph);
 		if (TheRenderManager->FirstPersonView && *SettingNearDistance != TheSettingManager->SettingsMain.CameraModeNearDistanceFirst) {
 			*SettingNearDistance = TheSettingManager->SettingsMain.CameraModeNearDistanceFirst;
 			WorldSceneGraph->camera->Frustum.Near = *SettingNearDistance;
@@ -114,15 +119,37 @@ void RenderManager::SetSceneGraph()
 
 }
 
+HRESULT RenderManager::SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* Value, bool SetState)
+{
+	HRESULT r = S_OK;
+
+	if (TheSettingManager->SettingsMain.AnisotropicFilter >= 2) {
+		if (Type == D3DSAMP_MAGFILTER) {
+			if (*Value != D3DTEXF_NONE && *Value != D3DTEXF_POINT) *Value = D3DTEXF_LINEAR;
+		}
+		if (Type == D3DSAMP_MINFILTER) {
+			if (*Value != D3DTEXF_NONE && *Value != D3DTEXF_POINT) *Value = D3DTEXF_ANISOTROPIC;
+		}
+		if ((Type == D3DSAMP_MIPFILTER) && ((*Value == D3DTEXF_POINT) || (*Value == D3DTEXF_LINEAR))) {
+			*Value = D3DTEXF_LINEAR;
+		}
+	}
+	if (SetState) r = device->SetSamplerState(Sampler, Type, *Value);
+	return r;
+
+}
+
 void RenderManager::Initialize()
 {
 
 	IDirect3D9 *pD3D;
 	D3DDISPLAYMODE currentDisplayMode;
-	
+
+	_MESSAGE("Extending the render manager...");
+
 	CameraForward.x = CameraForward.y = CameraForward.z = CameraForward.w = 0.0f;
 	CameraPosition.x = CameraPosition.y = CameraPosition.z = CameraPosition.w = 0.0f;
-	LastFrame = NULL;
+	RenderTarget = NULL;
 	DepthSurface = NULL;
 	DepthTexture = NULL;
 	DepthTextureINTZ = NULL;
@@ -138,7 +165,7 @@ void RenderManager::Initialize()
 	else if (NvAPI_Initialize() == NVAPI_OK)
 		_MESSAGE("NVIDIA detected: NVAPI supported.");
 	else
-		_MESSAGE("ERROR: Cannot grab the depth buffer.");
+		_MESSAGE("ERROR: Cannot initialize the render manager. Graphics device not supported.");
 
 }
 
@@ -195,8 +222,9 @@ void RenderManager::ResolveDepthBuffer()
 			if (desc.Format == (D3DFORMAT)MAKEFOURCC('I','N','T','Z')) { // ENB or an other injector could have replaced the depth surface
 				void *Container = NULL;
 				DepthSurface->GetContainer(IID_IDirect3DTexture9, &Container);
-				DepthTextureINTZ = (IDirect3DTexture9 *)Container;
+				DepthTextureINTZ = (IDirect3DTexture9*)Container;
 				NvAPI_D3D9_RegisterResource(DepthTextureINTZ);
+				_MESSAGE("WARNING! An injector (ENB or other) replaced the depth buffer. Conflicts could occur.");
 			}
 			else
 				NvAPI_D3D9_RegisterResource(DepthSurface);
