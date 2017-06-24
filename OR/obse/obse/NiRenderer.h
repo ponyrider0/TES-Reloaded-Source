@@ -274,7 +274,7 @@ public:
 	virtual UInt32			GetClearStencil(void) = 0;
 	virtual bool			Unk_1D(NiRenderTargetGroup * renderTarget) = 0;
 	virtual void			Unk_1E(void) = 0;
-	virtual NiRenderTargetGroup *	GetDefaultRT(void) = 0;	// get back buffer rt?
+	virtual NiRenderTargetGroup *	GetDefaultRT(void) = 0;	// get back buffer rt
 	virtual NiRenderTargetGroup *	GetCurrentRT(void) = 0;	// get currentRTGroup
 	virtual UInt8			Unk_21(void) = 0;			// get unkA90 (u8)
 	virtual void			Unk_22(void) = 0;			// passthrough to currentRTGroup2->Fn1D
@@ -324,7 +324,7 @@ public:
 	virtual void			DisplayScene(void) = 0;
 	virtual void			Clear(float * rect, UInt32 flags) = 0;
 	virtual void			SetupCamera(NiPoint3 * pos, NiPoint3 * at, NiPoint3 * up, NiPoint3 * right, NiFrustum * frustum, float * viewport) = 0;
-	virtual void			Unk_51(void) = 0;			// reset transforms?
+	virtual void			SetupScreenSpaceCamera(float* viewport);
 	virtual bool			BeginUsingRenderTargetGroup(NiRenderTargetGroup* renderTarget, ClearFlags clearFlags);
 	virtual bool			EndUsingRenderTargetGroup(void) = 0;
 	virtual void			BeginBatch(UInt32 arg0, UInt32 arg1);	// set unk61C, unk620
@@ -521,7 +521,7 @@ public:
 	UInt8					pad5CA[2];					// 5CA
 	NiDX9AdapterDesc*		adapterDesc;				// 5CC
 	NiDX9DeviceDesc*		deviceDesc;					// 5D0
-	UInt32					clearColor;					// 5D4
+	D3DCOLOR				clearColor;					// 5D4
 	float					clearDepth;					// 5D8
 	UInt32					clearStencil;				// 5DC
 	UInt32					rendFlags;					// 5E0

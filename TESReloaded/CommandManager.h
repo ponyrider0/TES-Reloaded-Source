@@ -18,13 +18,9 @@ public:
 	{
 	public:
 		void GetVersion(double* result);
-		void PurgeResources(double* result);
 		void GetLocationName(double* result);
-		void SetShaderValue(double* result, const char* Name, const char* ConstantName, D3DXVECTOR4 Value);
-		void SetCustomShaderValue(double* result, const char* Name, const char* ConstantName, D3DXVECTOR4 Value);
-		void GetAnimGroup(double* result, Actor* Act, int AnimGroup, int AnimType);
-		void SetAnimGroup(double* result, Actor* Act, int Permanent, int PlayAnim, int AnimGroup, int AnimType, const char* Filename);
-		void ResetAnimGroup(double* result, Actor* Act, int AnimGroup, int AnimType);
+		void SetCustomShaderEnabled(double* result, const char* Name, bool Value);
+		void SetCustomConstant(double* result, const char* Name, D3DXVECTOR4 Value);
 	}; 
 
 	PluginCommands					Commands;

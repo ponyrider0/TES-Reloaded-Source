@@ -1,4 +1,4 @@
-Copyright (C) 2016 Alessio Tamburini (aletamburini78@gmail.com)
+Copyright (C) 2017 Alessio Tamburini (aletamburini78@gmail.com)
 All rights reserved.
 
 Contributor(s):
@@ -19,3 +19,5 @@ THE SOFTWARE IS DISTRIBUTED FOR FREE AND ANY EXPRESS OR IMPLIED MONEY REQUEST IS
 The licence terms can be eventually changed ONLY by the author.
 
 You can contact the author for informations.
+
+Official forum: www.tesreloaded.com

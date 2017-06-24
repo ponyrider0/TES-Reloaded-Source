@@ -16,14 +16,19 @@ static ParamInfo kParams_TwoString[2] =
 	{ "string",	kParamType_String, 0 },
 };
 
-static ParamInfo kParams_TwoString_FourFloat[6] =
+static ParamInfo kParams_OneString_FourFloat[5] =
 {
 	{ "string",	kParamType_String, 0 },
+	{ "float",  kParamType_Float,  0 },
+	{ "float",  kParamType_Float,  0 },
+	{ "float",  kParamType_Float,  0 },
+	{ "float",  kParamType_Float,  0 },
+};
+
+static ParamInfo kParams_OneString_OneInt[2] =
+{
 	{ "string",	kParamType_String, 0 },
-	{ "float",  kParamType_Float,  0 },
-	{ "float",  kParamType_Float,  0 },
-	{ "float",  kParamType_Float,  0 },
-	{ "float",  kParamType_Float,  0 },
+	{ "int",  kParamType_Integer,  0 },
 };
 
 static ParamInfo kParams_OneObject[1] =

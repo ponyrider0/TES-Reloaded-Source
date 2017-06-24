@@ -1014,7 +1014,7 @@ public:
 	UInt32			unk580;							// 580
 	UInt32			unk584;							// 584
 	UInt8			isThirdPerson;					// 588
-	UInt8			unk589;							// 589 Disable transparency (fading)?
+	UInt8			DisableFading;					// 589
 	UInt8			unk58A;							// 58A
 	UInt8			AlwaysRun;						// 58B
 	UInt8			AutoMove;						// 58C

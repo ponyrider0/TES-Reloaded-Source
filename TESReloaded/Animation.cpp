@@ -164,7 +164,7 @@ TESAnimGroup* __cdecl TrackLoadTESAnimGroup(NiControllerSequence* ControllerSequ
 
 	TESAnimGroup* AnimGroup = LoadTESAnimGroup(ControllerSequence, FilePath);
 
-	AnimGroup->animOR = (bool)strstr(FilePath, "_OR_");
+	AnimGroup->animOR = (bool)strstr(FilePath, ORAnimString);
 	return AnimGroup;
 
 }

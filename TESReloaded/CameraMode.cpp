@@ -28,12 +28,13 @@ public:
 	float TrackToggleCamera(UInt8 FirstPersonFlag);
 	int TrackProcessAction(float Arg1, float Arg2);
 	void TrackSetDialogCamera(Actor* Act, float Arg2, float Arg3);
+	NiPoint3* TrackSetThirdPersonCameraPosition(NiPoint3* CameraLocalPos, NiPoint3* PlayerWorldPos, UInt8 CameraChasing);
 
 };
 
 float (__thiscall CameraMode::* ToggleCamera)(UInt8);
 float (__thiscall CameraMode::* TrackToggleCamera)(UInt8);
-float CameraMode::TrackToggleCamera(UInt8 FirstPersonFlag) { //ecx is PlayerCharacter
+float CameraMode::TrackToggleCamera(UInt8 FirstPersonFlag) {
 	
 	TheRenderManager->FirstPersonView = FirstPersonView = FirstPersonFlag;
 	return (this->*ToggleCamera)(0);
@@ -63,7 +64,7 @@ int CameraMode::TrackProcessAction(float Arg1, float Arg2) {
 
 void (__thiscall CameraMode::* SetDialogCamera)(Actor*, float, float);
 void (__thiscall CameraMode::* TrackSetDialogCamera)(Actor*, float, float);
-void CameraMode::TrackSetDialogCamera(Actor* Act, float Arg2, float Arg3) { //ecx is PlayerCharacter
+void CameraMode::TrackSetDialogCamera(Actor* Act, float Arg2, float Arg3) {
 
 	if ((FirstPersonView && TheSettingManager->SettingsMain.CameraModeDialogFirst) || (!FirstPersonView && TheSettingManager->SettingsMain.CameraModeDialogThird))
 		DialogActorNode = Act->niNode;
@@ -72,26 +73,24 @@ void CameraMode::TrackSetDialogCamera(Actor* Act, float Arg2, float Arg3) { //ec
 
 }
 
-NiPoint3* (__fastcall * SetCameraPosition)(PlayerCharacter* Player, int Arg2, NiPoint3* CameraPos, NiPoint3* PlayerPos, UInt8 Flag) = (NiPoint3* (__fastcall *)(PlayerCharacter* Player, int Arg2, NiPoint3* CameraPos, NiPoint3* PlayerPos, UInt8 Flag))0x0065F080;
-NiPoint3* __fastcall TrackSetCameraPosition(PlayerCharacter* Player, int Arg2, NiPoint3* CameraPos, NiPoint3* PlayerPos, UInt8 Flag) {
-	
-	UInt8 CameraChasing;
+NiPoint3* (__thiscall CameraMode::* SetThirdPersonCameraPosition)(NiPoint3*, NiPoint3*, UInt8);
+NiPoint3* (__thiscall CameraMode::* TrackSetThirdPersonCameraPosition)(NiPoint3*, NiPoint3*, UInt8);
+NiPoint3* CameraMode::TrackSetThirdPersonCameraPosition(NiPoint3* CameraLocalPos, NiPoint3* PlayerWorldPos, UInt8 CameraChasing) {
 
 	if (FirstPersonView) {
-		Player->unk589 = 1;
+		(*g_thePlayer)->DisableFading = 1;
 		CameraChasing = !TheSettingManager->SettingsMain.CameraModeChasingFirst;
 	}
 	else
 		CameraChasing = !TheSettingManager->SettingsMain.CameraModeChasingThird;
-	return SetCameraPosition(Player, Arg2, CameraPos, PlayerPos, CameraChasing);
+	return (this->*SetThirdPersonCameraPosition)(CameraLocalPos, PlayerWorldPos, CameraChasing);
 
 }
 
 void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalTranslate)
 {
-
 	NiPoint3* CameraPosition = &CameraNode->m_localTransform.pos;
-
+	
 	if ((TheUtilityManager->IsMenu(1009) || TheUtilityManager->IsMenu(1034)) && ((FirstPersonView && TheSettingManager->SettingsMain.CameraModeDialogFirst == 2) || (!FirstPersonView && TheSettingManager->SettingsMain.CameraModeDialogThird == 2))) {
 		NiPoint3 v;
 		NiMatrix33 mw, ml;
@@ -110,9 +109,10 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalTranslate)
 		y = CameraPosition->y - (HeadPosition->y + v.y);
 		z = CameraPosition->z - (HeadPosition->z + v.z);
 		r = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
-		Rot.x = (acos(z / r) * 180 / M_PI) - 90;
-		Rot.z = (atan2(y, x) * 180 / M_PI) + 90;
 		TheUtilityManager->GenerateRotationMatrixZXY(&mw, &Rot, 1);
+		Rot.x = (atan2(y, x) * 180 / M_PI) + 90;
+		Rot.y = (acos(z / r) * 180 / M_PI) - 90;
+		Rot.z = 0;
 		TheUtilityManager->GenerateRotationMatrixZXY(&ml, &Rot, 1);
 		CameraNode->m_worldTransform.rot = mw;
 		CameraNode->m_localTransform.rot = ml;
@@ -134,7 +134,6 @@ void UpdateCamera(NiAVObject* CameraNode, NiPoint3* LocalTranslate)
 		LocalTranslate->y = CameraNode->m_localTransform.pos.y;
 		LocalTranslate->z = CameraNode->m_localTransform.pos.z;
 	}
-
 }
 
 static __declspec(naked) void UpdateCameraHook()
@@ -252,19 +251,21 @@ static __declspec(naked) void HUDReticleHook()
 void CreateCameraModeHook()
 {
 
-	*((int *)&ToggleCamera)		= 0x0066C580;
-	TrackToggleCamera			= &CameraMode::TrackToggleCamera;
-	*((int *)&ProcessAction)	= 0x005FCAB0;
-	TrackProcessAction			= &CameraMode::TrackProcessAction;
-	*((int *)&SetDialogCamera)	= 0x0066C6F0;
-	TrackSetDialogCamera		= &CameraMode::TrackSetDialogCamera;
+	*((int *)&ToggleCamera)					= 0x0066C580;
+	TrackToggleCamera						= &CameraMode::TrackToggleCamera;
+	*((int *)&ProcessAction)				= 0x005FCAB0;
+	TrackProcessAction						= &CameraMode::TrackProcessAction;
+	*((int *)&SetDialogCamera)				= 0x0066C6F0;
+	TrackSetDialogCamera					= &CameraMode::TrackSetDialogCamera;
+	*((int *)&SetThirdPersonCameraPosition) = 0x0065F080;
+	TrackSetThirdPersonCameraPosition		= &CameraMode::TrackSetThirdPersonCameraPosition;
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(PVOID&)ToggleCamera,		*((PVOID *)&TrackToggleCamera));
-	DetourAttach(&(PVOID&)ProcessAction,	*((PVOID *)&TrackProcessAction));
-	DetourAttach(&(PVOID&)SetDialogCamera,	*((PVOID *)&TrackSetDialogCamera));
-	DetourAttach(&(PVOID&)SetCameraPosition,		   &TrackSetCameraPosition);
+	DetourAttach(&(PVOID&)ToggleCamera,					*((PVOID *)&TrackToggleCamera));
+	DetourAttach(&(PVOID&)ProcessAction,				*((PVOID *)&TrackProcessAction));
+	DetourAttach(&(PVOID&)SetDialogCamera,				*((PVOID *)&TrackSetDialogCamera));
+	DetourAttach(&(PVOID&)SetThirdPersonCameraPosition, *((PVOID *)&TrackSetThirdPersonCameraPosition));
 	DetourTransactionCommit();
 
 	WriteRelJump(kOnCameraPOVHook,			(UInt32)OnCameraPOVHook);
@@ -319,7 +320,7 @@ int CameraMode::TrackSetCameraState(TESCameraState* CameraState) {
 		if (!TheRenderManager->FirstPersonView && CameraState->stateId == PlayerCamera::kCameraState_ThirdPerson2) {
 			IsWeaponOut = (*g_thePlayer)->actorState.IsWeaponDrawn();
 			Camera->AllowVanityMode = !IsWeaponOut;
-			TheUtilityManager->ThisStdCall(0x0083C7E0, this, IsWeaponOut);
+			TheUtilityManager->UpdateOverShoulder(Camera, IsWeaponOut);
 		}
 		TogglePOV = false;
 	}
@@ -336,9 +337,9 @@ void CameraMode::TrackManageButtonEvent(ButtonEvent* Event, int Arg2) {
 	(this->*ManageButtonEvent)(Event, Arg2);
 	if (State->stateId == PlayerCamera::kCameraState_ThirdPerson2) {
 		PlayerControls* Controls = PlayerControls::GetSingleton();
-		if ((UInt8)TheUtilityManager->ThisStdCall(0x00772A20, Controls)) {
+		if ((UInt8)TheUtilityManager->IsCamSwitchControlEnabled(Controls)) {
 			if (State->TogglePOV) TogglePOV = true;
-			if (TheRenderManager->FirstPersonView && *Event->GetControlID() == InputStringHolder::GetSingleton()->zoomOut) TheUtilityManager->ThisStdCall(0x006533D0, State->camera, State->camera->thirdPersonState2);
+			if (TheRenderManager->FirstPersonView && *Event->GetControlID() == InputStringHolder::GetSingleton()->zoomOut) TheUtilityManager->SetCameraState(State);
 		}
 	}
 
@@ -351,7 +352,7 @@ void CameraMode::TrackSetCameraPosition() {
 	ThirdPersonState* State = (ThirdPersonState*)(this);
 	
 	if (TheRenderManager->FirstPersonView) {
-		BSFixedString Head; TheUtilityManager->ThisStdCall(0x00A511C0, &Head, "NPC Head [Head]");
+		BSFixedString Head; TheUtilityManager->CreateBSString(&Head, "NPC Head [Head]");
 		NiNode* ActorNode = (*g_thePlayer)->GetNiRootNode(0);
 		NiPoint3* HeadPosition = &ActorNode->GetObjectByName(&Head)->m_worldTransform.pos;
 		NiPoint3 v;
@@ -361,7 +362,7 @@ void CameraMode::TrackSetCameraPosition() {
 		State->CameraPosition.z = HeadPosition->z + v.z;
 		State->OverShoulderPosX = State->OverShoulderPosY = State->OverShoulderPosZ = 0.0f;
 		State->camera->AllowVanityMode = 0;
-		TheUtilityManager->ThisStdCall(0x00A511B0, &Head);
+		TheUtilityManager->DisposeBSString(&Head);
 	}
 	(this->*SetCameraPosition)();
 	

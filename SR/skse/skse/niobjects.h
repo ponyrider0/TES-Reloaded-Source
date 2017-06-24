@@ -139,12 +139,13 @@ class NiAVObject : public NiObjectNET
 public:
 	enum
 	{
-		kFlag_SelectiveUpdate =				0x00000002,
-		kFlag_UpdatePropertyControllers =	0x00000004,
+		kFlag_AppCulled						= 1 << 0,
+		kFlag_SelectiveUpdate				= 1 << 1,
+		kFlag_UpdatePropertyControllers		= 0x00000004,
 
-		kFlag_SelectiveUpdateRigid =		0x00000010,
+		kFlag_SelectiveUpdateRigid			= 0x00000010,
 
-		kFlag_OverrideSelectiveTransforms =	0x00000080,
+		kFlag_OverrideSelectiveTransforms	= 0x00000080,
 	};
 
 	struct ControllerUpdateContext

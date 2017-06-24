@@ -39,8 +39,10 @@ void RaiseEvent(Actor* Act, Actor* TargetAct, GameEventManager::EventEnum GameEv
 #if defined(OBLIVION)
 					HighProcess* Proc = (HighProcess*)Act->process;
 					ExtraContainerChanges::EntryData* WeaponData = Proc->equippedWeaponData;
-					TESForm* EquippedObject = WeaponData->type;
-					if (EquippedObject && EquippedObject->typeID == FormType::kFormType_Weapon && ((TESObjectWEAP*)EquippedObject)->wtype <= TESObjectWEAP::kType_BluntTwoHand) TheGameEventManager->OnHitByPlayer();
+					if (WeaponData) {
+						TESForm* EquippedObject = WeaponData->type;
+						if (EquippedObject && EquippedObject->typeID == FormType::kFormType_Weapon && ((TESObjectWEAP*)EquippedObject)->wtype <= TESObjectWEAP::kType_BluntTwoHand) TheGameEventManager->OnHitByPlayer();
+					}
 #elif defined (SKYRIM)
 					TESForm* EquippedObject = Act->GetEquippedObject(false);
 					if (EquippedObject && EquippedObject->formType == FormType::kFormType_Weapon && ((TESObjectWEAP*)EquippedObject)->wtype <= TESObjectWEAP::GameData::kType_TwoHandAxe) TheGameEventManager->OnHitByPlayer();

@@ -52,11 +52,13 @@ SettingManager::SettingManager() {
 	SettingsMain.ScreenshotType = GetPrivateProfileIntA("Main", "ScreenshotType", 1, Filename);
 	SettingsMain.ScreenshotKey = GetPrivateProfileIntA("Main", "ScreenshotKey", 87, Filename);
 	SettingsMain.FPSOverlay = GetPrivateProfileIntA("Main", "FPSOverlay", 0, Filename);
-	SettingsMain.ShaderProfile = GetPrivateProfileIntA("Main", "ShaderProfile", 7, Filename);
+	SettingsMain.ShaderModel3 = GetPrivateProfileIntA("Main", "ShaderModel3", 1, Filename);
+	SettingsMain.NVIDIAPatch = GetPrivateProfileIntA("Main", "NVIDIAPatch", 1, Filename);
+	SettingsMain.RendererBoost = GetPrivateProfileIntA("Main", "RendererBoost", 1, Filename);
 	SettingsMain.CustomEffects = GetPrivateProfileIntA("Main", "CustomEffects", 0, Filename);
 	SettingsMain.FrameRate = GetPrivateProfileIntA("Main", "FrameRate", 0, Filename);
 	SettingsMain.SaveSettings = GetPrivateProfileIntA("Main", "SaveSettings", 1, Filename);
-	SettingsMain.CombatMode = GetPrivateProfileIntA("Main", "CombatMode", 0, Filename);
+	SettingsMain.MountedCombat = GetPrivateProfileIntA("Main", "MountedCombat", 0, Filename);
 	SettingsMain.CameraMode = GetPrivateProfileIntA("Main", "CameraMode", 0, Filename);
 	SettingsMain.EquipmentMode = GetPrivateProfileIntA("Main", "EquipmentMode", 0, Filename);
 	SettingsMain.SleepingMode = GetPrivateProfileIntA("Main", "SleepingMode", 0, Filename);
@@ -97,6 +99,22 @@ SettingManager::SettingManager() {
 	SettingsMain.EquipmentModeWeaponOnBackRot.y = atof(value);
 	GetPrivateProfileStringA("EquipmentMode", "WeaponOnBackRotZ", "0.0", value, 255, Filename);
 	SettingsMain.EquipmentModeWeaponOnBackRot.z = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "TorchOnBeltPosX", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeTorchOnBeltPos.x = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "TorchOnBeltPosY", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeTorchOnBeltPos.y = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "TorchOnBeltPosZ", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeTorchOnBeltPos.z = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "TorchOnBeltRotX", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeTorchOnBeltRot.x = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "TorchOnBeltRotY", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeTorchOnBeltRot.y = atof(value);
+	GetPrivateProfileStringA("EquipmentMode", "TorchOnBeltRotZ", "0.0", value, 255, Filename);
+	SettingsMain.EquipmentModeTorchOnBeltRot.z = atof(value);
+	SettingsMain.EquipmentModeTorchKey = GetPrivateProfileIntA("EquipmentMode", "TorchKey", 21, Filename);
+	SettingsMain.EquipmentModeSleepingEquipment = GetPrivateProfileIntA("EquipmentMode", "SleepingEquipment", 1, Filename);
+	SettingsMain.EquipmentModeSwimmingEquipment = GetPrivateProfileIntA("EquipmentMode", "SwimmingEquipment", 1, Filename);
+	SettingsMain.EquipmentModeCombatEquipmentKey = GetPrivateProfileIntA("EquipmentMode", "CombatEquipmentKey", 259, Filename);
 
 	SettingsMain.CameraModeHUDReticle = GetPrivateProfileIntA("CameraMode", "HUDReticle", 2, Filename);
 	SettingsMain.CameraModeChasingFirst = GetPrivateProfileIntA("CameraMode", "ChasingFirst", 0, Filename);
@@ -125,6 +143,7 @@ SettingManager::SettingManager() {
 
 	GetPrivateProfileStringA("ShadowMode", "NearQuality", "3.0", value, 255, Filename);
 	SettingsMain.ShadowModeNearQuality = atof(value);
+	SettingsMain.ShadowModeMultiPointsLighting = GetPrivateProfileIntA("ShadowMode", "MultiPointsLighting", 0, Filename);
 
 	SettingsMain.EnableWater = GetPrivateProfileIntA("Shaders", "EnableWater", 0, Filename);
 	SettingsMain.EnableGrass = GetPrivateProfileIntA("Shaders", "EnableGrass", 0, Filename);
@@ -218,11 +237,11 @@ SettingManager::SettingManager() {
 	strcat(SettingsMain.MenuValueFormat, value);
 	strcat(SettingsMain.MenuValueFormat, "f");
 
-	SettingsMain.LowHFSoundEnableHealth = GetPrivateProfileIntA("LowHF", "EnableHealth", 0, Filename);
-	SettingsMain.LowHFSoundEnableFatigue = GetPrivateProfileIntA("LowHF", "EnableFatigue", 0, Filename);
-	GetPrivateProfileStringA("LowHF", "HealthCoeff", "0.5", value, 255, Filename);
+	SettingsMain.LowHFSoundEnableHealth = GetPrivateProfileIntA("LowHFSound", "EnableHealth", 0, Filename);
+	SettingsMain.LowHFSoundEnableFatigue = GetPrivateProfileIntA("LowHFSound", "EnableFatigue", 0, Filename);
+	GetPrivateProfileStringA("LowHFSound", "HealthCoeff", "0.5", value, 255, Filename);
 	SettingsMain.LowHFSoundHealthCoeff = atof(value);
-	GetPrivateProfileStringA("LowHF", "FatigueCoeff", "0.5", value, 255, Filename);
+	GetPrivateProfileStringA("LowHFSound", "FatigueCoeff", "0.5", value, 255, Filename);
 	SettingsMain.LowHFSoundFatigueCoeff = atof(value);
 
 	SettingsMain.PurgerEnabled = GetPrivateProfileIntA("Purger", "Enabled", 0, Filename);
@@ -379,12 +398,14 @@ void SettingManager::LoadSettings() {
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
 	strcat(Filename, "HDR\\HDR.ini");
-	GetPrivateProfileStringA("Default", "ToneMapping", "1.8", value, 255, Filename);
+	GetPrivateProfileStringA("Default", "ToneMapping", "1.0", value, 255, Filename);
 	SettingsHDR.ToneMapping = atof(value);
-	GetPrivateProfileStringA("Default", "ToneMappingBlur", "-0.1", value, 255, Filename);
+	GetPrivateProfileStringA("Default", "ToneMappingBlur", "0.2", value, 255, Filename);
 	SettingsHDR.ToneMappingBlur = atof(value);
-	GetPrivateProfileStringA("Default", "ToneMappingColor", "0", value, 255, Filename);
+	GetPrivateProfileStringA("Default", "ToneMappingColor", "1.0", value, 255, Filename);
 	SettingsHDR.ToneMappingColor = atof(value);
+	GetPrivateProfileStringA("Default", "Linearization", "2.2", value, 255, Filename);
+	SettingsHDR.Linearization = atof(value);
 
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
@@ -431,6 +452,8 @@ void SettingManager::LoadSettings() {
 	strcpy(Filename, CurrentPath);
 	strcat(Filename, SettingsPath);
 	strcat(Filename, "GodRays\\GodRays.ini");
+	GetPrivateProfileStringA("Default", "TimeEnabled", "1", value, 255, Filename);
+	SettingsGodRays.TimeEnabled = atoi(value);
 	GetPrivateProfileStringA("Default", "SunGlareEnabled", "1", value, 255, Filename);
 	SettingsGodRays.SunGlareEnabled = atoi(value);
 	GetPrivateProfileStringA("Default", "LightShaftPasses", "50", value, 255, Filename);
@@ -882,6 +905,7 @@ void SettingManager::SaveSettings(const char* Name) {
 		WritePrivateProfileStringA("Default", "RayG", ToString(SettingsGodRays.RayG).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "RayB", ToString(SettingsGodRays.RayB).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "SunGlareEnabled", ToString(SettingsGodRays.SunGlareEnabled).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "TimeEnabled", ToString(SettingsGodRays.TimeEnabled).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "RayVisibility", ToString(SettingsGodRays.RayVisibility).c_str(), Filename);
 	}
 	else if (!strcmp(Name, "Grass")) {
@@ -901,6 +925,7 @@ void SettingManager::SaveSettings(const char* Name) {
 		WritePrivateProfileStringA("Default", "ToneMapping", ToString(SettingsHDR.ToneMapping).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "ToneMappingBlur", ToString(SettingsHDR.ToneMappingBlur).c_str(), Filename);
 		WritePrivateProfileStringA("Default", "ToneMappingColor", ToString(SettingsHDR.ToneMappingColor).c_str(), Filename);
+		WritePrivateProfileStringA("Default", "Linearization", ToString(SettingsHDR.Linearization).c_str(), Filename);
 	}
 	else if (!strcmp(Name, "LowHF")) {
 		WritePrivateProfileStringA("Effects", "EnableLowHF", ToString(SettingsMain.EnableLowHF).c_str(), SettingsMain.MainSettingsFullFile);
@@ -1246,6 +1271,7 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["RayB"] = SettingsGodRays.RayB;
 		SettingsShader["Saturate"] = SettingsGodRays.Saturate;
 		SettingsShader["SunGlareEnabled"] = SettingsGodRays.SunGlareEnabled;
+		SettingsShader["TimeEnabled"] = SettingsGodRays.TimeEnabled;
 	}
 	else if (!strcmp(Name, "Grass")) {
 		SettingsShader["GrassDensity"] = SettingsGrass.GrassDensity;
@@ -1262,6 +1288,7 @@ SettingsList SettingManager::GetSettings(const char* Name, const char* Section) 
 		SettingsShader["ToneMapping"] = SettingsHDR.ToneMapping;
 		SettingsShader["ToneMappingBlur"] = SettingsHDR.ToneMappingBlur;
 		SettingsShader["ToneMappingColor"] = SettingsHDR.ToneMappingColor;
+		SettingsShader["Linearization"] = SettingsHDR.Linearization;
 	}
 	else if (!strcmp(Name, "LowHF")) {
 		SettingsShader["BlurMultiplier"] = SettingsLowHF.BlurMultiplier;
@@ -1534,6 +1561,8 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 			SettingsGodRays.RayG = Value;
 		else if (!strcmp(Setting, "RayB"))
 			SettingsGodRays.RayB = Value;
+		else if (!strcmp(Setting, "TimeEnabled"))
+			SettingsGodRays.TimeEnabled = Value;
 		else if (!strcmp(Setting, "SunGlareEnabled"))
 			SettingsGodRays.SunGlareEnabled = Value;
 		else if (!strcmp(Setting, "RayVisibility"))
@@ -1566,6 +1595,8 @@ void SettingManager::SetSetting(const char* Name, const char* Section, const cha
 			SettingsHDR.ToneMappingBlur = Value;
 		else if (!strcmp(Setting, "ToneMappingColor"))
 			SettingsHDR.ToneMappingColor = Value;	
+		else if (!strcmp(Setting, "Linearization"))
+			SettingsHDR.Linearization = Value;
 	}
 	else if (!strcmp(Name, "LowHF")) {
 		if (!strcmp(Setting, "BlurMultiplier"))

@@ -43,7 +43,7 @@ GameMenuManager::GameMenuManager()
 	D3DXCreateFont(TheRenderManager->device, TextSizeNormal, 0, FW_NORMAL, 1, false, DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, TextFont, &FontNormal);
 	D3DXCreateFont(TheRenderManager->device, TextSizeNormal, 0, FW_BOLD, 1, false, DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, TextFont, &FontSelected);
 	memcpy(IntValues, "ScreenshotKeyGrassDensityLightShaftPasses\0", 42);
-	memcpy(BoolValues, "EnabledDialogModeRestDistantBlurSunGlareEnabledFPSOverlay\0", 58);
+	memcpy(BoolValues, "EnabledDialogModeRestDistantBlurSunGlareEnabledTimeEnabledFPSOverlay\0", 69);
 
 }
 

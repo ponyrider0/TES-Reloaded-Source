@@ -31,32 +31,11 @@ bool __cdecl TrackLoadForm(TESForm* Form, UInt32 Arg2) {
 				#endif
 			}
 			break;
-		case FormType::kFormType_Armor:
-			#if defined(OBLIVION)
-			if (TheSettingManager->SettingsMain.EquipmentMode) {
-				TESObjectARMO* Armor = (TESObjectARMO*)Form;
-				const char* Name = Armor->fullName.name.m_data;
-				//if (Name && !strcmp(Name, "ORLeftWeapon")) TheEquipmentManager->LeftWeapon = Armor;
-			}
-			#endif
-			break;
-		case FormType::kFormType_REFR:
-			#if defined(OBLIVION)
-			if (TheSettingManager->SettingsMain.EquipmentMode) {
-				TESObjectREFR* Container = (TESObjectREFR*)Form;
-				TESFullName* FullName = Container->GetFullName();
-				if (FullName) {
-					const char* Name = Container->GetFullName()->name.m_data;
-					//if (Name && !strcmp(Name, "ORContainer")) TheEquipmentManager->Container = Container;
-				}
-			}
-			#endif
-			break;
 		case FormType::kFormType_Idle:
 			if (TheSettingManager->SettingsMain.EquipmentMode) {
 			#if defined(OBLIVION)
 				TESIdleForm* Anim = (TESIdleForm*)Form;
-				//if (!strcmp(Anim->animModel.nifPath.m_data, "Characters\\_Male\\IdleAnims\\oronbackanim.kf")) TheEquipmentManager->OnBackAnim = Anim;
+				if (!strcmp(Anim->animModel.nifPath.m_data, "Characters\\_Male\\IdleAnims\\oronbackanim.kf")) TheEquipmentManager->OnBackAnim = Anim;
 			#endif
 			}
 			break;

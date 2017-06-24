@@ -1,6 +1,7 @@
 #if defined(OBLIVION)
 #include "obse\GameData.h"
 #include "obse\GameOSDepend.h"
+#include "obse\GameTasks.h"
 #define kMessageBoxButtonTextYes 0x00B38CF8
 #define kMessageBoxButtonTextNo 0x00B38D00
 #define kGetWaterHeight 0x004CACE0
@@ -65,18 +66,6 @@ bool UtilityManager::IsMenu(int MenuType)
 
 }
 
-bool UtilityManager::IsMenu()
-{
-
-#if defined(OBLIVION)
-	bool (__cdecl * MenuMode)() = (bool(*)())0x00578F60;
-	return MenuMode();
-#elif defined(SKYRIM)
-	return false;
-#endif
-
-}
-
 bool UtilityManager::IsConsole()
 {
 
@@ -118,83 +107,13 @@ TESWaterForm* UtilityManager::GetWaterForm(TESObjectCELL* Cell)
 #if defined(OBLIVION)
 	return NULL;
 #elif defined(SKYRIM)
-	return (TESWaterForm*)ThisStdCall(0x004C0800, Cell);
+	return (TESWaterForm*)ThisCall(0x004C0800, Cell);
 #endif
 }
 
 float UtilityManager::GetFarPlaneDistance(SceneGraph* WorldSceneGraph)
 {
 	return ThisCallF(kGetFarPlaneDistance, WorldSceneGraph);
-}
-
-void UtilityManager::Play(TESSound* Sound)
-{
-#if defined(OBLIVION)
-	TESGameSound* GameSound = (TESGameSound*)ThisStdCall(0x006AE0A0, (*g_osGlobals)->sound, Sound->refID, 0x101, 0);
-	ThisStdCall(0x006B7190, GameSound, 0);
-	ThisStdCall(0x006B73E0, GameSound);
-#endif
-}
-
-bool UtilityManager::IsFemale(Actor* Act)
-{
-#if defined(OBLIVION)
-	return ThisStdCall(0x005E1DF0, Act);
-#elif defined(SKYRIM)
-	return false;
-#endif
-}
-
-#if defined(OBLIVION)
-int UtilityManager::GetInventoryCount(TESObjectREFR* Ref)
-{
-#if defined (OBLIVION)
-	return ThisStdCall(0x004D8950, Ref, 0);
-#elif defined(SKYRIM)
-	return 0;
-#endif
-}
-
-ExtraContainerChanges::EntryData* UtilityManager::GetInventoryItem(TESObjectREFR* Ref, UInt32 Index)
-{
-#if defined (OBLIVION)
-	return (ExtraContainerChanges::EntryData*)ThisStdCall(0x004D88F0, Ref, Index, 0);
-#elif defined(SKYRIM)
-	return false;
-#endif
-}
-
-float UtilityManager::GetExtraHealthValue(ExtraDataList* DataList)
-{
-#if defined (OBLIVION)
-	return ThisCallF(0x0041E810, DataList);
-#elif defined(SKYRIM)
-	return 0.0f;
-#endif
-}
-
-void UtilityManager::SetExtraHealthValue(ExtraDataList* DataList, float Value)
-{
-#if defined(OBLIVION)
-	ThisStdCall(0x0041ECB0, DataList, Value);
-#endif
-}
-
-void UtilityManager::QueueIdle(ActorAnimData* AnimData, TESIdleForm* Idle, Actor* Act, UInt32 Flags)
-{
-#if defined(OBLIVION)
-	ThisStdCall(0x00477DB0, AnimData, Idle, Act, Flags, 3);
-#endif
-}
-#endif
-void UtilityManager::PurgeCellBuffers()
-{
-#if defined(OBLIVION)
-	TES* pTES = TES::GetSingleton();
-	ThisStdCall(0x00442630, pTES, 1, 0);
-	ThisStdCall(0x0043FC20, pTES, 0);
-	ThisStdCall(0x00404C60, (*g_osGlobals), 1);
-#endif
 }
 
 bool UtilityManager::ShowMessageBoxQuestion(const char* Message, void* Callback)
@@ -214,6 +133,24 @@ void UtilityManager::ShowMessage(const char* Message)
 #elif defined(SKYRIM)
 	void (__cdecl * ShowMessage)(const char*, const char*, bool) = (void (__cdecl *)(const char*, const char*, bool))0x008997A0;
 	return ShowMessage(Message, NULL, 1);
+#endif
+}
+
+void UtilityManager::RestoreCamera()
+{
+#if defined(OBLIVION)
+	ThisCall(0x0066C600, *g_thePlayer);
+#elif defined(SKYRIM)
+	ThisCall(0x00730EE0, *g_thePlayer, 0);
+#endif
+}
+
+void UtilityManager::SetCameraFOV(SceneGraph* WorldSceneGraph, float FoV)
+{
+#if defined(OBLIVION)
+	ThisCall(0x00664A40, *g_thePlayer, FoV);
+#elif defined(SKYRIM)
+	ThisCall(0x00B17960, WorldSceneGraph, FoV, 0, NULL, 0);
 #endif
 }
 
@@ -294,16 +231,12 @@ void UtilityManager::GenerateRotationMatrixXYZ(NiMatrix33* sm, NiPoint3* v, bool
 
 float UtilityManager::RadiansToDegrees(float radians)
 {
-
 	return radians * 180 / M_PI;
-
 }
 
 float UtilityManager::DegreesToRadians(float degrees)
 {
-
 	return degrees * M_PI / 180;
-
 }
 
 void  UtilityManager::NormalizeVector3(D3DXVECTOR4* vector) {
@@ -321,3 +254,117 @@ void  UtilityManager::NormalizeVector3(D3DXVECTOR4* vector) {
 	}
 
 }
+
+#if defined(OBLIVION)
+bool UtilityManager::IsMenu()
+{
+	bool(__cdecl * MenuMode)() = (bool(*)())0x00578F60;
+	return MenuMode();
+}
+
+void UtilityManager::Play(TESSound* Sound)
+{
+	TESGameSound* GameSound = (TESGameSound*)ThisCall(0x006AE0A0, (*g_osGlobals)->sound, Sound->refID, 0x101, 0);
+	ThisCall(0x006B7190, GameSound, 0);
+	ThisCall(0x006B73E0, GameSound);
+}
+
+bool UtilityManager::IsFemale(Actor* Act)
+{
+	return ThisCall(0x005E1DF0, Act);
+}
+
+ExtraContainerChanges::EntryData* UtilityManager::GetInventoryItem(TESObjectREFR* Ref, UInt32 Index)
+{
+	return (ExtraContainerChanges::EntryData*)ThisCall(0x004D88F0, Ref, Index, 0);
+}
+
+void UtilityManager::UpdateInventory()
+{
+	Actor* Act = *g_thePlayer;
+	void (*UpdateInventoryMenu)() = (void(*)())0x005AADC0;
+
+	ThisStdCall(0x00668CC0, Act);
+	ThisStdCall(0x006575B0, Act->process, Act, 1, 0, 0);
+	ThisStdCall(0x0060E260, Act);
+	UpdateInventoryMenu();
+}
+
+ExtraContainerChanges::Data* UtilityManager::GetExtraContainerChangesData(ExtraDataList* DataList)
+{
+	return (ExtraContainerChanges::Data*)ThisCall(0x0041E6F0, DataList);
+}
+
+float UtilityManager::GetExtraHealthValue(ExtraDataList* DataList)
+{
+	return ThisCallF(0x0041E810, DataList);
+}
+
+void UtilityManager::SetExtraHealthValue(ExtraDataList* DataList, float Value)
+{
+	ThisCall(0x0041ECB0, DataList, Value);
+}
+
+void UtilityManager::QueueIdle(ActorAnimData* AnimData, TESIdleForm* Idle, Actor* Act, UInt32 Flags)
+{
+	ThisCall(0x00477DB0, AnimData, Idle, Act, Flags, 3);
+}
+
+TESObjectExtraData * UtilityManager::GetRef(NiNode* ActorNode)
+{
+	return (TESObjectExtraData*)ThisCall(0x006FF9C0, ActorNode, "REF");
+}
+
+void UtilityManager::RemoveModel(char* WeaponModelPath)
+{
+	ThisCall(0x004384E0, ModelLoader::GetSingleton(), WeaponModelPath, 1, 1);
+}
+
+void UtilityManager::PurgeCellBuffers()
+{
+	TES* pTES = TES::GetSingleton();
+	ThisCall(0x00442630, pTES, 1, 0);
+	ThisCall(0x0043FC20, pTES, 0);
+	ThisCall(0x00404C60, (*g_osGlobals), 1);
+}
+
+UInt8 UtilityManager::GetAnimSequence(NiTPointerMap<AnimSequenceBase>* AnimsMap, UInt16 AnimGroupKey, AnimSequenceBase** AnimSequence)
+{
+	return (UInt8)ThisCall(0x00470960, AnimsMap, AnimGroupKey, AnimSequence);
+}
+#elif defined(SKYRIM)
+void UtilityManager::SetupCamera(NiCamera* Camera)
+{
+	ThisCall(0x00633670, TheRenderManager, Camera);
+}
+
+void UtilityManager::QueueNiNodeUpdate(Actor* Act)
+{
+	ThisCall(0x00730EE0, Act, 0);
+}
+
+void UtilityManager::UpdateOverShoulder(PlayerCamera* Camera, bool IsWeaponOut)
+{
+	ThisCall(0x0083C7E0, Camera, IsWeaponOut);
+}
+
+bool UtilityManager::IsCamSwitchControlEnabled(PlayerControls* Controls)
+{
+	return ThisCall(0x00772A20, Controls);
+}
+
+void UtilityManager::SetCameraState(TESCameraState* State)
+{
+	ThisCall(0x006533D0, State->camera, State->camera->thirdPersonState2);
+}
+
+BSFixedString* UtilityManager::CreateBSString(BSFixedString* FixedString, char* Value)
+{
+	return (BSFixedString*)ThisCall(0x00A511C0, FixedString, Value);
+}
+
+void UtilityManager::DisposeBSString(BSFixedString* FixedString)
+{
+	ThisCall(0x00A511B0, FixedString);
+}
+#endif

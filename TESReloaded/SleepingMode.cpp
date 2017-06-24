@@ -69,7 +69,7 @@ void SleepingMode::TrackSetFurnitureCameraState(TESFurniture* Furniture) {
 	PlayerCamera* Camera = (PlayerCamera*)this;
 	UInt8 SitSleepState = TheUtilityManager->GetSitSleepState((Actor*)*g_thePlayer);
 
-	if (SitSleepState == 7 && Camera->cameraState->stateId == PlayerCamera::kCameraState_Furniture) TheUtilityManager->ThisStdCall(0x00730EE0, *g_thePlayer, 0);
+	if (SitSleepState == 7 && Camera->cameraState->stateId == PlayerCamera::kCameraState_Furniture) TheUtilityManager->QueueNiNodeUpdate(*g_thePlayer);
 	(this->*SetFurnitureCameraState)(Furniture);
 
 }
@@ -94,13 +94,11 @@ int SleepingMode::TrackProcessSleepWaitMenu(UInt32 Arg1) {
 int (__thiscall SleepingMode::* ServeSentence)();
 int (__thiscall SleepingMode::* TrackServeSentence)();
 int SleepingMode::TrackServeSentence() {
-
+	
+	TheUtilityManager->RestoreCamera();
 #if defined(OBLIVION)
-	TheUtilityManager->ThisStdCall(0x0066C600, *g_thePlayer);
 	(*g_thePlayer)->unk61C = 0.0f;
 	(*g_thePlayer)->Resurrect(0, 0, 0);
-#elif defined(SKYRIM)
-	TheUtilityManager->ThisStdCall(0x00730EE0, *g_thePlayer, 0);
 #endif
 	return (this->*ServeSentence)();
 

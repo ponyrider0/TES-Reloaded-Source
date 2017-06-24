@@ -42,6 +42,8 @@ static float*			SettingGrassWindMagnitudeMax	= (float*)0x00B09B30; // Only Obliv
 static float*			SettingGrassWindMagnitudeMin	= (float*)0x00B09B28; // Only Oblivion
 static float*			SettingTexturePctThreshold		= (float*)0x00B08B6C; // Only Oblivion
 static float*			SettingDecalLifetime			= (float*)0x00B097C8; // Only Oblivion
+static UInt32*			SettingMultiSample				= (UInt32*)0x00B06D0C; // Only Oblivion
+static UInt8*			SettingHDR						= (UInt8*)0x00B06DE4; // Only Oblivion
 
 struct SettingsMainStruct
 {
@@ -50,27 +52,26 @@ struct SettingsMainStruct
 	char SleepingModeRestMessage[80];
 	char MainSettingsFullFile[MAX_PATH];
 	char MenuValueFormat[5];
-	UInt8 ScreenshotKey;
-	UInt8 ScreenshotType;
 	bool WaterManagement;
-	UInt8 AnisotropicFilter;
 	bool FPSOverlay;
-	UInt8 ShaderProfile;
+	bool ShaderModel3;
+	bool NVIDIAPatch;
+	bool RendererBoost;
 	bool CustomEffects;
 	bool FrameRate;
 	bool SaveSettings;
-	bool CombatMode;
+	bool MountedCombat;
 	bool CameraMode;
 	bool EquipmentMode;
 	bool SleepingMode;
 	bool GrassMode;
 	bool ShadowMode;
-	UInt8 CameraModeHUDReticle;
 	bool CameraModeChasingFirst;
 	bool CameraModeChasingThird;
-	UInt8 CameraModeDialogFirst;
-	UInt8 CameraModeDialogThird;
 	bool SleepingModeRest;
+	bool ShadowModeMultiPointsLighting;
+	bool EquipmentModeSleepingEquipment;
+	bool EquipmentModeSwimmingEquipment;
 	bool EnableWater;
 	bool EnableGrass;
 	bool EnablePrecipitations;
@@ -96,6 +97,19 @@ struct SettingsMainStruct
 	bool EnableWetWorld;
 	bool EnableSharpening;
 	bool EnableSMAA;
+	bool LowHFSoundEnableHealth;
+	bool LowHFSoundEnableFatigue;
+	bool PurgerEnabled;
+	bool PurgerPurgeTexture;
+	bool PurgerPurgeCells;
+	bool DevelopCompileShaders;
+	bool DevelopCompileEffects;
+	bool DevelopTraceShaders;
+	UInt8 ScreenshotType;
+	UInt8 AnisotropicFilter;
+	UInt8 CameraModeHUDReticle;
+	UInt8 CameraModeDialogFirst;
+	UInt8 CameraModeDialogThird;
 	UInt8 MenuTextColorNormal[3];
 	UInt8 MenuTextShadowColorNormal[3];
 	UInt8 MenuTextColorSelected[3];
@@ -114,15 +128,10 @@ struct SettingsMainStruct
 	UInt8 MenuKeySubtract;
 	UInt8 MenuKeySave;
 	UInt8 MenuKeyEditing;
-	bool LowHFSoundEnableHealth;
-	bool LowHFSoundEnableFatigue;
-	bool PurgerEnabled;
-	bool PurgerPurgeTexture;
-	bool PurgerPurgeCells;
-	UInt8 PurgerKey;
-	bool DevelopCompileShaders;
-	bool DevelopCompileEffects;
-	bool DevelopTraceShaders;
+	UInt16 ScreenshotKey;
+	UInt16 EquipmentModeTorchKey;
+	UInt16 EquipmentModeCombatEquipmentKey;
+	UInt16 PurgerKey;
 	int WaterReflectionMapSize;
 	int FrameRateAverage;
 	int FrameRateGap;
@@ -156,6 +165,8 @@ struct SettingsMainStruct
 	NiPoint3 EquipmentModeShieldOnBackRot;
 	NiPoint3 EquipmentModeWeaponOnBackPos;
 	NiPoint3 EquipmentModeWeaponOnBackRot;
+	NiPoint3 EquipmentModeTorchOnBeltPos;
+	NiPoint3 EquipmentModeTorchOnBeltRot;
 };
 
 struct SettingsWaterStruct
@@ -200,6 +211,7 @@ struct SettingsHDRStruct
 	float ToneMapping;
 	float ToneMappingBlur;
 	float ToneMappingColor;
+	float Linearization;
 };
 
 struct SettingsPOMStruct
@@ -231,6 +243,7 @@ struct SettingsSkinStruct
 
 struct SettingsGodRaysStruct
 {
+	bool TimeEnabled;
 	bool SunGlareEnabled;
 	int LightShaftPasses;
 	float RayIntensity;

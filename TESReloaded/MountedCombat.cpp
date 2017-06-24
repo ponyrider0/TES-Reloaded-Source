@@ -1,5 +1,5 @@
 #if defined(OBLIVION)
-#include "CombatMode.h"
+#include "MountedCombat.h"
 #include "obse_common\SafeWrite.h"
 
 static const UInt32 kPlayerReadyWeaponHook = 0x00671E37;
@@ -289,7 +289,7 @@ static __declspec(naked) void HorsePaletteHook()
 
 }
 
-void CreateCombatModeHook()
+void CreateMountedCombatHook()
 {
 	
 	WriteRelCall(kPlayerReadyWeaponHook, (UInt32)ReadyWeaponHook);

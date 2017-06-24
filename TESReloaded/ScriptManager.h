@@ -40,17 +40,48 @@ public:
 	void			Run();
 };
 
+class EquipmentSetupScript : public BaseScript // Never disposed
+{
+public:
+	EquipmentSetupScript();
+
+	enum StepType
+	{
+		None,
+		Request,
+		Choice,
+		Normal,
+		Combat,
+		Sleeping,
+		Swimming,
+	};
+
+	void				Run();
+	void				EquipItems(StepType From, StepType To);
+	StepType			GetCurrentEquipmentType();
+
+	EquippedItemsList	Items[4];
+	TESObjectWEAP*		LeftWeapon[4];
+	StepType			ConfigStep;
+	StepType			GameStep;
+	bool				CombatState;
+
+};
+
 class ScriptManager // Never disposed
 {
 public:
 	ScriptManager();
 
-	void				Run();
+	void					Run();
 
-	LowHSoundScript*	LowHSound;
-	LowFSoundScript*	LowFSound;
-	PurgerScript*		Purger;
+	LowHSoundScript*		LowHSound;
+	LowFSoundScript*		LowFSound;
+	PurgerScript*			Purger;
+	EquipmentSetupScript*	EquipmentSetup;
 };
+
+void CreateScriptHook();
 #elif defined(SKYRIM)
 class ScriptManager // Never disposed
 {

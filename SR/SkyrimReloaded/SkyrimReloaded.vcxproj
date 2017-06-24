@@ -125,7 +125,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\TESReloaded\Animation.cpp" />
     <ClCompile Include="..\..\TESReloaded\CameraMode.cpp" />
-    <ClCompile Include="..\..\TESReloaded\CombatMode.cpp" />
     <ClCompile Include="..\..\TESReloaded\D3D9Device.cpp" />
     <ClCompile Include="..\..\TESReloaded\D3D9Interface.cpp" />
     <ClCompile Include="..\..\TESReloaded\EquipmentManager.cpp" />
@@ -140,6 +139,7 @@
     <ClCompile Include="..\..\TESReloaded\KeyboardManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\Managers.cpp" />
     <ClCompile Include="..\..\TESReloaded\CommandManager.cpp" />
+    <ClCompile Include="..\..\TESReloaded\MountedCombat.cpp" />
     <ClCompile Include="..\..\TESReloaded\RenderHook.cpp" />
     <ClCompile Include="..\..\TESReloaded\RenderManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\ScriptManager.cpp" />
@@ -173,7 +173,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\TESReloaded\Animation.h" />
     <ClInclude Include="..\..\TESReloaded\CameraMode.h" />
-    <ClInclude Include="..\..\TESReloaded\CombatMode.h" />
     <ClInclude Include="..\..\TESReloaded\CommandInfo.h" />
     <ClInclude Include="..\..\TESReloaded\D3D9Device.h" />
     <ClInclude Include="..\..\TESReloaded\D3D9Interface.h" />
@@ -188,6 +187,7 @@
     <ClInclude Include="..\..\TESReloaded\KeyboardManager.h" />
     <ClInclude Include="..\..\TESReloaded\Managers.h" />
     <ClInclude Include="..\..\TESReloaded\CommandManager.h" />
+    <ClInclude Include="..\..\TESReloaded\MountedCombat.h" />
     <ClInclude Include="..\..\TESReloaded\RenderHook.h" />
     <ClInclude Include="..\..\TESReloaded\RenderManager.h" />
     <ClInclude Include="..\..\TESReloaded\ScriptManager.h" />

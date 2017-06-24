@@ -818,12 +818,12 @@ public:
 	UInt8				unk0F5;		// 0F5
 	UInt8				pad0F6[2];	// 0F6
 	float				unk0F8;		// 0F8
-	UInt32				unk0FC;		// 0FC
-	UInt32				unk100;		// 100
-	UInt32				unk104;		// 104
-	UInt32				unk108;		// 108
-	UInt32				unk10C;		// 10C
-	UInt32				unk110;		// 110
+	NiNode*				WeaponNode;		// 0FC
+	NiNode*				TorchNode;		// 100
+	NiNode*				LForearmTwistNode;	// 104
+	NiNode*				SideWeaponNode;	// 108
+	NiNode*				QuiverNode;		// 10C
+	NiNode*				unk110;		// 110
 	UInt8				CombatMode;	// 114
 	UInt8				WeaponState;// 115
 	UInt8				pad116[2];	// 116
@@ -1107,72 +1107,85 @@ public:
 	SkinInfo();
 	~SkinInfo();
 
-	struct NodeData
-	{
-		NiNode*		niNode;
-		UInt8		unk04;
-		UInt8		pad04[3];
-	};
-	// Possible NiTMap of NiObject* and bool from 000 to 054
-	// Possible NiTMap of ObjectInfo (TESForm* and TESModel*) and NodeData from 05C to 13C
-	NodeData		NodeBip01;				// 000
-	NodeData		NodeBip01Head;			// 008
-	NodeData		NodeBip01RFinger1;		// 010
-	NodeData		NodeBip01LFinger1;		// 018
-	NodeData		NodeWeapon;				// 020
-	NodeData		NodeBackWeapon;			// 028
-	NodeData		NodeSideWeapon;			// 030
-	NodeData		NodeQuiver;				// 038
-	NodeData		NodeBip01LForearmTwist;	// 040
-	NodeData		NodeTorch;				// 048
-	UInt32			unk050;					// 050
+	NiNode*			Bip01Node;				// 000
+	UInt32			unk004;
+	NiNode*			HeadNode;				// 008
+	UInt32			unk00C;
+	NiNode*			Finger1Node;			// 010
+	UInt32			unk014;
+	NiNode*			LFinger1Node;			// 018
+	UInt32			unk01C;
+	NiNode*			WeaponNode;				// 020
+	UInt32			unk024;
+	NiNode*			BackWeaponNode;			// 028
+	UInt32			unk02C;
+	NiNode*			SideWeaponNode;			// 030
+	UInt32			unk034;
+	NiNode*			QuiverNode;				// 038
+	UInt32			unk03C;
+	NiNode*			LForearmTwistNode;		// 040
+	UInt32			unk044;
+	NiNode*			TorchNode;				// 048
+	UInt32			unk04C;
+	UInt32			unk050;
 	Actor*			Actor054;				// 054
-	UInt32			unk058;					// 058
-	TESForm*		unk05C;					// 05C
-	TESModel*		unk060;					// 060
-	NodeData		unk064;					// 064
+	UInt32			unk058;
+	TESForm*		unk05C;
+	TESModel*		unk060;
+	NiNode*			unk064;
+	UInt32			unk068;
 	TESForm*		UpperBodyForm;			// 06C
 	TESModel*		UpperBodyModel;			// 070
-	NodeData		UpperBody;				// 074
+	NiNode*			UpperBodyObject;		// 074
+	UInt32			unk078;
 	TESForm*		LowerBodyForm;			// 07C
 	TESModel*		LowerBodyModel;			// 080
-	NodeData		LowerBody;				// 084
+	NiNode*			LowerBodyObject;		// 084
+	UInt32			unk088;
 	TESForm*		HandForm;				// 08C
 	TESModel*		HandModel;				// 090
-	NodeData		Hand;					// 094
+	NiNode*			HandObject;				// 094
+	UInt32			unk098;
 	TESForm*		FootForm;				// 09C
 	TESModel*		FootModel;				// 0A0
-	NodeData		Foot;					// 0A4
+	NiNode*			FootObject;				// 0A4
+	UInt32			unk0A8;
 	UInt32			unk0AC;
 	UInt32			unk0B0;
-	UInt32			unk0B4;
+	NiNode*			unk0B4;
 	UInt32			unk0B8;
 	UInt32			unk0BC;
 	UInt32			unk0C0;
-	UInt32			unk0C4;
+	NiNode*			unk0C4;
 	UInt32			unk0C8;
 	UInt32			unk0CC;
 	UInt32			unk0D0;
-	UInt32			unk0D4;
+	NiNode*			unk0D4;
 	UInt32			unk0D8;
 	TESObjectWEAP*	WeaponForm;				// 0DC
 	TESModel*		WeaponModel;			// 0E0
-	NodeData		Weapon;					// 0E4
-	TESForm*		unk0EC;					// 0EC
-	TESModel*		unk0F0;					// 0F0
-	NodeData		unk0F4;					// 0F4
-	TESForm*		unk0FC;					// 0FC
-	TESModel*		unk100;					// 100
-	NodeData		unk104;					// 104
+	NiNode*			WeaponObject;			// 0E4
+	UInt32			unk0E8;
+	TESForm*		unk0EC;
+	TESModel*		unk0F0;
+	NiNode*			unk0F4;
+	UInt32			unk0F8;
+	TESForm*		unk0FC;
+	TESModel*		unk100;
+	NiNode*			unk104;
+	UInt32			unk108;
 	TESForm*		AmmoForm;				// 10C
 	TESModel*		AmmoModel;				// 110
-	NodeData		Ammo;					// 114
+	NiNode*			AmmoObject;				// 114
+	UInt32			unk118;
 	TESObjectARMO*	ShieldForm;				// 11C
 	TESModel*		ShieldModel;			// 120
-	NodeData		Shield;					// 124
+	NiNode*			ShieldObject;			// 124
+	UInt32			unk128;
 	TESObjectLIGH*	LightForm;				// 12C
 	TESModel*		LightModel;				// 130
-	NodeData		Light;					// 134
+	NiNode*			LightObject;			// 134
+	UInt32			unk138;
 	UInt32			unk13C;
 	UInt32			unk140;
 	UInt32			unk144;

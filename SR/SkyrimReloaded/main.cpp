@@ -24,28 +24,27 @@ namespace SRPapyrus
 {
 	const char* SRClass = "SRCommands";
 
-	bool SetShaderValue(StaticFunctionTag* FunctionTag, BSFixedString Name, BSFixedString Const, float Value1, float Value2, float Value3, float Value4)
+	bool SetCustomShaderEnabled(StaticFunctionTag* FunctionTag, BSFixedString Name, bool Value)
 	{
 		double result;
-		float Value[4] = { Value1, Value2, Value3, Value4 };
 
-		TheCommandManager->Commands.SetShaderValue(&result, Name.data, Const.data, Value);
+		TheCommandManager->Commands.SetCustomShaderEnabled(&result, Name.data, Value);
 		return result;
 	}
 	
-	bool SetCustomShaderValue(StaticFunctionTag* FunctionTag, BSFixedString Name, BSFixedString Const, float Value1, float Value2, float Value3, float Value4)
+	bool SetCustomConstant(StaticFunctionTag* FunctionTag, BSFixedString Name, float Value1, float Value2, float Value3, float Value4)
 	{
 		double result;
 		float Value[4] = { Value1, Value2, Value3, Value4 };
 
-		TheCommandManager->Commands.SetCustomShaderValue(&result, Name.data, Const.data, Value);
+		TheCommandManager->Commands.SetCustomConstant(&result, Name.data, Value);
 		return result;
 	}
 
 	bool RegisterCommands(VMClassRegistry* registry)
 	{
-		registry->RegisterFunction(new NativeFunction6<StaticFunctionTag, bool, BSFixedString, BSFixedString, float, float, float, float>("SetShaderValue", SRClass, SetShaderValue, registry));
-		registry->RegisterFunction(new NativeFunction6<StaticFunctionTag, bool, BSFixedString, BSFixedString, float, float, float, float>("SetCustomShaderValue", SRClass, SetCustomShaderValue, registry));
+		registry->RegisterFunction(new NativeFunction2<StaticFunctionTag, bool, BSFixedString, bool>("SetCustomShaderEnabled", SRClass, SetCustomShaderEnabled, registry));
+		registry->RegisterFunction(new NativeFunction5<StaticFunctionTag, bool, BSFixedString, float, float, float, float>("SetCustomConstant", SRClass, SetCustomConstant, registry));
 		return true;
 	}
 

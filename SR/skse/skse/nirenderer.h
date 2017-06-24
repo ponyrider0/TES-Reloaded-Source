@@ -34,7 +34,7 @@ class BSRenderedTexture : public NiObject
 {
 public:
 
-	NiRenderTargetGroup*	RenderTargets;		// 008
+	NiRenderTargetGroup*	RenderTargetGroup;	// 008
 	UInt32					unk00C[5];			// 00C
 	UInt32					unk020;				// 020
 	UInt32					unk024;				// 024
@@ -128,7 +128,7 @@ public:
 	NiPixelFormat		* m_apkDefaultTextureFormat[4]; // 604 [TEXUSE_NUM]
 	NiPixelData			* m_aspDefaultTextureData[4];	// 614 [TEXUSE_NUM]
 	UInt32				m_eReplacementDataFormat;		// 624
-	NiRenderTargetGroup * m_spDefaultRenderTargetGroup; // 628
+	NiRenderTargetGroup * defaultRTGroup;				// 628
 	NiRenderTargetGroup * currentRTGroup;				// 62C
 	NiRenderTargetGroup * m_pkCurrOnscreenRenderTargetGroup; // 630
 	NiTPointerMap<HWND, NiRenderTargetGroup*>	m_kOnscreenRenderTargetGroups; // 634 NiTPointerMap<HWND, NiRenderTargetGroupPtr>

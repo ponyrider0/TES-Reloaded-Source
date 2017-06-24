@@ -536,7 +536,7 @@ public:
 	UInt32			unk580;							// 580
 	UInt32			HoursToSleep;					// 584 (value is in seconds)
 	UInt32			unk588;							// 588
-	NiNode*			firstPersonSkeleton;			// 58C
+	NiNode*			firstPersonNiNode;				// 58C
 	UInt32			pad590[(0x5AC - 0x590) >> 2];
 	UInt32			lastRiddenHorseHandle;			// 5AC - Handle
 	UInt32			pad5B0[(0x614 - 0x5B0) >> 2];

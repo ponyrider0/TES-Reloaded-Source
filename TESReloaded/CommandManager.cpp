@@ -1,15 +1,14 @@
 #include "CommandInfo.h"
 #if defined(OBLIVION)
-#include "Animation.h"
 #define CommandPrefix "OR"
-#define PluginVersion "Oblivion Reloaded v6.0.0"
+#define PluginVersion "Oblivion Reloaded v6.2.0"
 #elif defined(SKYRIM)
 #include "skse\skse_version.h"
 #include "skse\PapyrusVM.h"
 #include "Hooking\detours\detours.h"
 #include "CommandManager.h"
 #define CommandPrefix "SR"
-#define PluginVersion "Skyrim Reloaded v2.0.0"
+#define PluginVersion "Skyrim Reloaded v2.1.0"
 #endif
 
 #define DEFINE_COMMAND_PLUGIN_R(name, altName, description, refRequired, numParams, paramInfo, parser) \
@@ -49,65 +48,27 @@ bool Cmd_GetVersion_Execute(COMMAND_ARGS)
 	return true;
 }
 
-bool Cmd_PurgeResources_Execute(COMMAND_ARGS)
-{
-	TheCommandManager->Commands.PurgeResources(result);
-	return true;
-}
-
 bool Cmd_GetLocationName_Execute(COMMAND_ARGS)
 {
 	TheCommandManager->Commands.GetLocationName(result);
 	return true;
 }
 
-bool Cmd_SetShaderValue_Execute(COMMAND_ARGS)
+bool Cmd_SetCustomShaderEnabled_Execute(COMMAND_ARGS)
 {
 	char Name[80];
-	char Const[80];
-	float Value[4];
+	int Value;
 
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Const, &Value[0], &Value[1], &Value[2], &Value[3])) TheCommandManager->Commands.SetShaderValue(result, Name, Const, Value);
+	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Value)) TheCommandManager->Commands.SetCustomShaderEnabled(result, Name, Value);
 	return true;
 }
 
-bool Cmd_SetCustomShaderValue_Execute(COMMAND_ARGS)
+bool Cmd_SetCustomConstant_Execute(COMMAND_ARGS)
 {
 	char Name[80];
-	char Const[80];
 	float Value[4];
 	
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Const, &Value[0], &Value[1], &Value[2], &Value[3])) TheCommandManager->Commands.SetCustomShaderValue(result, Name, Const, Value);
-	return true;
-}
-
-bool Cmd_GetAnimGroup_Execute(COMMAND_ARGS)
-{
-	int AnimGroup = 0;
-	int AnimType = 0;
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &AnimGroup, &AnimType)) TheCommandManager->Commands.GetAnimGroup(result, (Actor*)thisObj, AnimGroup, AnimType);
-	return true;
-}
-
-bool Cmd_SetAnimGroup_Execute(COMMAND_ARGS)
-{
-	int Permanent = 0;
-	int PlayAnim = 0;
-	int AnimGroup = 0;
-	int AnimType = 0;
-	char Filename[80];
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &Permanent, &PlayAnim, &AnimGroup, &AnimType, &Filename)) TheCommandManager->Commands.SetAnimGroup(result, (Actor*)thisObj, Permanent, PlayAnim, AnimGroup, AnimType, Filename);
-	return true;
-}
-
-bool Cmd_ResetAnimGroup_Execute(COMMAND_ARGS)
-{
-	int AnimGroup = 0;
-	int AnimType = 0;
-
-	if (ExtractArgs(PASS_EXTRACT_ARGS, &AnimGroup, &AnimType)) TheCommandManager->Commands.ResetAnimGroup(result, (Actor*)thisObj, AnimGroup, AnimType);
+	if (ExtractArgs(PASS_EXTRACT_ARGS, &Name, &Value[0], &Value[1], &Value[2], &Value[3])) TheCommandManager->Commands.SetCustomConstant(result, Name, Value);
 	return true;
 }
 
@@ -117,14 +78,10 @@ DEFINE_COMMAND_PLUGIN_R(GetSKSEVersion, , "Returns the SKSE version", 0, 0, NULL
 DEFINE_COMMAND_PLUGIN_R(ClearInvalidRegistrations, , "Clears invalid event registrations", 0, 0, NULL, NULL);
 #define CommandPrefix "SR"
 #endif
-DEFINE_COMMAND_PLUGIN_R(GetVersion,				, "Returns the plugin version", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(PurgeResources,			, "Purges resources from the video memory", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetLocationName,		, "Gets the name of the current worldspace and current cell - this is a console command only", 0, 0, NULL, NULL);
-DEFINE_COMMAND_PLUGIN_R(SetShaderValue,			, "Sets the value of a shader", 0, 6, kParams_TwoString_FourFloat, NULL);
-DEFINE_COMMAND_PLUGIN_R(SetCustomShaderValue,	, "Sets the value of a custom effect", 0, 6, kParams_TwoString_FourFloat, NULL);
-DEFINE_COMMAND_PLUGIN_R(GetAnimGroup,			, "Gets if a specific animation for the specific group is set", 1, 2, kParams_TwoInts, NULL);
-DEFINE_COMMAND_PLUGIN_R(SetAnimGroup,			, "Sets a specific animation for the specific group", 1, 5, kParams_FourIntsOneString, NULL);
-DEFINE_COMMAND_PLUGIN_R(ResetAnimGroup,			, "Reset a permanent specific animation for the specific group to default", 1, 2, kParams_TwoInts, NULL);
+DEFINE_COMMAND_PLUGIN_R(GetVersion,				, "Returns the plugin version (console command only)", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(GetLocationName,		, "Gets the name of the current worldspace and current cell (console command only)", 0, 0, NULL, NULL);
+DEFINE_COMMAND_PLUGIN_R(SetCustomShaderEnabled,	, "Enables or disables a custom shader", 0, 2, kParams_OneString_OneInt, NULL);
+DEFINE_COMMAND_PLUGIN_R(SetCustomConstant,		, "Sets the value of a custom constant", 0, 5, kParams_OneString_FourFloat, NULL);
 
 #if defined(OBLIVION)
 CommandManager::CommandManager() {
@@ -138,13 +95,9 @@ void CommandManager::RegisterCommands(const OBSEInterface* obse)
 {
 	obse->SetOpcodeBase(0x2800);
 	obse->RegisterCommand(&kCommandInfo_GetVersion);
-	obse->RegisterCommand(&kCommandInfo_PurgeResources);
 	obse->RegisterCommand(&kCommandInfo_GetLocationName);
-	obse->RegisterCommand(&kCommandInfo_SetShaderValue);
-	obse->RegisterCommand(&kCommandInfo_SetCustomShaderValue);
-	obse->RegisterCommand(&kCommandInfo_GetAnimGroup);
-	obse->RegisterCommand(&kCommandInfo_SetAnimGroup);
-	obse->RegisterCommand(&kCommandInfo_ResetAnimGroup);
+	obse->RegisterCommand(&kCommandInfo_SetCustomShaderEnabled);
+	obse->RegisterCommand(&kCommandInfo_SetCustomConstant);
 }
 #elif defined (SKYRIM)
 CommandTable	commandTable;
@@ -236,10 +189,9 @@ void __cdecl TrackToggleConsole() {
 		commandTable.Add(&kCommandInfo_ClearInvalidRegistrations);
 		commandTable.Add();
 		commandTable.Add(&kCommandInfo_GetVersion);
-		commandTable.Add(&kCommandInfo_PurgeResources);
 		commandTable.Add(&kCommandInfo_GetLocationName);
-		commandTable.Add(&kCommandInfo_SetShaderValue);
-		commandTable.Add(&kCommandInfo_SetCustomShaderValue);
+		commandTable.Add(&kCommandInfo_SetCustomShaderEnabled);
+		commandTable.Add(&kCommandInfo_SetCustomConstant);
 		commandTable.Add();
 		commandTable.PatchEXE(&kPatchSet);
 		TheCommandManager->ConsolePatched = true;
@@ -271,12 +223,6 @@ void CommandManager::PluginCommands::GetVersion(double* result)
 	*result = 1;
 }
 
-void CommandManager::PluginCommands::PurgeResources(double* result)
-{
-	TheRenderManager->device->EvictManagedResources();
-	*result = 1;
-}
-
 void CommandManager::PluginCommands::GetLocationName(double* result)
 {
 	if (IsConsoleMode()) {
@@ -296,101 +242,14 @@ void CommandManager::PluginCommands::GetLocationName(double* result)
 	*result = 1;
 }
 
-void CommandManager::PluginCommands::SetShaderValue(double* result, const char* Name, const char* ConstantName, D3DXVECTOR4 Value)
+void CommandManager::PluginCommands::SetCustomShaderEnabled(double* result, const char* Name, bool Value)
 {
-	TheShaderManager->SetShaderValue(Name, ConstantName, Value);
+	TheShaderManager->SetCustomShaderEnabled(Name, Value);
 	*result = 1;
 }
 
-void CommandManager::PluginCommands::SetCustomShaderValue(double* result, const char* Name, const char* ConstantName, D3DXVECTOR4 Value)
+void CommandManager::PluginCommands::SetCustomConstant(double* result, const char* Name, D3DXVECTOR4 Value)
 {
-	TheShaderManager->SetCustomShaderValue(Name, ConstantName, Value);
+	TheShaderManager->SetCustomConstant(Name, Value);
 	*result = 1;
-}
-
-void CommandManager::PluginCommands::GetAnimGroup(double* result, Actor* Act, int AnimGroup, int AnimType)
-{
-	*result = 0;
-#if defined(OBLIVION)
-	if (Act->process->GetProcessLevel() <= 1) {
-		MiddleHighProcess* Proc = (MiddleHighProcess*)Act->process;
-		ActorAnimData* AnimData = Proc->animData;
-		if (AnimData) {
-			AnimSequenceBase* AnimSequence = NULL;
-			UInt16 AnimGroupKey = ((UInt8)AnimType << 8) | (UInt8)AnimGroup;
-			if (ThisStdCall(0x00470960, AnimData->animsMap, AnimGroupKey, &AnimSequence) && AnimSequence) {
-				if (AnimSequence->IsSingle()) {
-					AnimSequenceSingleEx* AnimSequenceS = (AnimSequenceSingleEx*)AnimSequence;
-					if (AnimSequenceS->ORAnim) *result = 1;
-				}
-				else {
-					AnimSequenceMultipleEx* AnimSequenceM = (AnimSequenceMultipleEx*)AnimSequence;
-					if (AnimSequenceM->ORAnim) *result = 1;
-				}
-			}
-		}
-	}
-#endif
-}
-
-void CommandManager::PluginCommands::SetAnimGroup(double* result, Actor* Act, int Permanent, int PlayAnim, int AnimGroup, int AnimType, const char* Filename)
-{
-	*result = 0;
-#if defined(OBLIVION)
-	if (Act->process->GetProcessLevel() <= 1) {
-		BSAnimGroupSequence* AnimGroupSequence = NULL;
-		MiddleHighProcess* Proc = (MiddleHighProcess*)Act->process;
-		ActorAnimDataEx* AnimData = (ActorAnimDataEx*)Proc->animData;
-		if (AnimData) {
-			AnimSequenceBase* AnimSequence = NULL;
-			UInt16 AnimGroupKey = ((UInt8)AnimType << 8) | (UInt8)AnimGroup;
-			if (ThisStdCall(0x00470960, AnimData->animsMap, AnimGroupKey, &AnimSequence) && AnimSequence) {
-				NiTList<BSAnimGroupSequence>::Node* Iter = AnimData->ORAnims->start;
-				while (Iter) {
-					AnimGroupSequence = Iter->data;
-					if (!stricmp(AnimGroupSequence->filePath, Filename)) break;
-					Iter = Iter->next;
-					AnimGroupSequence = NULL;
-				}
-				if (AnimSequence->IsSingle()) {
-					AnimSequenceSingleEx* AnimSequenceS = (AnimSequenceSingleEx*)AnimSequence;
-					if (Permanent) AnimSequenceS->ORAnim = AnimGroupSequence;
-					if (Permanent == 0 || PlayAnim == 1) ThisStdCall(0x00474530, AnimData, AnimGroupSequence, AnimGroupKey, -1);
-				}
-				else {
-					AnimSequenceMultipleEx* AnimSequenceM = (AnimSequenceMultipleEx*)AnimSequence;
-					if (Permanent) AnimSequenceM->ORAnim = AnimGroupSequence;
-					if (Permanent == 0 || PlayAnim == 1) ThisStdCall(0x00474530, AnimData, AnimGroupSequence, AnimGroupKey, -1);
-				}
-				*result = 1;
-			}
-		}
-	}
-#endif
-}
-
-void CommandManager::PluginCommands::ResetAnimGroup(double* result, Actor* Act, int AnimGroup, int AnimType)
-{
-	*result = 0;
-#if defined(OBLIVION)
-	if (Act->process->GetProcessLevel() <= 1) {
-		MiddleHighProcess* Proc = (MiddleHighProcess*)Act->process;
-		ActorAnimData* AnimData = Proc->animData;
-		if (AnimData) {
-			AnimSequenceBase* AnimSequence = NULL;
-			UInt16 AnimGroupKey = ((UInt8)AnimType << 8) | (UInt8)AnimGroup;
-			if (ThisStdCall(0x00470960, AnimData->animsMap, AnimGroupKey, &AnimSequence)) {
-				if (AnimSequence->IsSingle()) {
-					AnimSequenceSingleEx* AnimSequenceS = (AnimSequenceSingleEx*)AnimSequence;
-					AnimSequenceS->ORAnim = NULL;
-				}
-				else {
-					AnimSequenceMultipleEx* AnimSequenceM = (AnimSequenceMultipleEx*)AnimSequence;
-					AnimSequenceM->ORAnim = NULL;
-				}
-				*result = 1;
-			}
-		}
-	}
-#endif
 }

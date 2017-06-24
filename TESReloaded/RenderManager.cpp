@@ -1,13 +1,10 @@
 #include <nvapi.h>
 #if defined(OBLIVION)
-#define kWorldSceneGraph 0x00B333CC
 #elif defined(SKYRIM)
 #include "skse\NiNodes.h"
-#include "RenderManager.h"
-#define kWorldSceneGraph 0x01B2E8BC
+#include "skse\GameReferences.h"
 #endif
-
-#define RESZ_CODE 0x7fa05000
+#define RESZ_CODE 0x7FA05000
 
 void RenderManager::GetCameraData()
 {
@@ -31,7 +28,7 @@ void RenderManager::GetCameraData()
 
 void RenderManager::SetCameraData()
 {
-	
+
 	SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
 	NiCamera* Camera = WorldSceneGraph->camera;
 
@@ -55,7 +52,7 @@ void RenderManager::SetCameraData()
 #if defined(OBLIVION)		
 		SetupCamera(WorldTranslate, &Forward, &Up, &Right, &Camera->Frustum, (float*)&Camera->ViewPort);
 #elif defined(SKYRIM)
-		TheUtilityManager->ThisStdCall(0x00633670, this, Camera);
+		TheUtilityManager->SetupCamera(Camera);
 #endif
 		CameraForward.x = Forward.x;
 		CameraForward.y = Forward.y;
@@ -63,7 +60,6 @@ void RenderManager::SetCameraData()
 		CameraPosition.x = WorldTranslate->x;
 		CameraPosition.y = WorldTranslate->y;
 		CameraPosition.z = WorldTranslate->z;
-
 	}
 
 }
@@ -71,13 +67,14 @@ void RenderManager::SetCameraData()
 void RenderManager::SetSceneGraph()
 {
 
+	SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
 	float FoV = TheSettingManager->SettingsMain.FoV;
 
 #if defined(OBLIVION)
 	if (FoV) {
 		if ((*g_thePlayer)->FoV != FoV && !TheUtilityManager->IsMenu()) {
 			*SettingWorldFoV = FoV;
-			ThisStdCall(0x00664A40, (*g_thePlayer), FoV);
+			TheUtilityManager->SetCameraFOV(WorldSceneGraph, FoV);
 		}
 	}
 	else
@@ -87,9 +84,7 @@ void RenderManager::SetSceneGraph()
 		PlayerCamera* Camera = PlayerCamera::GetSingleton();
 		if (Camera->worldFOV != FoV) {
 			void (__cdecl * C71820)(float) = (void(__cdecl *)(float))0x00C71820;
-			SceneGraph* WorldSceneGraph = *(SceneGraph**)kWorldSceneGraph;
-		
-			TheUtilityManager->ThisStdCall(0x00B17960, WorldSceneGraph, FoV, 0, NULL, 0);	
+			TheUtilityManager->SetCameraFOV(WorldSceneGraph, FoV);	
 			C71820(FoV);
 			Camera->worldFOV = FoV;
 			Camera->firstPersonFOV = FoV;
@@ -116,6 +111,7 @@ void RenderManager::SetSceneGraph()
 			WorldSceneGraph->camera->MaxFarNearRatio = FarPlaneDistance / *SettingNearDistance;
 		}
 	}
+	FirstPersonDiscarded = (*g_thePlayer)->firstPersonNiNode->m_flags & NiAVObject::kFlag_AppCulled;
 
 }
 
@@ -142,31 +138,43 @@ HRESULT RenderManager::SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, 
 void RenderManager::Initialize()
 {
 
-	IDirect3D9 *pD3D;
+	IDirect3D9* D3D;
 	D3DDISPLAYMODE currentDisplayMode;
 
 	_MESSAGE("Extending the render manager...");
-
 	CameraForward.x = CameraForward.y = CameraForward.z = CameraForward.w = 0.0f;
 	CameraPosition.x = CameraPosition.y = CameraPosition.z = CameraPosition.w = 0.0f;
-	RenderTarget = NULL;
+	BackBuffer = NULL;
 	DepthSurface = NULL;
 	DepthTexture = NULL;
 	DepthTextureINTZ = NULL;
 	SaveGameScreenShotRECT = { 0, 0, 256, 144 };
-	IsSaveGameScreenShot = 0;
-	FirstPersonView = 0;
+	IsSaveGameScreenShot = false;
+	FirstPersonView = false;
+	FirstPersonDiscarded = true;
 	device->CreateTexture(width, height, 1, D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)MAKEFOURCC('I','N','T','Z'), D3DPOOL_DEFAULT, &DepthTexture, NULL);
-	device->GetDirect3D(&pD3D);
-	pD3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &currentDisplayMode);
-	RESZ = pD3D->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, currentDisplayMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, (D3DFORMAT)MAKEFOURCC('R','E','S','Z')) == D3D_OK;
+	device->GetDirect3D(&D3D);
+	D3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &currentDisplayMode);
+	RESZ = D3D->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, currentDisplayMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, (D3DFORMAT)MAKEFOURCC('R','E','S','Z')) == D3D_OK;
 	if (RESZ)
 		_MESSAGE("AMD/Intel detected: RESZ supported.");
 	else if (NvAPI_Initialize() == NVAPI_OK)
 		_MESSAGE("NVIDIA detected: NVAPI supported.");
 	else
 		_MESSAGE("ERROR: Cannot initialize the render manager. Graphics device not supported.");
-
+	if (TheSettingManager->SettingsMain.AnisotropicFilter >= 2) device->SetSamplerState(0, D3DSAMP_MAXANISOTROPY, TheSettingManager->SettingsMain.AnisotropicFilter);
+#if defined(OBLIVION)
+	if (*SettingHDR == 1 && *SettingMultiSample >= 2) {
+		Ni2DBuffer* Buffer = (Ni2DBuffer*)FormHeap_Allocate(0x14); ((UInt32*)Buffer)[0] = 0x00A8098C; Buffer->m_uiRefCount = 1;
+		NiDX92DBufferData* BufferData = (NiDX92DBufferData*)FormHeap_Allocate(0x10); ((UInt32*)BufferData)[0] = 0x00A89818; BufferData->m_uiRefCount = 1; BufferData->ParentData = Buffer;
+		Buffer->width = width;
+		Buffer->height = height;
+		Buffer->data = BufferData;
+		device->CreateRenderTarget(width, height, D3DFMT_A16B16G16R16F, (D3DMULTISAMPLE_TYPE)(*SettingMultiSample), 0, false, &BufferData->Surface, NULL);
+		defaultRTGroup->RenderTargets[1] = Buffer;
+		BackBuffer = defaultRTGroup->RenderTargets[0]->data->Surface;
+	}
+#endif
 }
 
 void RenderManager::ResolveDepthBuffer()

@@ -30,7 +30,6 @@
     <ClCompile Include="..\..\TESReloaded\WindowedMode.cpp" />
     <ClCompile Include="..\..\TESReloaded\RenderManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\CameraMode.cpp" />
-    <ClCompile Include="..\..\TESReloaded\CombatMode.cpp" />
     <ClCompile Include="..\..\TESReloaded\EquipmentManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\FrameRateManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\Grass.cpp" />
@@ -100,6 +99,7 @@
     <ClCompile Include="..\..\TESReloaded\KeyboardManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\GameEventManager.cpp" />
     <ClCompile Include="..\..\TESReloaded\ScriptManager.cpp" />
+    <ClCompile Include="..\..\TESReloaded\MountedCombat.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -120,7 +120,6 @@
     <ClInclude Include="..\..\TESReloaded\WindowedMode.h" />
     <ClInclude Include="..\..\TESReloaded\RenderManager.h" />
     <ClInclude Include="..\..\TESReloaded\CameraMode.h" />
-    <ClInclude Include="..\..\TESReloaded\CombatMode.h" />
     <ClInclude Include="..\..\TESReloaded\EquipmentManager.h" />
     <ClInclude Include="..\..\TESReloaded\FrameRateManager.h" />
     <ClInclude Include="..\..\TESReloaded\Grass.h" />
@@ -191,6 +190,7 @@
     <ClInclude Include="..\..\TESReloaded\KeyboardManager.h" />
     <ClInclude Include="..\..\TESReloaded\GameEventManager.h" />
     <ClInclude Include="..\..\TESReloaded\ScriptManager.h" />
+    <ClInclude Include="..\..\TESReloaded\MountedCombat.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="exports.def" />

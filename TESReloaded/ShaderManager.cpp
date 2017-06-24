@@ -1,7 +1,5 @@
 #if defined(OBLIVION)
 #include "obse\GameData.h"
-#define SetCurrentVertexStream TheRenderManager->renderState->SetFVF(EFFECTQUADFORMAT, false)
-#define kSky 0x00B365C4
 #define fogNight_nearFog fogNight.nearFog
 #define fogNight_farFog fogNight.farFog
 #define fogDay_nearFog fogDay.nearFog
@@ -22,8 +20,6 @@
 #elif defined(SKYRIM)
 #include "skse\GameData.h"
 #include "skse\GameCamera.h"
-#define SetCurrentVertexStream D3DDevice->SetFVF(EFFECTQUADFORMAT)
-#define kSky 0x01B1160C
 #define eColor_Fog kColorType_FogNear
 #define eColor_Sun kColorType_Sun
 #define fogNight_nearFog fogDistance.nearNight
@@ -610,11 +606,11 @@ void ShaderManager::UpdateConstants() {
 
 	LARGE_INTEGER tick;
 	SettingsWaterStruct *sws = NULL;
-	Sky* pSky = *(Sky**)kSky;
-	NiAVObject* SunRoot = (NiAVObject*)pSky->sun->SunBillboard->m_parent;
-	TESClimate* currentClimate = pSky->firstClimate;
-	TESWeather* currentWeather = pSky->firstWeather;
-	float weatherPercent = pSky->weatherPercent;
+	Sky* WorldSky = *(Sky**)kWorldSky;
+	NiAVObject* SunRoot = (NiAVObject*)WorldSky->sun->SunBillboard->m_parent;
+	TESClimate* currentClimate = WorldSky->firstClimate;
+	TESWeather* currentWeather = WorldSky->firstWeather;
+	float weatherPercent = WorldSky->weatherPercent;
 	bool IsThirdPersonView;
 
 	QueryPerformanceCounter(&tick);
@@ -1051,6 +1047,7 @@ void ShaderManager::UpdateConstants() {
 			ShaderConst.HDR_ToneMapping.x = TheSettingManager->SettingsHDR.ToneMapping;
 			ShaderConst.HDR_ToneMapping.y = TheSettingManager->SettingsHDR.ToneMappingBlur;
 			ShaderConst.HDR_ToneMapping.z = TheSettingManager->SettingsHDR.ToneMappingColor;
+			ShaderConst.HDR_ToneMapping.w = TheSettingManager->SettingsHDR.Linearization;
 		}
 
 		if (TheSettingManager->SettingsMain.EnablePOM) {
@@ -1106,6 +1103,7 @@ void ShaderManager::UpdateConstants() {
 			ShaderConst.GodRays_Data.x = TheSettingManager->SettingsGodRays.LightShaftPasses;
 			ShaderConst.GodRays_Data.y = TheSettingManager->SettingsGodRays.Luminance;
 			ShaderConst.GodRays_Data.z = TheSettingManager->SettingsGodRays.GlobalMultiplier;
+			ShaderConst.GodRays_Data.w = TheSettingManager->SettingsGodRays.TimeEnabled;
 		}
 
 		if (TheSettingManager->SettingsMain.EnableAmbientOcclusion) {
@@ -1196,22 +1194,20 @@ void ShaderManager::UpdateConstants() {
 			}
 		}
 
-		ShaderConst.LowHF_Data.x = 0.0f;
 		if (TheSettingManager->SettingsMain.EnableLowHF) {
 			float PlayerHealthPercent = GetPlayerHealthPercent;
 			float PlayerFatiguePercent = GetPlayerFatiguePercent;
 
+			ShaderConst.LowHF_Data.x = 0.0f;
+			ShaderConst.LowHF_HealthCoeff = 1.0f - PlayerHealthPercent / TheSettingManager->SettingsLowHF.HealthLimit;
+			ShaderConst.LowHF_FatigueCoeff = 1.0f - PlayerFatiguePercent / TheSettingManager->SettingsLowHF.FatigueLimit;
 			if (PlayerHealthPercent < TheSettingManager->SettingsLowHF.HealthLimit) {
-				ShaderConst.LowHF_HealthCoeff = 1.0f - PlayerHealthPercent / TheSettingManager->SettingsLowHF.HealthLimit;
 				ShaderConst.LowHF_Data.x = ShaderConst.LowHF_HealthCoeff * TheSettingManager->SettingsLowHF.LumaMultiplier;
 				ShaderConst.LowHF_Data.y = ShaderConst.LowHF_HealthCoeff * 0.01f * TheSettingManager->SettingsLowHF.BlurMultiplier;
 				ShaderConst.LowHF_Data.z = ShaderConst.LowHF_HealthCoeff * 20.0f * TheSettingManager->SettingsLowHF.VignetteMultiplier;
 				ShaderConst.LowHF_Data.w = (1.0f - ShaderConst.LowHF_HealthCoeff) * TheSettingManager->SettingsLowHF.DarknessMultiplier;
 			}
-			if (!ShaderConst.LowHF_Data.x && PlayerFatiguePercent < TheSettingManager->SettingsLowHF.FatigueLimit) {
-				ShaderConst.LowHF_FatigueCoeff = 1.0f - PlayerFatiguePercent / TheSettingManager->SettingsLowHF.FatigueLimit;
-				ShaderConst.LowHF_Data.x = ShaderConst.LowHF_FatigueCoeff * TheSettingManager->SettingsLowHF.LumaMultiplier;
-			}
+			if (!ShaderConst.LowHF_Data.x && PlayerFatiguePercent < TheSettingManager->SettingsLowHF.FatigueLimit) ShaderConst.LowHF_Data.x = ShaderConst.LowHF_FatigueCoeff * TheSettingManager->SettingsLowHF.LumaMultiplier;
 		}
 
 		if (TheSettingManager->SettingsMain.EnableDepthOfField) {
@@ -1473,36 +1469,35 @@ void ShaderManager::DisposeEffect(EffectRecord* TheEffect)
 
 }
 
-void ShaderManager::RenderEffects() {
+void ShaderManager::RenderEffects(IDirect3DSurface9* RenderTarget) {
 
-	IDirect3DDevice9 *D3DDevice = TheRenderManager->device;
-	IDirect3DSurface9* RenderTarget = TheRenderManager->RenderTarget;
+	IDirect3DDevice9* Device = TheRenderManager->device;
 
 	TheRenderManager->SetCameraData();
-	D3DDevice->SetStreamSource(0, EffectVertex, 0, sizeof(EffectQuad));
-	SetCurrentVertexStream;
-	D3DDevice->StretchRect(RenderTarget, NULL, RenderedSurface, NULL, D3DTEXF_NONE);
+	Device->SetStreamSource(0, EffectVertex, 0, sizeof(EffectQuad));
+	Device->SetFVF(EFFECTQUADFORMAT);
+	Device->StretchRect(RenderTarget, NULL, RenderedSurface, NULL, D3DTEXF_NONE);
 
 	if (TheSettingManager->SettingsMain.EnableWetWorld && TheShaderManager->ShaderConst.currentWorldSpace && TheShaderManager->ShaderConst.WetWorld_Data.x > 0) {
-		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
 		WetWorldEffect->SetCT();
-		WetWorldEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		WetWorldEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 	else if (TheSettingManager->SettingsMain.EnableSnowAccumulation && TheShaderManager->ShaderConst.currentWorldSpace && TheShaderManager->ShaderConst.SnowAccumulation_Params.w > 0) {
-		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
 		SnowAccumulationEffect->SetCT();
-		SnowAccumulationEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		SnowAccumulationEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableColoring) {
 		ColoringEffect->SetCT();
-		ColoringEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		ColoringEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableBloom) {
-		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
 		BloomEffect->SetCT();
-		BloomEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		BloomEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableUnderwater && TheShaderManager->ShaderConst.HasWater && TheRenderManager->CameraPosition.z < TheShaderManager->ShaderConst.Water_waterSettings.x + 20) {
@@ -1511,77 +1506,77 @@ void ShaderManager::RenderEffects() {
 			TheShaderManager->ShaderConst.WaterLens_Percent = -1.0f;
 		}
 		UnderwaterEffect->SetCT();
-		UnderwaterEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		UnderwaterEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 	else {
 		if (TheShaderManager->ShaderConst.WaterLens_Percent == -1.0f) TheShaderManager->ShaderConst.WaterLens_Percent = 1.0f;
 
 		if (TheSettingManager->SettingsMain.EnableAmbientOcclusion && TheShaderManager->ShaderConst.AmbientOcclusion_Enabled) {
-			D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+			Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
 			AmbientOcclusionEffect->SetCT();
-			AmbientOcclusionEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+			AmbientOcclusionEffect->Render(Device, RenderTarget, RenderedSurface, false);
 		}
 
 		if (TheSettingManager->SettingsMain.EnableGodRays && TheShaderManager->ShaderConst.currentWorldSpace) {
-			D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+			Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
 			GodRaysEffect->SetCT();
-			GodRaysEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+			GodRaysEffect->Render(Device, RenderTarget, RenderedSurface, false);
 		}
 	}
 
 	if (TheSettingManager->SettingsMain.EnableDepthOfField && TheShaderManager->ShaderConst.DepthOfField_Enabled) {
-		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
 		DepthOfFieldEffect->SetCT();
-		DepthOfFieldEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		DepthOfFieldEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableBloodLens && TheShaderManager->ShaderConst.BloodLens_Percent > 0.0f) {
 		BloodLensEffect->SetCT();
-		BloodLensEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		BloodLensEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableWaterLens && TheShaderManager->ShaderConst.WaterLens_Percent > 0.0f) {
 		WaterLensEffect->SetCT();
-		WaterLensEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		WaterLensEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableMotionBlur && (TheShaderManager->ShaderConst.MotionBlur_Data.x || TheShaderManager->ShaderConst.MotionBlur_Data.y)) {
 		MotionBlurEffect->SetCT();
-		MotionBlurEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		MotionBlurEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableLowHF && TheShaderManager->ShaderConst.LowHF_Data.x) {
 		LowHFEffect->SetCT();
-		LowHFEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		LowHFEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableSharpening) {
 		SharpeningEffect->SetCT();
-		SharpeningEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		SharpeningEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.EnableCinema && (TheShaderManager->ShaderConst.Cinema_Data.x != 0.0f || TheShaderManager->ShaderConst.Cinema_Data.y != 0.0f)) {
 		CinemaEffect->SetCT();
-		CinemaEffect->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+		CinemaEffect->Render(Device, RenderTarget, RenderedSurface, false);
 	}
 
 	if (TheSettingManager->SettingsMain.CustomEffects) {
 		for (CustomEffectRecordList::iterator iter = CustomEffectRecords.begin(); iter != CustomEffectRecords.end(); ++iter) {
 			if (iter->second->Enabled) {
-				D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+				Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
 				iter->second->SetCT();
-				iter->second->Render(D3DDevice, RenderTarget, RenderedSurface, false);
+				iter->second->Render(Device, RenderTarget, RenderedSurface, false);
 			}
 		}
 	}
 
 	if (TheSettingManager->SettingsMain.EnableSMAA) {
-		D3DDevice->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
-		D3DDevice->SetRenderTarget(0, RenderSurfaceSMAA);
+		Device->StretchRect(RenderTarget, NULL, SourceSurface, NULL, D3DTEXF_NONE);
+		Device->SetRenderTarget(0, RenderSurfaceSMAA);
 		SMAAEffect->SetCT();
-		SMAAEffect->Render(D3DDevice, RenderSurfaceSMAA, RenderedSurface, true);
-		D3DDevice->StretchRect(RenderSurfaceSMAA, NULL, RenderTarget, NULL, D3DTEXF_NONE);
-		D3DDevice->SetRenderTarget(0, RenderTarget);
+		SMAAEffect->Render(Device, RenderSurfaceSMAA, RenderedSurface, true);
+		Device->StretchRect(RenderSurfaceSMAA, NULL, RenderTarget, NULL, D3DTEXF_NONE);
+		Device->SetRenderTarget(0, RenderTarget);
 	}
 
 	if (TheKeyboardManager->OnKeyDown(TheSettingManager->SettingsMain.ScreenshotKey)) {
@@ -1684,7 +1679,7 @@ void ShaderManager::EnableEffect(const char* Name, bool Value)
 
 }
 
-void ShaderManager::SetShaderValue(const char* Name, const char* ConstantName, D3DXVECTOR4 Value)
+void ShaderManager::SetCustomConstant(const char* Name, D3DXVECTOR4 Value)
 {
 	
 	CustomConstants::iterator v = CustomConst.find(std::string(Name));
@@ -1692,15 +1687,10 @@ void ShaderManager::SetShaderValue(const char* Name, const char* ConstantName, D
 
 }
 
-void ShaderManager::SetCustomShaderValue(const char* Name, const char* ConstantName, D3DXVECTOR4 Value)
+void ShaderManager::SetCustomShaderEnabled(const char* Name, bool Value)
 {
 
 	CustomEffectRecordList::iterator v = CustomEffectRecords.find(std::string(Name));
-	if (v != CustomEffectRecords.end()) {
-		if (!memcmp(ConstantName, "Enabled", 7))
-			v->second->Enabled = Value;
-		else
-			v->second->pEffect->SetVector(ConstantName, &Value);
-	}
+	if (v != CustomEffectRecords.end()) v->second->Enabled = Value;
 
 }

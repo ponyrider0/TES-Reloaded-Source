@@ -6,7 +6,7 @@
 #include "ShaderIOHook.h"
 #include "FormHook.h"
 #include "Grass.h"
-#include "CombatMode.h"
+#include "MountedCombat.h"
 #include "CameraMode.h"
 #include "SleepingMode.h"
 #include "Animation.h"
@@ -56,7 +56,7 @@ bool OBSEPlugin_Query(const OBSEInterface* obse, PluginInfo* info)
 
 	info->infoVersion = PluginInfo::kInfoVersion;
 	info->name = "OblivionReloaded";
-	info->version = 5;
+	info->version = 6;
 #ifdef _DEBUG
 	#if HookD3DDevice
 	if(!obse->isEditor)
@@ -88,13 +88,13 @@ bool OBSEPlugin_Load(const OBSEInterface* obse)
 		CreateRenderHook();
 		CreateFormLoadHook();
 		CreateSettingsHook();
-		CreateAnimationHook();
 		CreateGameEventHook();
+		CreateScriptHook();
 
 		if (TheSettingManager->SettingsMain.GrassMode) CreateGrassHook();
-		if (TheSettingManager->SettingsMain.CombatMode) CreateCombatModeHook();
+		if (TheSettingManager->SettingsMain.MountedCombat) CreateMountedCombatHook();
 		if (TheSettingManager->SettingsMain.CameraMode) CreateCameraModeHook();
-		//if (TheSettingManager->SettingsMain.EquipmentMode) CreateEquipmentHook();
+		if (TheSettingManager->SettingsMain.EquipmentMode) { CreateAnimationHook(); CreateEquipmentHook(); }
 		if (TheSettingManager->SettingsMain.SleepingMode) CreateSleepingModeHook();
 
 		WriteRelJump(0x0049849A, 0x004984A0); //Skips antialiasing deactivation if HDR is enabled on the D3DDevice

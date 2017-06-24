@@ -419,11 +419,9 @@ void CreateShaderIOHook()
 	DetourTransactionCommit();
 
 #if defined(OBLIVION)
-	SafeWrite32(0x0076BD75, 0xB44); // Extends the NiDX9Renderer allocation from size 0xB00 to 0xB44 to store additional data
 	SafeWrite8(0x00801BCB, 0x40);	// Extends the NiD3DVertexShader allocation from size 0x38 to 0x40 to store additional data
 	SafeWrite8(0x008023A1, 0x34);	// Extends the NiD3DPixelShader allocation from size 0x2C to 0x34 to store additional data
 #elif defined(SKYRIM)
-	SafeWrite32(0x00CDB659, 0x8C4); // Extends the NiDX9Renderer allocation from size 0x880 to 0x8C4 to store additional data
 	SafeWrite8(0x00CCBD66, 0x3C);	// Extends the NiD3DVertexShader allocation from size 0x34 to 0x3C to store additional data
 	SafeWrite8(0x00CCC676, 0x6C);	// Extends the NiD3DPixelShader allocation from size 0x64 to 0x6C to store additional data
 	WriteRelJump(kVertexShaderFunctionHook, (UInt32)VertexShaderFunctionHook);

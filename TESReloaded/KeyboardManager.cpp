@@ -20,17 +20,19 @@ KeyboardManager::KeyboardManager()
 
 }
 
-bool KeyboardManager::OnKeyDown(UInt8 KeyCode)
+bool KeyboardManager::OnKeyDown(UInt16 KeyCode)
 {
 
+	if (KeyCode >= 256) return OnMouseDown(KeyCode - 256);
 	if (KeyboardCurrentState[KeyCode] && !KeyboardPreviousState[KeyCode]) return true;
 	return false;
 
 }
 
-bool KeyboardManager::OnKeyUp(UInt8 KeyCode)
+bool KeyboardManager::OnKeyUp(UInt16 KeyCode)
 {
 
+	if (KeyCode >= 256) return OnMouseUp(KeyCode - 256);
 	if (!KeyboardCurrentState[KeyCode] && KeyboardPreviousState[KeyCode]) return true;
 	return false;
 

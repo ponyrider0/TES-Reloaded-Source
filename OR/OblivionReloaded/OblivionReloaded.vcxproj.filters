@@ -15,7 +15,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="..\..\TESReloaded\Animation.cpp" />
     <ClCompile Include="..\..\TESReloaded\CameraMode.cpp" />
-    <ClCompile Include="..\..\TESReloaded\CombatMode.cpp" />
     <ClCompile Include="..\..\TESReloaded\D3D9Device.cpp" />
     <ClCompile Include="..\..\TESReloaded\D3D9Interface.cpp" />
     <ClCompile Include="..\..\TESReloaded\EquipmentManager.cpp" />
@@ -94,12 +93,12 @@
     <ClCompile Include="..\obse\obse\GameTiles.cpp">
       <Filter>obse</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\TESReloaded\MountedCombat.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
     <ClInclude Include="..\..\TESReloaded\Animation.h" />
     <ClInclude Include="..\..\TESReloaded\CameraMode.h" />
-    <ClInclude Include="..\..\TESReloaded\CombatMode.h" />
     <ClInclude Include="..\..\TESReloaded\D3D9Device.h" />
     <ClInclude Include="..\..\TESReloaded\D3D9Interface.h" />
     <ClInclude Include="..\..\TESReloaded\EquipmentManager.h" />
@@ -176,6 +175,7 @@
     <ClInclude Include="..\obse\obse\GameTiles.h">
       <Filter>obse</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\TESReloaded\MountedCombat.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="exports.def" />

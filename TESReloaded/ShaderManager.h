@@ -234,10 +234,10 @@ public:
 	void					CreateEffect(EffectRecordType EffectType);
 	bool					LoadEffect(EffectRecord* TheEffect, char* Filename, char* CustomEffectName);
 	void					DisposeEffect(EffectRecord* TheEffect);
-	void					RenderEffects();
+	void					RenderEffects(IDirect3DSurface9* RenderTarget);
 	void					EnableEffect(const char* Name, bool Value);
-	void					SetShaderValue(const char* Name, const char* ConstantName, D3DXVECTOR4 Value);
-	void					SetCustomShaderValue(const char* Name, const char* ConstantName, D3DXVECTOR4 Value);
+	void					SetCustomConstant(const char* Name, D3DXVECTOR4 Value);
+	void					SetCustomShaderEnabled(const char* Name, bool Value);
 
 	struct					EffectQuad { float x, y, z; float u, v; };
 	ShaderConstants			ShaderConst;
